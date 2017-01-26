@@ -14,7 +14,14 @@
 
 package protoscan
 
-import "github.com/gogo/protobuf/proto"
+import (
+	"crypto/sha1"
+	"fmt"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/pkg/errors"
+)
 
 // -----------------------------------------------------------------------------
 
@@ -44,7 +51,7 @@ type Descriptor struct {
 	// It is the unique, deterministic and versioned identifier for a Message or
 	// Enum type.
 	// This is the actual value that is exposed to the end-user of the protoscan
-	// package, and is traditionally used a key inside a schema registry.
+	// package, and is traditionally used as key inside a schema registry.
 	hashRecursive string
 }
 
@@ -53,3 +60,87 @@ func (d Descriptor) Descr() proto.Message { return d.descr }
 
 // UID returns the unique, deterministic, versioned identifier of a Descriptor.
 func (d Descriptor) UID() string { return d.hashRecursive }
+
+// -----------------------------------------------------------------------------
+
+// A DescriptorTree is a dependency tree of Message/Enum descriptors.
+type DescriptorTree struct {
+	*Descriptor
+	children []*DescriptorTree
+}
+
+func NewDescriptorTrees(
+	fdps map[string]*descriptor.FileDescriptorProto,
+) (map[string]*DescriptorTree, error) {
+	/* DEBUG */
+	for file, fdp := range fdps {
+		fmt.Println("file:", file)
+		for _, dep := range fdp.GetDependency() {
+			fmt.Println("\tdependency:", dep)
+		}
+		for _, et := range fdp.GetEnumType() {
+			fmt.Println("\tenum type:", et.GetName())
+		}
+		for _, mt := range fdp.GetMessageType() {
+			fmt.Println("\tmessage type:", mt.GetName())
+		}
+	}
+
+	// Pre-allocating len(fdps)*2, assuming an average of 3 Message/Enum
+	// types per file.
+	dtsSingle := make(map[string]*DescriptorTree, len(fdps)*3)
+	// This intermediate mapping is arranged by the descriptors' `hashSingle`
+	// and is used for the final computation of dependency trees.
+	for _, fdp := range fdps {
+		for _, et := range fdp.GetEnumType() {
+			dt, err := NewDescriptorTree(et)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			dtsSingle[dt.Descriptor.hashSingle] = dt
+		}
+		for _, mt := range fdp.GetMessageType() {
+			dt, err := NewDescriptorTree(mt)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			dtsSingle[dt.Descriptor.hashSingle] = dt
+		}
+	}
+
+	return nil, nil
+}
+
+// NewDescriptorTree returns a new DescriptorTree with its `hashSingle`
+// field already computed.
+// At this stage, dependencies have not been calculated, hence the `children`
+// slice of the Descriptor is nil.
+func NewDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
+	dt := &DescriptorTree{Descriptor: &Descriptor{descr: descr}}
+
+	switch descr.(type) {
+	case *descriptor.DescriptorProto:
+	case *descriptor.EnumDescriptorProto:
+	default:
+		return nil, errors.Errorf("")
+	}
+
+	descrBytes, err := proto.Marshal(descr)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	h := sha1.New()
+	_, err = h.Write(descrBytes)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	dt.Descriptor.hashSingle = fmt.Sprintf("%x", h.Sum(nil))
+
+	return dt, nil
+}
+
+func (dt *DescriptorTree) ComputeDependencies(
+	dtsSingle map[string]*DescriptorTree,
+) {
+
+}
