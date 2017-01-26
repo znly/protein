@@ -17,6 +17,7 @@ package protoscan
 import (
 	"crypto/sha1"
 	"fmt"
+	"reflect"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
@@ -35,12 +36,8 @@ type Descriptor struct {
 	//
 	// It is used to uniquely and deterministically identify a Message or Enum
 	// type that has been instanciated by a protobuf library.
-	// NOTE: You cannot rely on a type's GetName() method; you will end up with
-	//       discrepancies between the name returned by this method and the
-	//       name used by other types which import this type as a dependency.
-	//       Really, you don't wanna go down that road.
 	//
-	// hashSingle is necessary for the internal DescriptorTree machinery to,
+	// hashSingle is necessary for the internal DescriptorTree machinery to work,
 	// but it is never exposed to the end-user of the protoscan package.
 	hashSingle string
 	// hashRecursive is the the SHA-1 hash of `this.descr` + the SHA-1 hashes
@@ -86,25 +83,14 @@ func NewDescriptorTrees(
 		}
 	}
 
-	// Pre-allocating len(fdps)*2, assuming an average of 3 Message/Enum
-	// types per file.
-	dtsSingle := make(map[string]*DescriptorTree, len(fdps)*3)
-	// This intermediate mapping is arranged by the descriptors' `hashSingle`
-	// and is used for the final computation of dependency trees.
-	for _, fdp := range fdps {
-		for _, et := range fdp.GetEnumType() {
-			dt, err := NewDescriptorTree(et)
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
-			dtsSingle[dt.Descriptor.hashSingle] = dt
-		}
-		for _, mt := range fdp.GetMessageType() {
-			dt, err := NewDescriptorTree(mt)
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
-			dtsSingle[dt.Descriptor.hashSingle] = dt
+	dtsByName, err := collectDescriptorTypes(fdps)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	for _, dt := range dtsByName {
+		if err := dt.ComputeDependencies(dtsByName); err != nil {
+			return nil, errors.WithStack(err)
 		}
 	}
 
@@ -118,11 +104,8 @@ func NewDescriptorTrees(
 func NewDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
 	dt := &DescriptorTree{Descriptor: &Descriptor{descr: descr}}
 
-	switch descr.(type) {
-	case *descriptor.DescriptorProto:
-	case *descriptor.EnumDescriptorProto:
-	default:
-		return nil, errors.Errorf("")
+	if err := checkDescriptorType(descr); err != nil {
+		return nil, errors.WithStack(err)
 	}
 
 	descrBytes, err := proto.Marshal(descr)
@@ -140,7 +123,76 @@ func NewDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
 }
 
 func (dt *DescriptorTree) ComputeDependencies(
-	dtsSingle map[string]*DescriptorTree,
-) {
+	dtsByName map[string]*DescriptorTree,
+) error {
+	switch descr := dt.descr.(type) {
+	case *descriptor.DescriptorProto:
+	case *descriptor.EnumDescriptorProto:
+	default:
+		return errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
+	}
+	return nil
+}
 
+// -----------------------------------------------------------------------------
+
+func collectDescriptorTypes(
+	fdps map[string]*descriptor.FileDescriptorProto,
+) (map[string]*DescriptorTree, error) {
+	// TODO(cmc): nested protobuf types
+	// Pre-allocating len(fdps)*3, assuming an average of 3 Message/Enum
+	// types per file.
+	// This intermediate mapping is arranged by the descriptors' respective
+	// name and is a necessary intermediate representation for the final
+	// computation of dependency trees.
+	dtsByName := make(map[string]*DescriptorTree, len(fdps)*3)
+
+	var recurseMessages func(fldp *descriptor.DescriptorProto) error
+	recurseMessages = func(mt *descriptor.DescriptorProto) error {
+		dt, err := NewDescriptorTree(mt)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		dtsByName[mt.GetName()] = dt
+		for _, et := range mt.GetEnumType() {
+			dt, err := NewDescriptorTree(et)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			dtsByName[et.GetName()] = dt
+		}
+		for _, nmt := range mt.GetNestedType() {
+			if err := recurseMessages(nmt); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		return nil
+	}
+
+	for _, fdp := range fdps {
+		for _, et := range fdp.GetEnumType() {
+			dt, err := NewDescriptorTree(et)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			dtsByName[et.GetName()] = dt
+		}
+		for _, mt := range fdp.GetMessageType() {
+			if err := recurseMessages(mt); err != nil {
+				return nil, errors.WithStack(err)
+			}
+		}
+	}
+
+	return dtsByName, nil
+}
+
+func checkDescriptorType(descr proto.Message) error {
+	switch descr.(type) {
+	case *descriptor.DescriptorProto:
+	case *descriptor.EnumDescriptorProto:
+	default:
+		return errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
+	}
+	return nil
 }
