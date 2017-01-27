@@ -30,7 +30,8 @@ type descriptorNode struct {
 	// EnumDescriptorProto (Enum).
 	descr proto.Message
 
-	// hashSingle is the the SHA-1 hash of `this.descr`.
+	// hashSingle is the the hash (as implemented in byte_sslice.go) of
+	// `this.descr`.
 	// hashSingle = SHA1(d.descr)
 	//
 	// It is used to uniquely and deterministically identify a Message or Enum
@@ -39,8 +40,8 @@ type descriptorNode struct {
 	// hashSingle is necessary for the internal DescriptorTree machinery to work,
 	// but it is never exposed to the end-user of the protoscan package.
 	hashSingle []byte
-	// hashRecursive is the the SHA-1 hash of `this.descr` + the SHA-1 hashes
-	// of every type it depends of (recursively).
+	// hashRecursive is the the hash (as implemented in byte_sslice.go) of
+	// `this.descr` + the hashes of every type it depends on (recursively).
 	// Note that, to ensure determinism, the list of hashes used to compute
 	// the final `hashRecursive` value is alphabetically-sorted first.
 	// hashRecursive = SHA1(SORT(d.hashSingle, d.AllDependencyHashes))
@@ -188,10 +189,17 @@ func (dt *DescriptorTree) computeDependencyLinks(
 // `computeDependencyLinks()` must be called first for every available
 // DescriptorTree.
 func (dt *DescriptorTree) computeRecursiveHash() error {
+	// used to avoid cyclic dependencies
+	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.children))
+
 	var recurseChildren func(dts []*DescriptorTree) (ByteSSlice, error)
 	recurseChildren = func(dts []*DescriptorTree) (ByteSSlice, error) {
 		singleHashes := make(ByteSSlice, 0, len(dts))
 		for _, dt := range dts {
+			if _, ok := alreadyMet[dt]; ok {
+				continue
+			}
+			alreadyMet[dt] = struct{}{}
 			singleHashesRec, err := recurseChildren(dt.children)
 			if err != nil {
 				return nil, errors.WithStack(err)
