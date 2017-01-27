@@ -26,7 +26,7 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type Descriptor struct {
+type descriptorNode struct {
 	// descr is either a DescriptorProto (Message) or an
 	// EnumDescriptorProto (Enum).
 	descr proto.Message
@@ -52,17 +52,11 @@ type Descriptor struct {
 	hashRecursive string
 }
 
-// Descr returns the Message/Enum descriptor.
-func (d Descriptor) Descr() proto.Message { return d.descr }
-
-// UID returns the unique, deterministic, versioned identifier of a Descriptor.
-func (d Descriptor) UID() string { return d.hashRecursive }
-
 // -----------------------------------------------------------------------------
 
 // A DescriptorTree is a dependency tree of Message/Enum descriptors.
 type DescriptorTree struct {
-	*Descriptor
+	*descriptorNode
 	children []*DescriptorTree
 }
 
@@ -83,16 +77,20 @@ func NewDescriptorTrees(
 		}
 	}
 
+	// all of the Message/Enum/Nested types currently instanciated,
+	// arranged by their fully-qualified names
 	dtsByName, err := collectDescriptorTypes(fdps)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	for name := range dtsByName {
-		fmt.Println(name)
-	}
 
+	// Compute the `children` lists for every available DescriptorTree.
+	//
+	// Note that we need all the dependency trees of all DescriptorTrees
+	// to be already computed before we can compute the definitive recursive
+	// hashes.
 	for _, dt := range dtsByName {
-		if err := dt.ComputeDependencies(dtsByName); err != nil {
+		if err := dt.computeDependencyLinks(dtsByName); err != nil {
 			return nil, errors.WithStack(err)
 		}
 	}
@@ -102,10 +100,10 @@ func NewDescriptorTrees(
 
 // newDescriptorTree returns a new DescriptorTree with its `hashSingle`
 // field already computed.
-// At this stage, dependencies have not been calculated, hence the `children`
-// slice of the Descriptor is nil.
+// At this stage, dependencies have not been calculated yet, hence the
+// `children` slice of the DescriptorTree is nil.
 func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
-	dt := &DescriptorTree{Descriptor: &Descriptor{descr: descr}}
+	dt := &DescriptorTree{descriptorNode: &descriptorNode{descr: descr}}
 
 	if err := checkDescriptorType(descr); err != nil {
 		return nil, errors.WithStack(err)
@@ -120,17 +118,38 @@ func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	dt.Descriptor.hashSingle = fmt.Sprintf("%x", h.Sum(nil))
+	dt.hashSingle = fmt.Sprintf("%x", h.Sum(nil))
 
 	return dt, nil
 }
 
-func (dt *DescriptorTree) ComputeDependencies(
+// computeDependencyLinks appends the DependencyTrees of `dt`'s dependencies
+// to its list of children.
+//
+// At this stage, the newly-appended dependencies are not guaranteed to have
+// their own dependency-links already computed (i.e. their respective
+// `children` lists are still nil), since their `computeDependencyLinks`
+// might not have been called yet (the order in which each DescritorTree
+// gets its links computed is random).
+// For that reason, recursive hashes cannot be computed here.
+func (dt *DescriptorTree) computeDependencyLinks(
 	dtsByName map[string]*DescriptorTree,
 ) error {
 	switch descr := dt.descr.(type) {
 	case *descriptor.DescriptorProto:
+		for _, f := range descr.GetField() {
+			// `typeName` is non-empty only if it references a Message or
+			// Enum type
+			if typeName := f.GetTypeName(); len(typeName) > 0 {
+				child, ok := dtsByName[typeName]
+				if !ok {
+					return errors.Errorf("`%s`: no such type")
+				}
+				dt.children = append(dt.children, child)
+			}
+		}
 	case *descriptor.EnumDescriptorProto:
+		// nothing to do
 	default:
 		return errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
 	}
