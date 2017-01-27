@@ -15,7 +15,6 @@
 package protoscan
 
 import (
-	"crypto/sha1"
 	"fmt"
 	"reflect"
 
@@ -39,17 +38,18 @@ type descriptorNode struct {
 	//
 	// hashSingle is necessary for the internal DescriptorTree machinery to work,
 	// but it is never exposed to the end-user of the protoscan package.
-	hashSingle string
+	hashSingle []byte
 	// hashRecursive is the the SHA-1 hash of `this.descr` + the SHA-1 hashes
-	// of every type it depends of.
-	// To be deterministic, this list of hashes is sorted alphabetically first.
+	// of every type it depends of (recursively).
+	// Note that, to ensure determinism, the list of hashes used to compute
+	// the final `hashRecursive` value is alphabetically-sorted first.
 	// hashRecursive = SHA1(SORT(d.hashSingle, d.AllDependencyHashes))
 	//
 	// It is the unique, deterministic and versioned identifier for a Message or
 	// Enum type.
 	// This is the actual value that is exposed to the end-user of the protoscan
-	// package, and is traditionally used as key inside a schema registry.
-	hashRecursive string
+	// package, and is traditionally used as the key inside a schema registry.
+	hashRecursive []byte
 }
 
 // -----------------------------------------------------------------------------
@@ -59,6 +59,22 @@ type DescriptorTree struct {
 	*descriptorNode
 	children []*DescriptorTree
 }
+
+// UID returns a unique, deterministic, versioned identifier for this particular
+// DescriptorTree.
+//
+// This identifier is computed from `dt`'s protobuf schema as well as its
+// dependencies' schemas.
+// This means that modifying any schema in the dependency tree, not just `dt`'s,
+// will result in a new identifier being generated.
+//
+// The returned string is the hexadecimal representation of `dt`'s internal
+// recursive hash.
+func (dt *DescriptorTree) UID() string {
+	return fmt.Sprintf("%x", dt.hashRecursive)
+}
+
+// -----------------------------------------------------------------------------
 
 func NewDescriptorTrees(
 	fdps map[string]*descriptor.FileDescriptorProto,
@@ -84,13 +100,20 @@ func NewDescriptorTrees(
 		return nil, errors.WithStack(err)
 	}
 
-	// Compute the `children` lists for every available DescriptorTree.
+	// Computes the `children` lists for every available DescriptorTree.
 	//
 	// Note that we need all the dependency trees of all DescriptorTrees
 	// to be already computed before we can compute the definitive recursive
 	// hashes.
 	for _, dt := range dtsByName {
 		if err := dt.computeDependencyLinks(dtsByName); err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+
+	// computes the recursive hash value for each available DescriptorTree
+	for _, dt := range dtsByName {
+		if err := dt.computeRecursiveHash(); err != nil {
 			return nil, errors.WithStack(err)
 		}
 	}
@@ -113,15 +136,16 @@ func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	h := sha1.New()
-	_, err = h.Write(descrBytes)
+	hashSingle, err := ByteSSlice{descrBytes}.Hash()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	dt.hashSingle = fmt.Sprintf("%x", h.Sum(nil))
+	dt.hashSingle = hashSingle
 
 	return dt, nil
 }
+
+// -----------------------------------------------------------------------------
 
 // computeDependencyLinks appends the DependencyTrees of `dt`'s dependencies
 // to its list of children.
@@ -129,9 +153,11 @@ func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
 // At this stage, the newly-appended dependencies are not guaranteed to have
 // their own dependency-links already computed (i.e. their respective
 // `children` lists are still nil), since their `computeDependencyLinks`
-// might not have been called yet (the order in which each DescritorTree
+// might not have been called yet (the order in which each DescriptorTree
 // gets its links computed is random).
-// For that reason, recursive hashes cannot be computed here.
+// For that reason, recursive hashes cannot yet be computed here.
+//
+// This must be called before calling `computeRecursiveHash()`.
 func (dt *DescriptorTree) computeDependencyLinks(
 	dtsByName map[string]*DescriptorTree,
 ) error {
@@ -153,6 +179,39 @@ func (dt *DescriptorTree) computeDependencyLinks(
 	default:
 		return errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
 	}
+	return nil
+}
+
+// computeRecursiveHash recursively walks through `dt`'s dependencies
+// in order to compute its recursive hash.
+//
+// `computeDependencyLinks()` must be called first for every available
+// DescriptorTree.
+func (dt *DescriptorTree) computeRecursiveHash() error {
+	var recurseChildren func(dts []*DescriptorTree) (ByteSSlice, error)
+	recurseChildren = func(dts []*DescriptorTree) (ByteSSlice, error) {
+		singleHashes := make(ByteSSlice, 0, len(dts))
+		for _, dt := range dts {
+			singleHashesRec, err := recurseChildren(dt.children)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			singleHashes = append(singleHashes, dt.hashSingle)
+			singleHashes = append(singleHashes, singleHashesRec...)
+		}
+		return singleHashes, nil
+	}
+
+	singleHashes, err := recurseChildren(dt.children)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	hashRecursive, err := singleHashes.Hash()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	dt.hashRecursive = hashRecursive
+
 	return nil
 }
 
