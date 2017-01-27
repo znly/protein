@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package protoscan;
+
+import "google/protobuf/descriptor.proto";
+import "protobuf/gogoproto/gogo.proto";
+
+// -----------------------------------------------------------------------------
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.protosizer_all) = true;
+option (gogoproto.unsafe_marshaler_all) = false;
+option (gogoproto.unsafe_unmarshaler_all) = false;
+option (gogoproto.stable_marshaler_all) = false;
+option (gogoproto.typedecl_all) = true;
+option (gogoproto.gostring_all) = true;
+option (gogoproto.stringer_all) = false;
+option (gogoproto.onlyone_all) = false;
+
+// -----------------------------------------------------------------------------
+
+// ProtobufSchema is a versioned protobuf Message or Enum descriptor that can
+// be used to decode protobuf payloads at runtime.
+message ProtobufSchema {
+	// uid is the unique, deterministic & versioned identifier for this schema.
+	string uid = 1;
+	// fq_name is the fully-qualified name for this schema,
+	// e.g. `.google.protobuf.Timestamp`.
+	string fq_name = 2;
+	// descriptor is either a Message or an Enum protobuf descriptor.
+	oneof descriptor {
+		// msg is the protobuf descriptor of a Message type.
+		google.protobuf.DescriptorProto     msg = 30;
+		// enm is the protobuf descriptor of an Enum type.
+		google.protobuf.EnumDescriptorProto enm = 31;
+	}
+	// deps contains every direct and indirect dependencies required by this
+	// schema.
+	//
+	// Key: the dependency's UID
+	// Value: the dependency's fully-qualified name
+	map<string, string> deps = 4 [(gogoproto.nullable) = false];
+}
