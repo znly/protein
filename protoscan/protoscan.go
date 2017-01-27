@@ -99,6 +99,7 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 		ps := &ProtobufSchema{
 			UID:    uid,
 			FQName: dt.FQName(),
+			Deps:   map[string]string{},
 		}
 		switch descr := dt.descr.(type) {
 		case *descriptor.DescriptorProto:
