@@ -61,7 +61,7 @@ type descriptorNode struct {
 // A DescriptorTree is a dependency tree of Message/Enum descriptors.
 type DescriptorTree struct {
 	*descriptorNode
-	children []*DescriptorTree
+	deps []*DescriptorTree
 }
 
 // FQName returns the fully-qualified name of the underlying descriptor `descr`
@@ -89,8 +89,8 @@ func (dt *DescriptorTree) UID() string {
 // This should only be called once the linking & recursive hashing computation
 // have been done.
 func (dt *DescriptorTree) DependencyUIDs() []string {
-	// used to avoid cyclic dependencies
-	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.children))
+	// used to avoid non-linear dependencies
+	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.deps))
 	var recurseChildren func(dts []*DescriptorTree) []string
 	recurseChildren = func(dts []*DescriptorTree) []string {
 		recursiveHashes := make([]string, 0, len(dts))
@@ -101,13 +101,13 @@ func (dt *DescriptorTree) DependencyUIDs() []string {
 			alreadyMet[dt] = struct{}{}
 			recursiveHashes = append(recursiveHashes, dt.UID())
 			recursiveHashes = append(
-				recursiveHashes, recurseChildren(dt.children)...,
+				recursiveHashes, recurseChildren(dt.deps)...,
 			)
 		}
 		return recursiveHashes
 	}
 
-	return recurseChildren(dt.children)
+	return recurseChildren(dt.deps)
 }
 
 // -----------------------------------------------------------------------------
@@ -122,7 +122,7 @@ func NewDescriptorTrees(
 		return nil, errors.WithStack(err)
 	}
 
-	// Computes the `children` lists for every available DescriptorTree.
+	// Computes the immediated dependencies of every available DescriptorTree.
 	//
 	// Note that we need all the dependency trees of all DescriptorTrees
 	// to be already computed before we can compute the definitive recursive
@@ -152,11 +152,10 @@ func NewDescriptorTrees(
 
 // newDescriptorTree returns a new DescriptorTree with its `hashSingle`
 // field already computed.
+//
 // At this stage, dependencies have not been calculated yet, hence the
-// `children` slice of the DescriptorTree is nil.
+// `deps` list of the DescriptorTree is nil.
 func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
-	dt := &DescriptorTree{descriptorNode: &descriptorNode{descr: descr}}
-
 	if err := checkDescriptorType(descr); err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -169,38 +168,52 @@ func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	dt.hashSingle = hashSingle
+
+	dt := &DescriptorTree{
+		descriptorNode: &descriptorNode{
+			descr:      descr,
+			hashSingle: hashSingle,
+		},
+	}
 
 	return dt, nil
 }
 
 // -----------------------------------------------------------------------------
 
-// computeDependencyLinks appends the DependencyTrees of `dt`'s dependencies
-// to its list of children.
+// computeDependencyLinks adds the immediate dependencies of `dt` to its
+// `deps` list.
 //
-// At this stage, the newly-appended dependencies are not guaranteed to have
+// At this stage, the newly-added dependencies are not guaranteed to have
 // their own dependency-links already computed (i.e. their respective
-// `children` lists are still nil), since their `computeDependencyLinks`
+// `deps` lists are still nil), since their `computeDependencyLinks` methods
 // might not have been called yet (the order in which each DescriptorTree
-// gets its links computed is random).
-// For that reason, recursive hashes cannot yet be computed here.
+// gets its links computed is non-deterministic).
+// For that reason, recursive hashes cannot yet be computed from here.
 //
-// This must be called before calling `computeRecursiveHash()`.
+// NOTE: This must be called before calling `computeRecursiveHash()`.
 func (dt *DescriptorTree) computeDependencyLinks(
 	dtsByName map[string]*DescriptorTree,
 ) error {
+	// Multiple fields of the current descriptor might rely on the same
+	// Message or Enum type: we need to count those recurring dependencies
+	// as one, or all hell will break loose later on in the pipeline.
+	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.deps))
 	switch descr := dt.descr.(type) {
 	case *descriptor.DescriptorProto:
 		for _, f := range descr.GetField() {
 			// `typeName` is non-empty only if it references a Message or
 			// Enum type
 			if typeName := f.GetTypeName(); len(typeName) > 0 {
-				child, ok := dtsByName[typeName]
+				dep, ok := dtsByName[typeName]
 				if !ok {
-					return errors.Errorf("`%s`: no such type")
+					return errors.Errorf("`%s`: no such type", typeName)
 				}
-				dt.children = append(dt.children, child)
+				if _, ok := alreadyMet[dep]; ok {
+					continue
+				}
+				alreadyMet[dep] = struct{}{}
+				dt.deps = append(dt.deps, dep)
 			}
 		}
 	case *descriptor.EnumDescriptorProto:
@@ -214,11 +227,11 @@ func (dt *DescriptorTree) computeDependencyLinks(
 // computeRecursiveHash recursively walks through `dt`'s dependencies
 // in order to compute its recursive hash.
 //
-// `computeDependencyLinks()` must be called first for every available
-// DescriptorTree.
+// NOTE: `computeDependencyLinks()` must have been called first for every
+// available DescriptorTree.
 func (dt *DescriptorTree) computeRecursiveHash() error {
-	// used to avoid cyclic dependencies
-	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.children))
+	// used to avoid non-linear dependencies
+	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.deps))
 	var recurseChildren func(dts []*DescriptorTree) (ByteSSlice, error)
 	recurseChildren = func(dts []*DescriptorTree) (ByteSSlice, error) {
 		singleHashes := make(ByteSSlice, 0, len(dts))
@@ -227,20 +240,26 @@ func (dt *DescriptorTree) computeRecursiveHash() error {
 				continue
 			}
 			alreadyMet[dt] = struct{}{}
-			singleHashesRec, err := recurseChildren(dt.children)
+			singleHashes = append(singleHashes, dt.hashSingle)
+			singleHashesRec, err := recurseChildren(dt.deps)
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
-			singleHashes = append(singleHashes, dt.hashSingle)
 			singleHashes = append(singleHashes, singleHashesRec...)
 		}
 		return singleHashes, nil
 	}
 
-	singleHashes, err := recurseChildren(dt.children)
+	singleHashes, err := recurseChildren(dt.deps)
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	// /!\ Do not forget to add `dt`'s own single hash!
+	// Otherwise, any DescriptorTree with the exact same set of dependencies
+	// would end up with the same recursive hash, thus overwriting each other.
+	singleHashes = append(singleHashes, dt.hashSingle)
+
 	hashRecursive, err := singleHashes.Hash()
 	if err != nil {
 		return errors.WithStack(err)
@@ -256,21 +275,21 @@ func (dt *DescriptorTree) computeRecursiveHash() error {
 // that are passed to it in order to collect all of the Message, Enum & Nested
 // types that can be found in these descriptors.
 //
-// The result is a flattened map of single-level (i.e. `children` is nil)
-// DescriptorTrees arranged by the types' absolute names
-// (e.g. `.google.protobuf.Timestamp`).
+// The result is a flattened map of single-level (i.e. `deps` is nil)
+// DescriptorTrees that are arranged by the types' respective fully-qualified
+// names (e.g. `.google.protobuf.Timestamp`).
 //
 // This map is a necessary intermediate representation for computing the final
 // dependency trees.
 func collectDescriptorTypes(
 	fdps map[string]*descriptor.FileDescriptorProto,
 ) (map[string]*DescriptorTree, error) {
-	// Pre-allocating len(fdps)*3, assuming an average of 3 Message/Enum
+	// Pre-allocating len(fdps)*5, assuming an average of 5 Message/Enum
 	// types per file.
-	// This mapping is arranged by the descriptors' respective name and is
+	// This mapping is arranged by the descriptors' respective FQ-names and is
 	// a necessary intermediate representation for the final computation of
 	// dependency trees.
-	dtsByName := make(map[string]*DescriptorTree, len(fdps)*3)
+	dtsByName := make(map[string]*DescriptorTree, len(fdps)*5)
 
 	// recurse through a protoFile and pushes every Message/Enum/Nested
 	// type to the `dtsByName` map
