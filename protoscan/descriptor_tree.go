@@ -29,6 +29,9 @@ type descriptorNode struct {
 	// descr is either a DescriptorProto (Message) or an
 	// EnumDescriptorProto (Enum).
 	descr proto.Message
+	// fqName is the fully-qualified name of the descriptor `descr`
+	// (e.g. .google.protobuf.Timestamp).
+	fqName string
 
 	// hashSingle is the the hash (as implemented in byte_sslice.go) of
 	// `this.descr`.
@@ -61,6 +64,10 @@ type DescriptorTree struct {
 	children []*DescriptorTree
 }
 
+// FQName returns the fully-qualified name of the underlying descriptor `descr`
+// (e.g. .google.protobuf.Timestamp).
+func (dt *DescriptorTree) FQName() string { return dt.fqName }
+
 // UID returns a unique, deterministic, versioned identifier for this particular
 // DescriptorTree.
 //
@@ -84,15 +91,15 @@ func (dt *DescriptorTree) UID() string {
 func (dt *DescriptorTree) DependencyUIDs() []string {
 	// used to avoid cyclic dependencies
 	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.children))
-	var recurseChildren func(dts []*DescriptorTree) ByteSSlice
-	recurseChildren = func(dts []*DescriptorTree) ByteSSlice {
-		recursiveHashes := make(ByteSSlice, 0, len(dts))
+	var recurseChildren func(dts []*DescriptorTree) []string
+	recurseChildren = func(dts []*DescriptorTree) []string {
+		recursiveHashes := make([]string, 0, len(dts))
 		for _, dt := range dts {
 			if _, ok := alreadyMet[dt]; ok {
 				continue
 			}
 			alreadyMet[dt] = struct{}{}
-			recursiveHashes = append(recursiveHashes, dt.hashSingle)
+			recursiveHashes = append(recursiveHashes, dt.UID())
 			recursiveHashes = append(
 				recursiveHashes, recurseChildren(dt.children)...,
 			)
@@ -100,15 +107,7 @@ func (dt *DescriptorTree) DependencyUIDs() []string {
 		return recursiveHashes
 	}
 
-	recursiveHashes := recurseChildren(dt.children)
-	recursiveHashes.Sort()
-
-	hexHashes := make([]string, len(recursiveHashes))
-	for i, rh := range recursiveHashes {
-		hexHashes[i] = string(rh)
-	}
-
-	return hexHashes
+	return recurseChildren(dt.children)
 }
 
 // -----------------------------------------------------------------------------
@@ -116,20 +115,6 @@ func (dt *DescriptorTree) DependencyUIDs() []string {
 func NewDescriptorTrees(
 	fdps map[string]*descriptor.FileDescriptorProto,
 ) (map[string]*DescriptorTree, error) {
-	/* DEBUG */
-	for file, fdp := range fdps {
-		fmt.Println("file:", file)
-		for _, dep := range fdp.GetDependency() {
-			fmt.Println("\tdependency:", dep)
-		}
-		for _, et := range fdp.GetEnumType() {
-			fmt.Println("\tenum type:", et.GetName())
-		}
-		for _, mt := range fdp.GetMessageType() {
-			fmt.Println("\tmessage type:", mt.GetName())
-		}
-	}
-
 	// all of the Message/Enum/Nested types currently instanciated,
 	// arranged by their fully-qualified names
 	dtsByName, err := collectDescriptorTypes(fdps)
@@ -155,7 +140,14 @@ func NewDescriptorTrees(
 		}
 	}
 
-	return nil, nil
+	// builds the final map of DescriptorTrees, arranged by UIDs
+	// (i.e. recursive hashes)
+	dtsByUID := make(map[string]*DescriptorTree, len(dtsByName))
+	for _, dt := range dtsByName {
+		dtsByUID[dt.UID()] = dt
+	}
+
+	return dtsByUID, nil
 }
 
 // newDescriptorTree returns a new DescriptorTree with its `hashSingle`
@@ -289,13 +281,15 @@ func collectDescriptorTypes(
 			return errors.WithStack(err)
 		}
 		parent += ("." + mt.GetName())
-		dtsByName[parent] = dt
+		dt.fqName = parent
+		dtsByName[dt.fqName] = dt
 		for _, et := range mt.GetEnumType() {
 			dt, err := newDescriptorTree(et)
 			if err != nil {
 				return errors.WithStack(err)
 			}
-			dtsByName[parent+"."+et.GetName()] = dt
+			dt.fqName = parent + "." + et.GetName()
+			dtsByName[dt.fqName] = dt
 		}
 		for _, nmt := range mt.GetNestedType() {
 			if err := recurseMessages(nmt, parent); err != nil {
@@ -313,7 +307,8 @@ func collectDescriptorTypes(
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
-			dtsByName[parent+"."+et.GetName()] = dt
+			dt.fqName = parent + "." + et.GetName()
+			dtsByName[dt.fqName] = dt
 		}
 		for _, mt := range fdp.GetMessageType() {
 			if err := recurseMessages(mt, parent); err != nil {
