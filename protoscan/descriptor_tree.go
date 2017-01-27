@@ -75,6 +75,42 @@ func (dt *DescriptorTree) UID() string {
 	return fmt.Sprintf("%x", dt.hashRecursive)
 }
 
+// DependencyUIDs recursively walks through the dependencies of `dt` and
+// returns a sorted list of the hexadecimal representations of their
+// respective recursive hashes.
+//
+// This should only be called once the linking & recursive hashing computation
+// have been done.
+func (dt *DescriptorTree) DependencyUIDs() []string {
+	// used to avoid cyclic dependencies
+	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.children))
+	var recurseChildren func(dts []*DescriptorTree) ByteSSlice
+	recurseChildren = func(dts []*DescriptorTree) ByteSSlice {
+		recursiveHashes := make(ByteSSlice, 0, len(dts))
+		for _, dt := range dts {
+			if _, ok := alreadyMet[dt]; ok {
+				continue
+			}
+			alreadyMet[dt] = struct{}{}
+			recursiveHashes = append(recursiveHashes, dt.hashSingle)
+			recursiveHashes = append(
+				recursiveHashes, recurseChildren(dt.children)...,
+			)
+		}
+		return recursiveHashes
+	}
+
+	recursiveHashes := recurseChildren(dt.children)
+	recursiveHashes.Sort()
+
+	hexHashes := make([]string, len(recursiveHashes))
+	for i, rh := range recursiveHashes {
+		hexHashes[i] = string(rh)
+	}
+
+	return hexHashes
+}
+
 // -----------------------------------------------------------------------------
 
 func NewDescriptorTrees(
@@ -191,7 +227,6 @@ func (dt *DescriptorTree) computeDependencyLinks(
 func (dt *DescriptorTree) computeRecursiveHash() error {
 	// used to avoid cyclic dependencies
 	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.children))
-
 	var recurseChildren func(dts []*DescriptorTree) (ByteSSlice, error)
 	recurseChildren = func(dts []*DescriptorTree) (ByteSSlice, error) {
 		singleHashes := make(ByteSSlice, 0, len(dts))
