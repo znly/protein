@@ -87,6 +87,9 @@ func NewDescriptorTrees(
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	for name := range dtsByName {
+		fmt.Println(name)
+	}
 
 	for _, dt := range dtsByName {
 		if err := dt.ComputeDependencies(dtsByName); err != nil {
@@ -97,11 +100,11 @@ func NewDescriptorTrees(
 	return nil, nil
 }
 
-// NewDescriptorTree returns a new DescriptorTree with its `hashSingle`
+// newDescriptorTree returns a new DescriptorTree with its `hashSingle`
 // field already computed.
 // At this stage, dependencies have not been calculated, hence the `children`
 // slice of the Descriptor is nil.
-func NewDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
+func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
 	dt := &DescriptorTree{Descriptor: &Descriptor{descr: descr}}
 
 	if err := checkDescriptorType(descr); err != nil {
@@ -136,49 +139,63 @@ func (dt *DescriptorTree) ComputeDependencies(
 
 // -----------------------------------------------------------------------------
 
+// collectDescriptorTypes recursively goes through all the FileDescriptorProtos
+// that are passed to it in order to collect all of the Message, Enum & Nested
+// types that can be found in these descriptors.
+//
+// The result is a flattened map of single-level (i.e. `children` is nil)
+// DescriptorTrees arranged by the types' absolute names
+// (e.g. `.google.protobuf.Timestamp`).
+//
+// This map is a necessary intermediate representation for computing the final
+// dependency trees.
 func collectDescriptorTypes(
 	fdps map[string]*descriptor.FileDescriptorProto,
 ) (map[string]*DescriptorTree, error) {
-	// TODO(cmc): nested protobuf types
 	// Pre-allocating len(fdps)*3, assuming an average of 3 Message/Enum
 	// types per file.
-	// This intermediate mapping is arranged by the descriptors' respective
-	// name and is a necessary intermediate representation for the final
-	// computation of dependency trees.
+	// This mapping is arranged by the descriptors' respective name and is
+	// a necessary intermediate representation for the final computation of
+	// dependency trees.
 	dtsByName := make(map[string]*DescriptorTree, len(fdps)*3)
 
-	var recurseMessages func(fldp *descriptor.DescriptorProto) error
-	recurseMessages = func(mt *descriptor.DescriptorProto) error {
-		dt, err := NewDescriptorTree(mt)
+	// recurse through a protoFile and pushes every Message/Enum/Nested
+	// type to the `dtsByName` map
+	var recurseMessages func(mt *descriptor.DescriptorProto, parent string) error
+	recurseMessages = func(mt *descriptor.DescriptorProto, parent string) error {
+		dt, err := newDescriptorTree(mt)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		dtsByName[mt.GetName()] = dt
+		parent += ("." + mt.GetName())
+		dtsByName[parent] = dt
 		for _, et := range mt.GetEnumType() {
-			dt, err := NewDescriptorTree(et)
+			dt, err := newDescriptorTree(et)
 			if err != nil {
 				return errors.WithStack(err)
 			}
-			dtsByName[et.GetName()] = dt
+			dtsByName[parent+"."+et.GetName()] = dt
 		}
 		for _, nmt := range mt.GetNestedType() {
-			if err := recurseMessages(nmt); err != nil {
+			if err := recurseMessages(nmt, parent); err != nil {
 				return errors.WithStack(err)
 			}
 		}
 		return nil
 	}
 
+	// walk through the protoFiles
 	for _, fdp := range fdps {
+		parent := "." + fdp.GetPackage()
 		for _, et := range fdp.GetEnumType() {
-			dt, err := NewDescriptorTree(et)
+			dt, err := newDescriptorTree(et)
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
-			dtsByName[et.GetName()] = dt
+			dtsByName[parent+"."+et.GetName()] = dt
 		}
 		for _, mt := range fdp.GetMessageType() {
-			if err := recurseMessages(mt); err != nil {
+			if err := recurseMessages(mt, parent); err != nil {
 				return nil, errors.WithStack(err)
 			}
 		}
@@ -186,6 +203,8 @@ func collectDescriptorTypes(
 
 	return dtsByName, nil
 }
+
+// -----------------------------------------------------------------------------
 
 func checkDescriptorType(descr proto.Message) error {
 	switch descr.(type) {
