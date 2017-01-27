@@ -32,12 +32,20 @@ import (
 // computes the dependency graphs that link them, then finally returns a map of
 // ProtobufSchema objects (which are protobuf objects themselves) using each
 // schema's unique, deterministic & versioned identifier as key.
-// Have a look at 'protoscan.go' and 'descriptor_tree.go' for more information
-// about how all of this works; the code is heavily documented.
+//
+// This unique key is generated based on the binary representation of the
+// schema and of its dependency graph: this implies that the key will change if
+// any of the schema's dependency is modified in any way.
+// In the end, this means that, as the schema and/or its dependencies follow
+// their natural evolution, each and every historic version of it will have
+// been stored with their own unique identifier.
 //
 // `failOnDuplicate` is an optional parameter that defaults to true; have a
 // look at ScanSchemas' implementation to understand what it does and when (if
 // ever) would you need to set it to false instead.
+//
+// Have a look at 'protoscan.go' and 'descriptor_tree.go' for more information
+// about how all of this works; the code is heavily documented.
 func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 	fod := true
 	if len(failOnDuplicate) > 0 {
