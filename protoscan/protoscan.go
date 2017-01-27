@@ -15,15 +15,112 @@
 package protoscan
 
 import (
+	"reflect"
 	"strings"
 	"unsafe"
 
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
 	"github.com/znly/protein/protoscan/internal/objfile"
 )
 
 // -----------------------------------------------------------------------------
+
+// ScanSchemas retrieves every protobuf schema instanciated by any of the
+// currently loaded protobuf libraries (e.g. golang/protobuf, gogo/protobuf...),
+// computes the dependency graphs that link them, then finally returns a map of
+// ProtobufSchema objects (which are protobuf objects themselves) using each
+// schema's unique, deterministic & versioned identifier as key.
+// Have a look at 'protoscan.go' and 'descriptor_tree.go' for more information
+// about how all of this works; the code is heavily documented.
+//
+// `failOnDuplicate` is an optional parameter that defaults to true; have a
+// look at ScanSchemas' implementation to understand what it does and when (if
+// ever) would you need to set it to false instead.
+func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
+	fod := true
+	if len(failOnDuplicate) > 0 {
+		fod = failOnDuplicate[0]
+	}
+
+	// get local pointers to proto.protoFiles instances
+	protoFiles, err := BindProtofileSymbols()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	// unzip everything into a map of FileDescriptorProtos using the path of
+	// the original .proto as key
+	fdps := map[string]*descriptor.FileDescriptorProto{}
+	for _, maps := range protoFiles {
+		for file, descr := range *maps {
+			// If a FileDescriptorProto already exists for this .proto
+			// (i.e. another protobuf package has already instanciated a type of
+			//  the same name) and `failOnDuplicate` is true (which is what it
+			// defaults to), then we immediately stop everything and return
+			// an error.
+			//
+			// You can disable this check by setting `failOnDuplicate` to false,
+			// but be aware that if this condition ever returns true, either:
+			// - you know exactly what you're doing and that is what you expected
+			//   to happen (i.e. some FDPs will be overwritten)
+			// - there is something seriously wrong with your setup and things
+			//   are going to take a turn for the worst pretty soon; hence you're
+			//   better off crashing right now
+			if _, ok := fdps[file]; ok && fod {
+				return nil, errors.Errorf("`%s` is instanciated multiple times", file)
+			}
+			fdp, err := UnzipAndUnmarshal(descr)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			fdps[file] = fdp
+		}
+	}
+
+	dts, err := NewDescriptorTrees(fdps)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	_ = dts
+
+	// builds slice of ProtobufSchema objects
+	pss := make(map[string]*ProtobufSchema, len(dts))
+	for uid, dt := range dts {
+		ps := &ProtobufSchema{
+			UID:    uid,
+			FQName: dt.FQName(),
+		}
+		switch descr := dt.descr.(type) {
+		case *descriptor.DescriptorProto:
+			ps.Descriptor_ = &ProtobufSchema_Message{descr}
+		case *descriptor.EnumDescriptorProto:
+			ps.Descriptor_ = &ProtobufSchema_Enum{descr}
+		default:
+			return nil, errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
+		}
+		for _, depUID := range dt.DependencyUIDs() {
+			dep, ok := dts[depUID]
+			if !ok {
+				return nil, errors.Errorf("missing dependency")
+			}
+			ps.Deps[depUID] = dep.FQName()
+		}
+		pss[uid] = ps
+	}
+
+	//for uid, dt := range dts {
+	//_ = uid
+	//fmt.Printf("Type: [%s] %s\n", uid, dt.FQName())
+	//for _, depUID := range dt.DependencyUIDs() {
+	//_ = depUID
+	//fmt.Printf("\tDependency: [%s] %s\n", depUID, dts[depUID].fqName)
+	//}
+	//}
+
+	return pss, nil
+}
 
 // BindProtofileSymbols loads the currently running executable in memory
 // using Go's private objfile API and then loops over its symbols in order
@@ -42,12 +139,12 @@ import (
 // There are two main issues that need to be worked around though:
 //
 // A. `proto.protoFiles` is a package-level private variable and, as such,
-//    cannot be (to my knowledge at least) accessed by any means except
-//    by forking the original package, which is not a viable option here.
+//    cannot be (AFAIK) accessed by any means except by forking the original
+//    package, which is not a viable option here.
 //
 // B. Because of how vendoring works, there can actually be an infinite amount
 //    of `proto.protoFiles` variables instanciated at runtime, and we must
-//    to get ahold of each and every one of them.
+//    get ahold of each and every one of them.
 //
 // Considering the above issues, doing some hacking with the symbols seem
 // to be the smart(er) way to go here.
