@@ -23,31 +23,8 @@ syntax = "proto3";
 
 package protoscan;
 
-import "google/protobuf/descriptor.proto";
-import "protobuf/gogoproto/gogo.proto";
-
-// -----------------------------------------------------------------------------
-
-option (gogoproto.marshaler_all) = false;
-option (gogoproto.unmarshaler_all) = false;
-option (gogoproto.sizer_all) = false;
-option (gogoproto.protosizer_all) = false;
-option (gogoproto.unsafe_marshaler_all) = false;
-option (gogoproto.unsafe_unmarshaler_all) = false;
-option (gogoproto.stable_marshaler_all) = false;
-option (gogoproto.typedecl_all) = true;
-option (gogoproto.gostring_all) = true;
-option (gogoproto.stringer_all) = false;
-option (gogoproto.onlyone_all) = false;
-
-// -----------------------------------------------------------------------------
-
 message TestSchema {
-	string uid = 1 [(gogoproto.customname) = "UID"];
-	string fq_name = 2 [(gogoproto.customname) = "FQName"];
-	oneof descr {
-		google.protobuf.DescriptorProto     msg = 30 [(gogoproto.customname) = "Message"];
-		google.protobuf.EnumDescriptorProto enm = 31 [(gogoproto.customname) = "Enum"];
-	}
-	map<string, string> deps = 4 [(gogoproto.nullable) = false];
+	string uid = 1;
+	string fq_name = 2;
+	map<string, string> deps = 4;
 }
