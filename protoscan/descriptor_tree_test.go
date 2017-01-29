@@ -17,43 +17,40 @@ package protoscan
 import (
 	"testing"
 
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/stretchr/testify/assert"
 )
 
 // -----------------------------------------------------------------------------
 
-func TestProtoscan_BindProtofileSymbols(t *testing.T) {
-	// protein/protoscan only imports a non-vendored gogo/protobuf package,
-	// so the only symbol found should be the following one:
+func TestProtoscan_collectDescriptorTypes(t *testing.T) {
+	// retrieve instanciated gogo/protobuf protofiles
 	symbol := "github.com/gogo/protobuf/proto.protoFiles"
 	protoFilesBindings, err := BindProtofileSymbols()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, protoFilesBindings)
-	assert.Equal(t, 1, len(protoFilesBindings))
 	assert.NotEmpty(t, protoFilesBindings[symbol])
-
-	// at least `descriptor.proto`, `gogo.proto` & `protobuf_schema.proto` are
-	// expected to have been registered for the gogo/protobuf symbol
-	registered := []string{
-		"descriptor.proto",
-		"gogo.proto",
-		"protobuf_schema.proto",
-	}
 	protoFiles := *protoFilesBindings[symbol]
 	assert.NotEmpty(t, protoFiles)
-	assert.True(t, len(protoFiles) >= len(registered))
-	for _, fileName := range registered {
-		assert.NotEmpty(t, protoFiles[fileName])
+
+	// keep only `protobuf_schema.proto`
+	fdpRaw := protoFiles["protobuf_schema.proto"]
+	assert.NotEmpty(t, fdpRaw)
+	fdp, err := UnzipAndUnmarshal(fdpRaw)
+	assert.Nil(t, err)
+	assert.NotNil(t, fdp)
+	fdps := map[string]*descriptor.FileDescriptorProto{
+		"protobuf_schema.proto": fdp,
 	}
 
-	// `protobuf_schema.proto`'s file descriptor should at least contain
-	// the ProtobufSchema message type, as well as the nested
-	// ProtobufSchema.DepsEntry type
-	descr, err := UnzipAndUnmarshal(protoFiles["protobuf_schema.proto"])
+	// collect DescriptorTrees for `protobuf_schema.proto`
+	dtsByName, err := collectDescriptorTypes(fdps)
 	assert.Nil(t, err)
-	assert.NotNil(t, descr)
-	assert.Equal(t, "protobuf_schema.proto", descr.GetName())
-	schemaMessage := descr.GetMessage("ProtobufSchema")
-	assert.NotNil(t, schemaMessage)
-	assert.NotNil(t, descr.GetNestedMessage(schemaMessage, "DepsEntry"))
+	assert.NotEmpty(t, dtsByName)
+
+	// should at least find 2 messages types here: `.protoscan.ProtobufSchema`
+	// and its nested `DepsEntry` message
+	assert.True(t, len(dtsByName) >= 2)
+	assert.NotNil(t, dtsByName[".protoscan.ProtobufSchema"])
+	assert.NotNil(t, dtsByName[".protoscan.ProtobufSchema.DepsEntry"])
 }
