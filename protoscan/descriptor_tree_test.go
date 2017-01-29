@@ -34,11 +34,11 @@ import (
 // you'd have to modify the following expected values in order to fix the
 // tests.. That is, if you're sure about what you're doing.
 var (
-	psKnownHashSingle = "a9fbbb51c6d1e9aabee6465bba6331cdfad337f420a18d0e3e6f4d8e2cb6035a"
-	deKnownHashSingle = "b0c930d41e1f44abe96a624a1dc9b7b0473c1f5adb8270abc3c67f01244329af"
+	psKnownHashSingle = "ffbe6433ce68e1a2ef3947cb52471b44479bc7bc63631d854cd57389e776a5e3"
+	deKnownHashSingle = "f691d70fe2b9e740f259fb7a634762e501f46c05a2ea84214f29f382395b4a7e"
 
-	psKnownHashRecurse = "bb06a3864164fb5af718c6a2f4f0b70032be9e04a2a756ef45d530d4b6e2a570"
-	deKnownHashRecurse = "d1f1090b178845e096dc0569b7ad93bd0eb711b1fa2d2172a53a7940d5d9024f"
+	psKnownHashRecurse = "103b218c29e5ea98fc2d9a46d964b468cffa76c76dadfdf31e9f8552273af0a7"
+	deKnownHashRecurse = "51fb869733d7b9926a2365cb8306125709cf53a05e97a8de00e98709cde91bab"
 )
 
 // -----------------------------------------------------------------------------
@@ -84,7 +84,7 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	b, err := proto.Marshal(psDT.descr)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)
-	psExpectedHash, err := ByteSSlice{b}.Hash()
+	psExpectedHash, err := ByteSSlice{[]byte(psDT.FQName()), b}.Hash()
 	assert.Nil(t, err)
 	assert.Equal(t, psKnownHashSingle, hex.EncodeToString(psExpectedHash))
 	assert.Equal(t, psExpectedHash, psDT.hashSingle)
@@ -98,7 +98,7 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	b, err = proto.Marshal(deDT.descr)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)
-	deExpectedHash, err := ByteSSlice{b}.Hash()
+	deExpectedHash, err := ByteSSlice{[]byte(deDT.FQName()), b}.Hash()
 	assert.Nil(t, err)
 	assert.Equal(t, deKnownHashSingle, hex.EncodeToString(deExpectedHash))
 	assert.Equal(t, deExpectedHash, deDT.hashSingle)

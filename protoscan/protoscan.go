@@ -87,15 +87,14 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 		}
 	}
 
-	dts, err := NewDescriptorTrees(fdps)
+	dtsByUID, err := NewDescriptorTrees(fdps)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	_ = dts
 
 	// builds slice of ProtobufSchema objects
-	pss := make(map[string]*ProtobufSchema, len(dts))
-	for uid, dt := range dts {
+	pss := make(map[string]*ProtobufSchema, len(dtsByUID))
+	for uid, dt := range dtsByUID {
 		ps := &ProtobufSchema{
 			UID:    uid,
 			FQName: dt.FQName(),
@@ -110,7 +109,7 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 			return nil, errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
 		}
 		for _, depUID := range dt.DependencyUIDs() {
-			dep, ok := dts[depUID]
+			dep, ok := dtsByUID[depUID]
 			if !ok {
 				return nil, errors.Errorf("missing dependency")
 			}

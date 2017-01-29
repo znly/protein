@@ -153,9 +153,14 @@ func NewDescriptorTrees(
 // newDescriptorTree returns a new DescriptorTree with its `hashSingle`
 // field already computed.
 //
+// `fqName` is necessary to defuse single-hash collision issues.
+// Have a look at the implementation for details.
+//
 // At this stage, dependencies have not been calculated yet, hence the
 // `deps` list of the DescriptorTree is nil.
-func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
+func newDescriptorTree(
+	fqName string, descr proto.Message,
+) (*DescriptorTree, error) {
 	if err := checkDescriptorType(descr); err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -164,7 +169,16 @@ func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	hashSingle, err := ByteSSlice{descrBytes}.Hash()
+
+	// Two purely-identical Message or Enum types will share the same exact
+	// binary protofile representation, even if they have different names.
+	// That's why we must make sure that the fully-qualified name of the type
+	// is part of the input of the hashing function.
+	//
+	// E.g., in the protein package, both `.protoscan.ProtobufSchema.DepsEntry`
+	// and `.protoscan.TestSchema.DepsEntry` have the same binary encoding, but
+	// different names.
+	hashSingle, err := ByteSSlice{[]byte(fqName), descrBytes}.Hash()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -172,6 +186,7 @@ func newDescriptorTree(descr proto.Message) (*DescriptorTree, error) {
 	dt := &DescriptorTree{
 		descriptorNode: &descriptorNode{
 			descr:      descr,
+			fqName:     fqName,
 			hashSingle: hashSingle,
 		},
 	}
@@ -295,19 +310,17 @@ func collectDescriptorTypes(
 	// type to the `dtsByName` map
 	var recurseMessages func(mt *descriptor.DescriptorProto, parent string) error
 	recurseMessages = func(mt *descriptor.DescriptorProto, parent string) error {
-		dt, err := newDescriptorTree(mt)
+		parent += ("." + mt.GetName())
+		dt, err := newDescriptorTree(parent, mt)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		parent += ("." + mt.GetName())
-		dt.fqName = parent
 		dtsByName[dt.fqName] = dt
 		for _, et := range mt.GetEnumType() {
-			dt, err := newDescriptorTree(et)
+			dt, err := newDescriptorTree(parent+"."+et.GetName(), et)
 			if err != nil {
 				return errors.WithStack(err)
 			}
-			dt.fqName = parent + "." + et.GetName()
 			dtsByName[dt.fqName] = dt
 		}
 		for _, nmt := range mt.GetNestedType() {
@@ -322,11 +335,10 @@ func collectDescriptorTypes(
 	for _, fdp := range fdps {
 		parent := "." + fdp.GetPackage()
 		for _, et := range fdp.GetEnumType() {
-			dt, err := newDescriptorTree(et)
+			dt, err := newDescriptorTree(parent+"."+et.GetName(), et)
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
-			dt.fqName = parent + "." + et.GetName()
 			dtsByName[dt.fqName] = dt
 		}
 		for _, mt := range fdp.GetMessageType() {
