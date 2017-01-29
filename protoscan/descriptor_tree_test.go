@@ -122,3 +122,51 @@ func TestProtoscan_DescriptorTree_computeDependencyLinks(t *testing.T) {
 	// recursive hash still shouldn't have been computed at this point
 	assert.Nil(t, deDT.hashRecursive)
 }
+
+func TestProtoscan_DescriptorTree_computeRecursiveHash(t *testing.T) {
+	dtsByName := _collectTestSchemaTrees(t)
+	for _, dt := range dtsByName {
+		assert.Nil(t, dt.computeDependencyLinks(dtsByName))
+	}
+	for _, dt := range dtsByName {
+		assert.Nil(t, dt.computeRecursiveHash())
+	}
+
+	psDT := dtsByName[".protoscan.TestSchema"]
+	assert.NotEmpty(t, psDT.deps)
+	depsMap := make(map[string]*DescriptorTree, len(psDT.deps))
+	for _, dep := range psDT.deps {
+		depsMap[dep.FQName()] = dep
+	}
+	// should only find a dependency to `DepsEntry` in here
+	assert.Len(t, depsMap, 1)
+	assert.Contains(t, depsMap, ".protoscan.TestSchema.DepsEntry")
+	// `TestSchema` is an immutable, for-testing-purposes only schema, so its
+	// recursive hash is known in advance & shouldn't ever change unless the
+	// `ByteSSlice.Hash` method is ever modified; in which case you'll have to
+	// modify this test if you're certain about what you're doing
+	psKnownHash := "bb06a3864164fb5af718c6a2f4f0b70032be9e04a2a756ef45d530d4b6e2a570"
+	// since `TestSchema` has no dependency, its recursive hash should just
+	// be a re-hash of its single hash
+	psExpectedHash, err := ByteSSlice{
+		psDT.hashSingle,
+		depsMap[".protoscan.TestSchema.DepsEntry"].hashSingle,
+	}.Hash()
+	assert.Nil(t, err)
+	assert.Equal(t, psKnownHash, hex.EncodeToString(psExpectedHash))
+	assert.Equal(t, psDT.hashRecursive, psExpectedHash)
+
+	deDT := dtsByName[".protoscan.TestSchema.DepsEntry"]
+	assert.Empty(t, deDT.deps) // DepsEntry has no dependency
+	// `DepsEntry` is an immutable, for-testing-purposes only schema, so its
+	// recursive hash is known in advance & shouldn't ever change unless the
+	// `ByteSSlice.Hash` method is ever modified; in which case you'll have to
+	// modify this test if you're certain about what you're doing
+	deKnownHash := "d1f1090b178845e096dc0569b7ad93bd0eb711b1fa2d2172a53a7940d5d9024f"
+	// since `DepsEntry` has no dependency, its recursive hash should just
+	// be a re-hash of its single hash
+	deExpectedHash, err := ByteSSlice{deDT.hashSingle}.Hash()
+	assert.Nil(t, err)
+	assert.Equal(t, deKnownHash, hex.EncodeToString(deExpectedHash))
+	assert.Equal(t, deDT.hashRecursive, deExpectedHash)
+}
