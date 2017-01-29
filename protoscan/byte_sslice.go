@@ -16,7 +16,7 @@ package protoscan
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -44,7 +44,7 @@ func (bss ByteSSlice) Sort() { sort.Sort(bss) }
 // every entry in the sorted slice.
 func (bss ByteSSlice) Hash() ([]byte, error) {
 	bss.Sort()
-	h := sha1.New()
+	h := sha256.New()
 	var err error
 	for _, bs := range bss {
 		_, err = h.Write(bs)

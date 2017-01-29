@@ -15,7 +15,7 @@
 package protoscan
 
 import (
-	"fmt"
+	"encoding/hex"
 	"reflect"
 
 	"github.com/gogo/protobuf/proto"
@@ -79,7 +79,7 @@ func (dt *DescriptorTree) FQName() string { return dt.fqName }
 // The returned string is the hexadecimal representation of `dt`'s internal
 // recursive hash.
 func (dt *DescriptorTree) UID() string {
-	return fmt.Sprintf("%x", dt.hashRecursive)
+	return hex.EncodeToString(dt.hashRecursive)
 }
 
 // DependencyUIDs recursively walks through the dependencies of `dt` and
