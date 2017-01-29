@@ -17,6 +17,7 @@ package protoscan
 import (
 	"testing"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,6 +52,33 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	// should at least find 2 messages types here: `.protoscan.ProtobufSchema`
 	// and its nested `DepsEntry` message
 	assert.True(t, len(dtsByName) >= 2)
-	assert.NotNil(t, dtsByName[".protoscan.ProtobufSchema"])
+
+	psDescr := dtsByName[".protoscan.ProtobufSchema"]
+	assert.NotNil(t, psDescr)
+	assert.Nil(t, psDescr.deps) // shouldn't have dependencies linked yet
+	assert.Equal(t, ".protoscan.ProtobufSchema", psDescr.fqName)
+	assert.NotNil(t, psDescr.descr)
+	assert.Equal(t, "ProtobufSchema", psDescr.descr.(*descriptor.DescriptorProto).GetName())
+	b, err := proto.Marshal(psDescr.descr)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, b)
+	psExpectedHash, err := ByteSSlice{b}.Hash()
+	assert.Nil(t, err)
+	assert.Equal(t, psExpectedHash, psDescr.hashSingle)
+	assert.Nil(t, psDescr.hashRecursive)
+
 	assert.NotNil(t, dtsByName[".protoscan.ProtobufSchema.DepsEntry"])
+	deDescr := dtsByName[".protoscan.ProtobufSchema.DepsEntry"]
+	assert.NotNil(t, deDescr)
+	assert.Nil(t, deDescr.deps) // shouldn't have dependencies linked yet
+	assert.Equal(t, ".protoscan.ProtobufSchema.DepsEntry", deDescr.fqName)
+	assert.NotNil(t, deDescr.descr)
+	assert.Equal(t, "DepsEntry", deDescr.descr.(*descriptor.DescriptorProto).GetName())
+	b, err = proto.Marshal(deDescr.descr)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, b)
+	deExpectedHash, err := ByteSSlice{b}.Hash()
+	assert.Nil(t, err)
+	assert.Equal(t, deExpectedHash, deDescr.hashSingle)
+	assert.Nil(t, deDescr.hashRecursive)
 }
