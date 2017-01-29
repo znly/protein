@@ -119,15 +119,6 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 		pss[uid] = ps
 	}
 
-	//for uid, dt := range dts {
-	//_ = uid
-	//fmt.Printf("Type: [%s] %s\n", uid, dt.FQName())
-	//for _, depUID := range dt.DependencyUIDs() {
-	//_ = depUID
-	//fmt.Printf("\tDependency: [%s] %s\n", depUID, dts[depUID].fqName)
-	//}
-	//}
-
 	return pss, nil
 }
 
@@ -164,8 +155,8 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 // to these addresses.
 //
 // And, voila!
-func BindProtofileSymbols() ([]*map[string][]byte, error) {
-	var protoFilesBindings []*map[string][]byte
+func BindProtofileSymbols() (map[string]*map[string][]byte, error) {
+	var protoFilesBindings map[string]*map[string][]byte
 
 	binPath, err := osext.Executable()
 	if err != nil {
@@ -181,12 +172,12 @@ func BindProtofileSymbols() ([]*map[string][]byte, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	protoFilesBindings = make([]*map[string][]byte, 0, len(syms))
+	protoFilesBindings = make(map[string]*map[string][]byte, len(syms))
 	for _, s := range syms {
 		if strings.HasSuffix(s.Name, "/proto.protoFiles") {
 			p := (*map[string][]byte)(unsafe.Pointer(uintptr(s.Addr)))
 			log.Infof("found symbol `%s` @ %p", s.Name, p)
-			protoFilesBindings = append(protoFilesBindings, p)
+			protoFilesBindings[s.Name] = p
 		}
 	}
 
