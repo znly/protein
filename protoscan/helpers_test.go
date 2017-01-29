@@ -23,10 +23,10 @@ import (
 // -----------------------------------------------------------------------------
 
 func TestProtoscan_UnzipAndUnmarshal(t *testing.T) {
-	ps := &ProtobufSchema{}
+	ps := &TestSchema{}
 	d, _ := ps.Descriptor()
 	descr, err := UnzipAndUnmarshal(d)
 	assert.Nil(t, err)
 	assert.NotNil(t, descr)
-	assert.Equal(t, "protobuf_schema.proto", descr.GetName())
+	assert.Equal(t, "test_schema.proto", descr.GetName())
 }

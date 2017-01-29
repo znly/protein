@@ -7,9 +7,11 @@ Package protoscan is a generated protocol buffer package.
 
 It is generated from these files:
 	protobuf_schema.proto
+	test_schema.proto
 
 It has these top-level messages:
 	ProtobufSchema
+	TestSchema
 */
 package protoscan
 

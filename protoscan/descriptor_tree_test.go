@@ -24,7 +24,7 @@ import (
 
 // -----------------------------------------------------------------------------
 
-func _collectProtobufSchemaTrees(t *testing.T) map[string]*DescriptorTree {
+func _collectTestSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 	// retrieve instanciated gogo/protobuf protofiles
 	symbol := "github.com/gogo/protobuf/proto.protoFiles"
 	protoFilesBindings, err := BindProtofileSymbols()
@@ -45,23 +45,23 @@ func _collectProtobufSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, dtsByName)
 
-	// should at least find 2 messages types here: `.protoscan.ProtobufSchema`
+	// should at least find 2 messages types here: `.protoscan.TestSchema`
 	// and its nested `DepsEntry` message
 	assert.True(t, len(dtsByName) >= 2)
-	assert.NotNil(t, dtsByName[".protoscan.ProtobufSchema"])
-	assert.NotNil(t, dtsByName[".protoscan.ProtobufSchema.DepsEntry"])
+	assert.NotNil(t, dtsByName[".protoscan.TestSchema"])
+	assert.NotNil(t, dtsByName[".protoscan.TestSchema.DepsEntry"])
 
 	return dtsByName
 }
 
 func TestProtoscan_collectDescriptorTypes(t *testing.T) {
-	dtsByName := _collectProtobufSchemaTrees(t)
+	dtsByName := _collectTestSchemaTrees(t)
 
-	psDT := dtsByName[".protoscan.ProtobufSchema"]
+	psDT := dtsByName[".protoscan.TestSchema"]
 	assert.Nil(t, psDT.deps) // shouldn't have dependencies linked yet
-	assert.Equal(t, ".protoscan.ProtobufSchema", psDT.fqName)
+	assert.Equal(t, ".protoscan.TestSchema", psDT.fqName)
 	assert.NotNil(t, psDT.descr)
-	assert.Equal(t, "ProtobufSchema", psDT.descr.(*descriptor.DescriptorProto).GetName())
+	assert.Equal(t, "TestSchema", psDT.descr.(*descriptor.DescriptorProto).GetName())
 	b, err := proto.Marshal(psDT.descr)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)
@@ -70,9 +70,9 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	assert.Equal(t, psExpectedHash, psDT.hashSingle)
 	assert.Nil(t, psDT.hashRecursive)
 
-	deDT := dtsByName[".protoscan.ProtobufSchema.DepsEntry"]
+	deDT := dtsByName[".protoscan.TestSchema.DepsEntry"]
 	assert.Nil(t, deDT.deps) // shouldn't have dependencies linked yet
-	assert.Equal(t, ".protoscan.ProtobufSchema.DepsEntry", deDT.fqName)
+	assert.Equal(t, ".protoscan.TestSchema.DepsEntry", deDT.fqName)
 	assert.NotNil(t, deDT.descr)
 	assert.Equal(t, "DepsEntry", deDT.descr.(*descriptor.DescriptorProto).GetName())
 	b, err = proto.Marshal(deDT.descr)
@@ -87,9 +87,9 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 // -----------------------------------------------------------------------------
 
 func TestProtoscan_DescriptorTree_computeDependencyLinks(t *testing.T) {
-	dtsByName := _collectProtobufSchemaTrees(t)
+	dtsByName := _collectTestSchemaTrees(t)
 
-	psDT := dtsByName[".protoscan.ProtobufSchema"]
+	psDT := dtsByName[".protoscan.TestSchema"]
 	assert.Nil(t, psDT.computeDependencyLinks(dtsByName))
 	assert.NotEmpty(t, psDT.deps)
 	depsMap := make(map[string]*DescriptorTree, len(psDT.deps))
@@ -97,11 +97,11 @@ func TestProtoscan_DescriptorTree_computeDependencyLinks(t *testing.T) {
 		depsMap[dep.FQName()] = dep
 	}
 	// should at least find a dependency to `DepsEntry` in here
-	assert.Contains(t, depsMap, ".protoscan.ProtobufSchema.DepsEntry")
+	assert.Contains(t, depsMap, ".protoscan.TestSchema.DepsEntry")
 	// recursive hash still shouldn't have been computed at this point
 	assert.Nil(t, psDT.hashRecursive)
 
-	deDT := dtsByName[".protoscan.ProtobufSchema.DepsEntry"]
+	deDT := dtsByName[".protoscan.TestSchema.DepsEntry"]
 	assert.Nil(t, deDT.computeDependencyLinks(dtsByName))
 	assert.Empty(t, deDT.deps) // DepsEntry has no dependency
 	// recursive hash still shouldn't have been computed at this point

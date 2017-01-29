@@ -32,12 +32,12 @@ func TestProtoscan_BindProtofileSymbols(t *testing.T) {
 	assert.Equal(t, 1, len(protoFilesBindings))
 	assert.NotEmpty(t, protoFilesBindings[symbol])
 
-	// at least `descriptor.proto`, `gogo.proto` & `protobuf_schema.proto` are
+	// at least `descriptor.proto`, `gogo.proto` & `test_schema.proto` are
 	// expected to have been registered for the gogo/protobuf symbol
 	registered := []string{
 		"descriptor.proto",
 		"gogo.proto",
-		"protobuf_schema.proto",
+		"test_schema.proto",
 	}
 	protoFiles := *protoFilesBindings[symbol]
 	assert.NotEmpty(t, protoFiles)
@@ -46,14 +46,14 @@ func TestProtoscan_BindProtofileSymbols(t *testing.T) {
 		assert.NotEmpty(t, protoFiles[fileName])
 	}
 
-	// `protobuf_schema.proto`'s file descriptor should at least contain
-	// the ProtobufSchema message type, as well as the nested
-	// ProtobufSchema.DepsEntry type
-	descr, err := UnzipAndUnmarshal(protoFiles["protobuf_schema.proto"])
+	// `test_schema.proto`'s file descriptor should at least contain
+	// the TestSchema message type, as well as the nested
+	// TestSchema.DepsEntry type
+	descr, err := UnzipAndUnmarshal(protoFiles["test_schema.proto"])
 	assert.Nil(t, err)
 	assert.NotNil(t, descr)
-	assert.Equal(t, "protobuf_schema.proto", descr.GetName())
-	schemaMessage := descr.GetMessage("ProtobufSchema")
+	assert.Equal(t, "test_schema.proto", descr.GetName())
+	schemaMessage := descr.GetMessage("TestSchema")
 	assert.NotNil(t, schemaMessage)
 	assert.NotNil(t, descr.GetNestedMessage(schemaMessage, "DepsEntry"))
 }
