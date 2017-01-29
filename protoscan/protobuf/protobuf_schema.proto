@@ -30,7 +30,7 @@ message ProtobufSchema {
 	// e.g. `.google.protobuf.Timestamp`.
 	string fq_name = 2 [(gogoproto.customname) = "FQName"];
 	// Descriptor is either a Message or an Enum protobuf descriptor.
-	oneof descriptor {
+	oneof descr {
 		// Message is the protobuf descriptor of a Message type.
 		google.protobuf.DescriptorProto     msg = 30 [(gogoproto.customname) = "Message"];
 		// Enum is the protobuf descriptor of an Enum type.

@@ -103,9 +103,9 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 		}
 		switch descr := dt.descr.(type) {
 		case *descriptor.DescriptorProto:
-			ps.Descriptor_ = &ProtobufSchema_Message{descr}
+			ps.Descr = &ProtobufSchema_Message{descr}
 		case *descriptor.EnumDescriptorProto:
-			ps.Descriptor_ = &ProtobufSchema_Enum{descr}
+			ps.Descr = &ProtobufSchema_Enum{descr}
 		default:
 			return nil, errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
 		}
