@@ -168,3 +168,37 @@ func TestProtoscan_DescriptorTree_computeRecursiveHash(t *testing.T) {
 	assert.Equal(t, deKnownHashRecurse, hex.EncodeToString(deExpectedHash))
 	assert.Equal(t, deDT.hashRecursive, deExpectedHash)
 }
+
+// -----------------------------------------------------------------------------
+
+func TestProtoscan_NewDescriptorTrees(t *testing.T) {
+	// retrieve instanciated gogo/protobuf protofiles
+	symbol := "github.com/gogo/protobuf/proto.protoFiles"
+	protoFilesBindings, err := BindProtofileSymbols()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, protoFilesBindings)
+	assert.NotEmpty(t, protoFilesBindings[symbol])
+	protoFiles := *protoFilesBindings[symbol]
+	assert.NotEmpty(t, protoFiles)
+
+	fdps := map[string]*descriptor.FileDescriptorProto{}
+	for file, descr := range protoFiles {
+		fdp, err := UnzipAndUnmarshal(descr)
+		assert.Nil(t, err)
+		fdps[file] = fdp
+	}
+
+	dtsByUID, err := NewDescriptorTrees(fdps)
+	assert.Nil(t, err)
+
+	// should at least find the `.protoscan.TestSchema` and its nested
+	// `DepsEntry` message in the DescriptorTrees
+	assert.NotEmpty(t, dtsByUID)
+	assert.NotNil(t, dtsByUID[psKnownHashRecurse])
+	assert.Equal(t, ".protoscan.TestSchema",
+		dtsByUID[psKnownHashRecurse].FQName(),
+	)
+	assert.Equal(t, ".protoscan.TestSchema.DepsEntry",
+		dtsByUID[deKnownHashRecurse].FQName(),
+	)
+}
