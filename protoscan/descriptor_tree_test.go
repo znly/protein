@@ -24,7 +24,7 @@ import (
 
 // -----------------------------------------------------------------------------
 
-func TestProtoscan_collectDescriptorTypes(t *testing.T) {
+func _collectProtobufSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 	// retrieve instanciated gogo/protobuf protofiles
 	symbol := "github.com/gogo/protobuf/proto.protoFiles"
 	protoFilesBindings, err := BindProtofileSymbols()
@@ -34,17 +34,13 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	protoFiles := *protoFilesBindings[symbol]
 	assert.NotEmpty(t, protoFiles)
 
-	// keep only `protobuf_schema.proto`
-	fdpRaw := protoFiles["protobuf_schema.proto"]
-	assert.NotEmpty(t, fdpRaw)
-	fdp, err := UnzipAndUnmarshal(fdpRaw)
-	assert.Nil(t, err)
-	assert.NotNil(t, fdp)
-	fdps := map[string]*descriptor.FileDescriptorProto{
-		"protobuf_schema.proto": fdp,
+	fdps := map[string]*descriptor.FileDescriptorProto{}
+	for file, descr := range protoFiles {
+		fdp, err := UnzipAndUnmarshal(descr)
+		assert.Nil(t, err)
+		fdps[file] = fdp
 	}
 
-	// collect DescriptorTrees for `protobuf_schema.proto`
 	dtsByName, err := collectDescriptorTypes(fdps)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, dtsByName)
@@ -52,33 +48,62 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	// should at least find 2 messages types here: `.protoscan.ProtobufSchema`
 	// and its nested `DepsEntry` message
 	assert.True(t, len(dtsByName) >= 2)
+	assert.NotNil(t, dtsByName[".protoscan.ProtobufSchema"])
+	assert.NotNil(t, dtsByName[".protoscan.ProtobufSchema.DepsEntry"])
 
-	psDescr := dtsByName[".protoscan.ProtobufSchema"]
-	assert.NotNil(t, psDescr)
-	assert.Nil(t, psDescr.deps) // shouldn't have dependencies linked yet
-	assert.Equal(t, ".protoscan.ProtobufSchema", psDescr.fqName)
-	assert.NotNil(t, psDescr.descr)
-	assert.Equal(t, "ProtobufSchema", psDescr.descr.(*descriptor.DescriptorProto).GetName())
-	b, err := proto.Marshal(psDescr.descr)
+	return dtsByName
+}
+
+func TestProtoscan_collectDescriptorTypes(t *testing.T) {
+	dtsByName := _collectProtobufSchemaTrees(t)
+
+	psDT := dtsByName[".protoscan.ProtobufSchema"]
+	assert.Nil(t, psDT.deps) // shouldn't have dependencies linked yet
+	assert.Equal(t, ".protoscan.ProtobufSchema", psDT.fqName)
+	assert.NotNil(t, psDT.descr)
+	assert.Equal(t, "ProtobufSchema", psDT.descr.(*descriptor.DescriptorProto).GetName())
+	b, err := proto.Marshal(psDT.descr)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)
 	psExpectedHash, err := ByteSSlice{b}.Hash()
 	assert.Nil(t, err)
-	assert.Equal(t, psExpectedHash, psDescr.hashSingle)
-	assert.Nil(t, psDescr.hashRecursive)
+	assert.Equal(t, psExpectedHash, psDT.hashSingle)
+	assert.Nil(t, psDT.hashRecursive)
 
-	assert.NotNil(t, dtsByName[".protoscan.ProtobufSchema.DepsEntry"])
-	deDescr := dtsByName[".protoscan.ProtobufSchema.DepsEntry"]
-	assert.NotNil(t, deDescr)
-	assert.Nil(t, deDescr.deps) // shouldn't have dependencies linked yet
-	assert.Equal(t, ".protoscan.ProtobufSchema.DepsEntry", deDescr.fqName)
-	assert.NotNil(t, deDescr.descr)
-	assert.Equal(t, "DepsEntry", deDescr.descr.(*descriptor.DescriptorProto).GetName())
-	b, err = proto.Marshal(deDescr.descr)
+	deDT := dtsByName[".protoscan.ProtobufSchema.DepsEntry"]
+	assert.Nil(t, deDT.deps) // shouldn't have dependencies linked yet
+	assert.Equal(t, ".protoscan.ProtobufSchema.DepsEntry", deDT.fqName)
+	assert.NotNil(t, deDT.descr)
+	assert.Equal(t, "DepsEntry", deDT.descr.(*descriptor.DescriptorProto).GetName())
+	b, err = proto.Marshal(deDT.descr)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)
 	deExpectedHash, err := ByteSSlice{b}.Hash()
 	assert.Nil(t, err)
-	assert.Equal(t, deExpectedHash, deDescr.hashSingle)
-	assert.Nil(t, deDescr.hashRecursive)
+	assert.Equal(t, deExpectedHash, deDT.hashSingle)
+	assert.Nil(t, deDT.hashRecursive)
+}
+
+// -----------------------------------------------------------------------------
+
+func TestProtoscan_DescriptorTree_computeDependencyLinks(t *testing.T) {
+	dtsByName := _collectProtobufSchemaTrees(t)
+
+	psDT := dtsByName[".protoscan.ProtobufSchema"]
+	assert.Nil(t, psDT.computeDependencyLinks(dtsByName))
+	assert.NotEmpty(t, psDT.deps)
+	depsMap := make(map[string]*DescriptorTree, len(psDT.deps))
+	for _, dep := range psDT.deps {
+		depsMap[dep.FQName()] = dep
+	}
+	// should at least find a dependency to `DepsEntry` in here
+	assert.Contains(t, depsMap, ".protoscan.ProtobufSchema.DepsEntry")
+	// recursive hash still shouldn't have been computed at this point
+	assert.Nil(t, psDT.hashRecursive)
+
+	deDT := dtsByName[".protoscan.ProtobufSchema.DepsEntry"]
+	assert.Nil(t, deDT.computeDependencyLinks(dtsByName))
+	assert.Empty(t, deDT.deps) // DepsEntry has no dependency
+	// recursive hash still shouldn't have been computed at this point
+	assert.Nil(t, deDT.hashRecursive)
 }
