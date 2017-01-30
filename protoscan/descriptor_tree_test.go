@@ -34,6 +34,9 @@ import (
 // you'd have to modify the following expected values in order to fix the
 // tests.. That is, if you're sure about what you're doing.
 var (
+	psKnownName = ".protoscan.TestSchema"
+	deKnownName = ".protoscan.TestSchema.DepsEntry"
+
 	psKnownHashSingle = "ffbe6433ce68e1a2ef3947cb52471b44479bc7bc63631d854cd57389e776a5e3"
 	deKnownHashSingle = "f691d70fe2b9e740f259fb7a634762e501f46c05a2ea84214f29f382395b4a7e"
 
@@ -67,8 +70,8 @@ func _collectTestSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 	// should at least find 2 messages types here: `.protoscan.TestSchema`
 	// and its nested `DepsEntry` message
 	assert.True(t, len(dtsByName) >= 2)
-	assert.NotNil(t, dtsByName[".protoscan.TestSchema"])
-	assert.NotNil(t, dtsByName[".protoscan.TestSchema.DepsEntry"])
+	assert.NotNil(t, dtsByName[psKnownName])
+	assert.NotNil(t, dtsByName[deKnownName])
 
 	return dtsByName
 }
@@ -76,9 +79,9 @@ func _collectTestSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	dtsByName := _collectTestSchemaTrees(t)
 
-	psDT := dtsByName[".protoscan.TestSchema"]
+	psDT := dtsByName[psKnownName]
 	assert.Nil(t, psDT.deps) // shouldn't have dependencies linked yet
-	assert.Equal(t, ".protoscan.TestSchema", psDT.fqName)
+	assert.Equal(t, psKnownName, psDT.fqName)
 	assert.NotNil(t, psDT.descr)
 	assert.Equal(t, "TestSchema", psDT.descr.(*descriptor.DescriptorProto).GetName())
 	b, err := proto.Marshal(psDT.descr)
@@ -90,9 +93,9 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	assert.Equal(t, psExpectedHash, psDT.hashSingle)
 	assert.Nil(t, psDT.hashRecursive)
 
-	deDT := dtsByName[".protoscan.TestSchema.DepsEntry"]
+	deDT := dtsByName[deKnownName]
 	assert.Nil(t, deDT.deps) // shouldn't have dependencies linked yet
-	assert.Equal(t, ".protoscan.TestSchema.DepsEntry", deDT.fqName)
+	assert.Equal(t, deKnownName, deDT.fqName)
 	assert.NotNil(t, deDT.descr)
 	assert.Equal(t, "DepsEntry", deDT.descr.(*descriptor.DescriptorProto).GetName())
 	b, err = proto.Marshal(deDT.descr)
@@ -113,7 +116,7 @@ func TestProtoscan_DescriptorTree_computeDependencyLinks(t *testing.T) {
 		assert.Nil(t, dt.computeDependencyLinks(dtsByName))
 	}
 
-	psDT := dtsByName[".protoscan.TestSchema"]
+	psDT := dtsByName[psKnownName]
 	assert.NotEmpty(t, psDT.deps)
 	depsMap := make(map[string]*DescriptorTree, len(psDT.deps))
 	for _, dep := range psDT.deps {
@@ -121,11 +124,11 @@ func TestProtoscan_DescriptorTree_computeDependencyLinks(t *testing.T) {
 	}
 	// should only find a dependency to `DepsEntry` in here
 	assert.Len(t, depsMap, 1)
-	assert.Contains(t, depsMap, ".protoscan.TestSchema.DepsEntry")
+	assert.Contains(t, depsMap, deKnownName)
 	// recursive hash still shouldn't have been computed at this point
 	assert.Nil(t, psDT.hashRecursive)
 
-	deDT := dtsByName[".protoscan.TestSchema.DepsEntry"]
+	deDT := dtsByName[deKnownName]
 	assert.Empty(t, deDT.deps) // DepsEntry has no dependency
 	// recursive hash still shouldn't have been computed at this point
 	assert.Nil(t, deDT.hashRecursive)
@@ -140,7 +143,7 @@ func TestProtoscan_DescriptorTree_computeRecursiveHash(t *testing.T) {
 		assert.Nil(t, dt.computeRecursiveHash())
 	}
 
-	psDT := dtsByName[".protoscan.TestSchema"]
+	psDT := dtsByName[psKnownName]
 	assert.NotEmpty(t, psDT.deps)
 	depsMap := make(map[string]*DescriptorTree, len(psDT.deps))
 	for _, dep := range psDT.deps {
@@ -148,18 +151,18 @@ func TestProtoscan_DescriptorTree_computeRecursiveHash(t *testing.T) {
 	}
 	// should only find a dependency to `DepsEntry` in here
 	assert.Len(t, depsMap, 1)
-	assert.Contains(t, depsMap, ".protoscan.TestSchema.DepsEntry")
+	assert.Contains(t, depsMap, deKnownName)
 	// since `TestSchema` has no dependency, its recursive hash should just
 	// be a re-hash of its single hash
 	psExpectedHash, err := ByteSSlice{
 		psDT.hashSingle,
-		depsMap[".protoscan.TestSchema.DepsEntry"].hashSingle,
+		depsMap[deKnownName].hashSingle,
 	}.Hash()
 	assert.Nil(t, err)
 	assert.Equal(t, psKnownHashRecurse, hex.EncodeToString(psExpectedHash))
 	assert.Equal(t, psDT.hashRecursive, psExpectedHash)
 
-	deDT := dtsByName[".protoscan.TestSchema.DepsEntry"]
+	deDT := dtsByName[deKnownName]
 	assert.Empty(t, deDT.deps) // DepsEntry has no dependency
 	// since `DepsEntry` has no dependency, its recursive hash should just
 	// be a re-hash of its single hash
@@ -195,10 +198,10 @@ func TestProtoscan_NewDescriptorTrees(t *testing.T) {
 	// `DepsEntry` message in the DescriptorTrees
 	assert.NotEmpty(t, dtsByUID)
 	assert.NotNil(t, dtsByUID[psKnownHashRecurse])
-	assert.Equal(t, ".protoscan.TestSchema",
+	assert.Equal(t, psKnownName,
 		dtsByUID[psKnownHashRecurse].FQName(),
 	)
-	assert.Equal(t, ".protoscan.TestSchema.DepsEntry",
+	assert.Equal(t, deKnownName,
 		dtsByUID[deKnownHashRecurse].FQName(),
 	)
 }

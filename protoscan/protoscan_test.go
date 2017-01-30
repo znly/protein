@@ -22,6 +22,29 @@ import (
 
 // -----------------------------------------------------------------------------
 
+func TestProtoscan_ScanSchemas(t *testing.T) {
+	schemas, err := ScanSchemas()
+	assert.Nil(t, err)
+
+	// should at least find the `.protoscan.TestSchema` and its nested
+	// `DepsEntry` message in the returned protobuf schemas
+
+	ps := schemas[psKnownHashRecurse]
+	assert.NotNil(t, ps)
+	assert.Equal(t, psKnownName, ps.GetFQName())
+	assert.Equal(t, psKnownHashRecurse, ps.GetUID())
+	assert.NotNil(t, ps.GetDescr())
+	assert.NotEmpty(t, ps.GetDeps())
+	assert.NotNil(t, ps.GetDeps()[deKnownHashRecurse])
+
+	de := schemas[deKnownHashRecurse]
+	assert.NotNil(t, de)
+	assert.Equal(t, deKnownName, de.GetFQName())
+	assert.Equal(t, deKnownHashRecurse, de.GetUID())
+	assert.NotNil(t, de.GetDescr())
+	assert.Empty(t, de.GetDeps())
+}
+
 func TestProtoscan_BindProtofileSymbols(t *testing.T) {
 	// protein/protoscan only imports a non-vendored gogo/protobuf package,
 	// so the only symbol found should be the following one:

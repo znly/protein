@@ -112,6 +112,8 @@ func (dt *DescriptorTree) DependencyUIDs() []string {
 
 // -----------------------------------------------------------------------------
 
+// NewDescriptorTrees builds all the DescriptorTrees it can compute from the
+// given file descriptors.
 func NewDescriptorTrees(
 	fdps map[string]*descriptor.FileDescriptorProto,
 ) (map[string]*DescriptorTree, error) {
