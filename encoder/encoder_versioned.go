@@ -21,20 +21,21 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// EncoderVersioned implements an Encoder that integrates with with znly/tuyauDB
+// Versioned implements an Encoder that integrates with with znly/tuyauDB
 // in order to add support for versioned protobuf objects via a central registry.
-type EncoderVersioned struct {
+type Versioned struct {
 	client client.Client
 }
 
-func New(c client.Client) protein.Encoder {
+func New(c client.Client) *Versioned {
+	return nil
 }
 
 // -----------------------------------------------------------------------------
 
-func (c *EncoderVersioned) Encode(o proto.Message) ([]byte, error) {
+func (c *Versioned) Encode(o proto.Message) ([]byte, error) {
 	return nil, nil
 }
-func (c *EncoderVersioned) EncodeAs(o proto.Message, hash []byte) ([]byte, error) {
+func (c *Versioned) EncodeAs(o proto.Message, hash []byte) ([]byte, error) {
 	return nil, nil
 }

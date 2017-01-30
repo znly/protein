@@ -21,26 +21,26 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type Optor func(d *DecoderVersioned)
+type Optor func(d *Versioned)
 
 func SetClient(c client.Client) Optor {
-	return func(d *DecoderVersioned) { d.client = c }
+	return func(d *Versioned) { d.client = c }
 }
 func SetCollector(c collector.Collector) Optor {
-	return func(d *DecoderVersioned) { d.collector = collector }
+	return func(d *Versioned) { d.collector = collector }
 }
 
 // -----------------------------------------------------------------------------
 
-// DecoderVersioned implements a Decoder that integrates with with znly/tuyauDB
+// Versioned implements a Decoder that integrates with with znly/tuyauDB
 // in order to add support for versioned protobuf objects via a central registry.
-type DecoderVersioned struct {
+type Versioned struct {
 	client    client.Client
 	collector collector.Collector
 }
 
 func New(opts ...Optor) Decoder {
-	d := &DecoderVersioned{}
+	d := &Versioned{}
 	for _, o := range opts {
 		o(d) // apply option
 	}
@@ -49,9 +49,9 @@ func New(opts ...Optor) Decoder {
 
 // -----------------------------------------------------------------------------
 
-func (c *DecoderVersioned) Decode(payload []byte) (map[string]interface{}, error) {
+func (c *Versioned) Decode(payload []byte) (map[string]interface{}, error) {
 	return nil, nil
 }
-func (c *DecoderVersioned) DecodeAs(payload []byte, dst proto.Message) error {
+func (c *Versioned) DecodeAs(payload []byte, dst proto.Message) error {
 	return nil
 }
