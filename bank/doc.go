@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package collector provides the interfaces & classes that expose methods
-// to collect, keep track of, and publish available protobuf schemas.
-package collector
+// Package bank provides the interfaces & classes that expose methods
+// to store and retrieve protobuf schemas.
+package bank

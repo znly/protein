@@ -12,21 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package collector
+package bank
 
-import "github.com/gogo/protobuf/proto"
+import "github.com/znly/protein"
 
 // -----------------------------------------------------------------------------
 
-// Implementers of the Collector interface expose methods to collect, keep
-// track of, and publish available protobuf schemas.
+// Implementers of the Bank interface expose methods to store and retrieve
+// ProtobufSchemas.
 //
-// The default implementation, as seen in collector/collector_tuyau.go,
-// integrates with znly/tuyauDB in order to Publish() the content of its
-// internal in-memory cache into a pipe.Pipe.
+// The default implementation, as seen in bank/tuyau.go, integrates with
+// znly/tuyauDB in order to keep its local in-memory cache in sync with a
+// TuyauDB store.
 type Collector interface {
-	Collect() error
-	Hash(s proto.Message) string
-	Add(hash []byte, d proto.Descriptor) error
-	Publish() error
+	Get(uid string) (map[string]*protein.ProtobufSchema, error)
+	Put(ps ...*protein.ProtobufSchema) error
 }
