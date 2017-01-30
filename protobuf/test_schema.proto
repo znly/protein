@@ -21,7 +21,7 @@
 
 syntax = "proto3";
 
-package protoscan;
+package protein;
 
 message TestSchema {
 	string uid = 1;

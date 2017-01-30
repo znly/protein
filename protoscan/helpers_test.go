@@ -18,12 +18,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/znly/protein"
 )
 
 // -----------------------------------------------------------------------------
 
 func TestProtoscan_UnzipAndUnmarshal(t *testing.T) {
-	ps := &TestSchema{}
+	ps := &protein.TestSchema{}
 	d, _ := ps.Descriptor()
 	descr, err := UnzipAndUnmarshal(d)
 	assert.Nil(t, err)

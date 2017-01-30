@@ -29,10 +29,10 @@ func TestProtoscan_ScanSchemas(t *testing.T) {
 	// should at least find the `.protoscan.TestSchema` and its nested
 	// `DepsEntry` message in the returned protobuf schemas
 
-	ps := schemas[psKnownHashRecurse]
+	ps := schemas[tsKnownHashRecurse]
 	assert.NotNil(t, ps)
-	assert.Equal(t, psKnownName, ps.GetFQName())
-	assert.Equal(t, psKnownHashRecurse, ps.GetUID())
+	assert.Equal(t, tsKnownName, ps.GetFQName())
+	assert.Equal(t, tsKnownHashRecurse, ps.GetUID())
 	assert.NotNil(t, ps.GetDescr())
 	assert.NotEmpty(t, ps.GetDeps())
 	assert.NotNil(t, ps.GetDeps()[deKnownHashRecurse])

@@ -34,14 +34,14 @@ import (
 // you'd have to modify the following expected values in order to fix the
 // tests.. That is, if you're sure about what you're doing.
 var (
-	psKnownName = ".protoscan.TestSchema"
-	deKnownName = ".protoscan.TestSchema.DepsEntry"
+	tsKnownName = ".protein.TestSchema"
+	deKnownName = ".protein.TestSchema.DepsEntry"
 
-	psKnownHashSingle = "PROT-ffbe6433ce68e1a2ef3947cb52471b44479bc7bc63631d854cd57389e776a5e3"
-	deKnownHashSingle = "PROT-f691d70fe2b9e740f259fb7a634762e501f46c05a2ea84214f29f382395b4a7e"
+	tsKnownHashSingle = "PROT-2753996d0e285237fff2af4b58540aba12bd11b547d06b2dd6142f98caca3d52"
+	deKnownHashSingle = "PROT-5cec2045c9d6fb4a8300c9a0957194facd02b5386b31a02ac048860fb1383223"
 
-	psKnownHashRecurse = "PROT-103b218c29e5ea98fc2d9a46d964b468cffa76c76dadfdf31e9f8552273af0a7"
-	deKnownHashRecurse = "PROT-51fb869733d7b9926a2365cb8306125709cf53a05e97a8de00e98709cde91bab"
+	tsKnownHashRecurse = "PROT-b4f1216c74d15da21b72e7064e8a5ad1e023ee64e016a09884b01f9c2622da4b"
+	deKnownHashRecurse = "PROT-2eef830874406d6ccf9a9ae9ac787d4be60f105695fd10a91f73a84d43a235b4"
 )
 
 // -----------------------------------------------------------------------------
@@ -70,7 +70,7 @@ func _collectTestSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 	// should at least find 2 messages types here: `.protoscan.TestSchema`
 	// and its nested `DepsEntry` message
 	assert.True(t, len(dtsByName) >= 2)
-	assert.NotNil(t, dtsByName[psKnownName])
+	assert.NotNil(t, dtsByName[tsKnownName])
 	assert.NotNil(t, dtsByName[deKnownName])
 
 	return dtsByName
@@ -79,9 +79,9 @@ func _collectTestSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	dtsByName := _collectTestSchemaTrees(t)
 
-	psDT := dtsByName[psKnownName]
+	psDT := dtsByName[tsKnownName]
 	assert.Nil(t, psDT.deps) // shouldn't have dependencies linked yet
-	assert.Equal(t, psKnownName, psDT.fqName)
+	assert.Equal(t, tsKnownName, psDT.fqName)
 	assert.NotNil(t, psDT.descr)
 	assert.Equal(t, "TestSchema", psDT.descr.(*descriptor.DescriptorProto).GetName())
 	b, err := proto.Marshal(psDT.descr)
@@ -89,7 +89,7 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	assert.NotEmpty(t, b)
 	psExpectedHash, err := ByteSSlice{[]byte(psDT.FQName()), b}.Hash()
 	assert.Nil(t, err)
-	assert.Equal(t, psKnownHashSingle, "PROT-"+hex.EncodeToString(psExpectedHash))
+	assert.Equal(t, tsKnownHashSingle, "PROT-"+hex.EncodeToString(psExpectedHash))
 	assert.Equal(t, psExpectedHash, psDT.hashSingle)
 	assert.Nil(t, psDT.hashRecursive)
 
@@ -116,7 +116,7 @@ func TestProtoscan_DescriptorTree_computeDependencyLinks(t *testing.T) {
 		assert.Nil(t, dt.computeDependencyLinks(dtsByName))
 	}
 
-	psDT := dtsByName[psKnownName]
+	psDT := dtsByName[tsKnownName]
 	assert.NotEmpty(t, psDT.deps)
 	depsMap := make(map[string]*DescriptorTree, len(psDT.deps))
 	for _, dep := range psDT.deps {
@@ -143,7 +143,7 @@ func TestProtoscan_DescriptorTree_computeRecursiveHash(t *testing.T) {
 		assert.Nil(t, dt.computeRecursiveHash())
 	}
 
-	psDT := dtsByName[psKnownName]
+	psDT := dtsByName[tsKnownName]
 	assert.NotEmpty(t, psDT.deps)
 	depsMap := make(map[string]*DescriptorTree, len(psDT.deps))
 	for _, dep := range psDT.deps {
@@ -159,7 +159,7 @@ func TestProtoscan_DescriptorTree_computeRecursiveHash(t *testing.T) {
 		depsMap[deKnownName].hashSingle,
 	}.Hash()
 	assert.Nil(t, err)
-	assert.Equal(t, psKnownHashRecurse, "PROT-"+hex.EncodeToString(psExpectedHash))
+	assert.Equal(t, tsKnownHashRecurse, "PROT-"+hex.EncodeToString(psExpectedHash))
 	assert.Equal(t, psDT.hashRecursive, psExpectedHash)
 
 	deDT := dtsByName[deKnownName]
@@ -197,9 +197,9 @@ func TestProtoscan_NewDescriptorTrees(t *testing.T) {
 	// should at least find the `.protoscan.TestSchema` and its nested
 	// `DepsEntry` message in the DescriptorTrees
 	assert.NotEmpty(t, dtsByUID)
-	assert.NotNil(t, dtsByUID[psKnownHashRecurse])
-	assert.Equal(t, psKnownName,
-		dtsByUID[psKnownHashRecurse].FQName(),
+	assert.NotNil(t, dtsByUID[tsKnownHashRecurse])
+	assert.Equal(t, tsKnownName,
+		dtsByUID[tsKnownHashRecurse].FQName(),
 	)
 	assert.Equal(t, deKnownName,
 		dtsByUID[deKnownHashRecurse].FQName(),
