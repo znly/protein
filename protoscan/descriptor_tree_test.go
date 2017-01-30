@@ -37,11 +37,11 @@ var (
 	psKnownName = ".protoscan.TestSchema"
 	deKnownName = ".protoscan.TestSchema.DepsEntry"
 
-	psKnownHashSingle = "ffbe6433ce68e1a2ef3947cb52471b44479bc7bc63631d854cd57389e776a5e3"
-	deKnownHashSingle = "f691d70fe2b9e740f259fb7a634762e501f46c05a2ea84214f29f382395b4a7e"
+	psKnownHashSingle = "PROT-ffbe6433ce68e1a2ef3947cb52471b44479bc7bc63631d854cd57389e776a5e3"
+	deKnownHashSingle = "PROT-f691d70fe2b9e740f259fb7a634762e501f46c05a2ea84214f29f382395b4a7e"
 
-	psKnownHashRecurse = "103b218c29e5ea98fc2d9a46d964b468cffa76c76dadfdf31e9f8552273af0a7"
-	deKnownHashRecurse = "51fb869733d7b9926a2365cb8306125709cf53a05e97a8de00e98709cde91bab"
+	psKnownHashRecurse = "PROT-103b218c29e5ea98fc2d9a46d964b468cffa76c76dadfdf31e9f8552273af0a7"
+	deKnownHashRecurse = "PROT-51fb869733d7b9926a2365cb8306125709cf53a05e97a8de00e98709cde91bab"
 )
 
 // -----------------------------------------------------------------------------
@@ -89,7 +89,7 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	assert.NotEmpty(t, b)
 	psExpectedHash, err := ByteSSlice{[]byte(psDT.FQName()), b}.Hash()
 	assert.Nil(t, err)
-	assert.Equal(t, psKnownHashSingle, hex.EncodeToString(psExpectedHash))
+	assert.Equal(t, psKnownHashSingle, "PROT-"+hex.EncodeToString(psExpectedHash))
 	assert.Equal(t, psExpectedHash, psDT.hashSingle)
 	assert.Nil(t, psDT.hashRecursive)
 
@@ -103,7 +103,7 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	assert.NotEmpty(t, b)
 	deExpectedHash, err := ByteSSlice{[]byte(deDT.FQName()), b}.Hash()
 	assert.Nil(t, err)
-	assert.Equal(t, deKnownHashSingle, hex.EncodeToString(deExpectedHash))
+	assert.Equal(t, deKnownHashSingle, "PROT-"+hex.EncodeToString(deExpectedHash))
 	assert.Equal(t, deExpectedHash, deDT.hashSingle)
 	assert.Nil(t, deDT.hashRecursive)
 }
@@ -159,7 +159,7 @@ func TestProtoscan_DescriptorTree_computeRecursiveHash(t *testing.T) {
 		depsMap[deKnownName].hashSingle,
 	}.Hash()
 	assert.Nil(t, err)
-	assert.Equal(t, psKnownHashRecurse, hex.EncodeToString(psExpectedHash))
+	assert.Equal(t, psKnownHashRecurse, "PROT-"+hex.EncodeToString(psExpectedHash))
 	assert.Equal(t, psDT.hashRecursive, psExpectedHash)
 
 	deDT := dtsByName[deKnownName]
@@ -168,7 +168,7 @@ func TestProtoscan_DescriptorTree_computeRecursiveHash(t *testing.T) {
 	// be a re-hash of its single hash
 	deExpectedHash, err := ByteSSlice{deDT.hashSingle}.Hash()
 	assert.Nil(t, err)
-	assert.Equal(t, deKnownHashRecurse, hex.EncodeToString(deExpectedHash))
+	assert.Equal(t, deKnownHashRecurse, "PROT-"+hex.EncodeToString(deExpectedHash))
 	assert.Equal(t, deDT.hashRecursive, deExpectedHash)
 }
 

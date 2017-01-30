@@ -70,6 +70,7 @@ func (dt *DescriptorTree) FQName() string { return dt.fqName }
 
 // UID returns a unique, deterministic, versioned identifier for this particular
 // DescriptorTree.
+// Protoscan identifers are always prefixed with "PROT-".
 //
 // This identifier is computed from `dt`'s protobuf schema as well as its
 // dependencies' schemas.
@@ -79,7 +80,7 @@ func (dt *DescriptorTree) FQName() string { return dt.fqName }
 // The returned string is the hexadecimal representation of `dt`'s internal
 // recursive hash.
 func (dt *DescriptorTree) UID() string {
-	return hex.EncodeToString(dt.hashRecursive)
+	return "PROT-" + hex.EncodeToString(dt.hashRecursive)
 }
 
 // DependencyUIDs recursively walks through the dependencies of `dt` and
@@ -112,8 +113,11 @@ func (dt *DescriptorTree) DependencyUIDs() []string {
 
 // -----------------------------------------------------------------------------
 
-// NewDescriptorTrees builds all the DescriptorTrees it can compute from the
-// given file descriptors.
+// NewDescriptorTrees builds all the dependency trees it can compute from the
+// given file descriptors; then returns the resulting DescriptorTrees as map
+// arranged by their UID.
+//
+// Note that Protoscan UIDs are always prefixed with "PROT-".
 func NewDescriptorTrees(
 	fdps map[string]*descriptor.FileDescriptorProto,
 ) (map[string]*DescriptorTree, error) {

@@ -33,6 +33,8 @@ import (
 // ProtobufSchema objects (which are protobuf objects themselves) using each
 // schema's unique, deterministic & versioned identifier as key.
 //
+// Note that ProtobufSchemas' UIDs are always prefixed with "PROT-".
+//
 // This unique key is generated based on the binary representation of the
 // schema and of its dependency graph: this implies that the key will change if
 // any of the schema's dependency is modified in any way.
