@@ -84,7 +84,7 @@ func (t *Tuyau) Get(uid string) (map[string]*protein.ProtobufSchema, error) {
 
 	// try the in-memory cache first..
 	psNotFound := make(map[string]struct{}, len(deps))
-	for _, depUID := range deps {
+	for depUID := range deps {
 		if s, ok := schemas[depUID]; ok {
 			schemas[depUID] = s
 			continue
@@ -109,7 +109,7 @@ func (t *Tuyau) Get(uid string) (map[string]*protein.ProtobufSchema, error) {
 	}
 	if len(psNotFound) > 0 {
 		err := errors.Errorf("one or more dependencies couldn't be found")
-		for _, depUID := range psNotFound {
+		for depUID := range psNotFound {
 			err = errors.Wrapf(err, "`%s`: dependency not found", depUID)
 		}
 		return nil, err
