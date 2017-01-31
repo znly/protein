@@ -18,13 +18,12 @@ import "github.com/gogo/protobuf/proto"
 
 // -----------------------------------------------------------------------------
 
-// Implementers of the Encoder interface expose methods to encode protobuf
-// messages.
+// Implementers of the Encoder interface expose a single method to encode a
+// protobuf message.
 //
-// The default implementation, as seen in encoder/encoder_versioned.go, integrates
-// with znly/tuyauDB in order to add support for versioned protobuf objects via
-// a central registry.
+// The default implementation, as seen in encoder/encoder_versioned.go,
+// implements an Encoder that embeds a Bank in order to augment the
+// protobuf payloads that it encodes with additional versioning metadata.
 type Encoder interface {
 	Encode(o proto.Message) ([]byte, error)
-	EncodeAs(o proto.Message, hash []byte) ([]byte, error)
 }
