@@ -24,7 +24,8 @@ import "github.com/znly/protein"
 // The default implementation, as seen in bank/tuyau.go, integrates with
 // znly/tuyauDB in order to keep its local in-memory cache in sync with a
 // TuyauDB store.
-type Collector interface {
+type Bank interface {
 	Get(uid string) (map[string]*protein.ProtobufSchema, error)
+	FQNameToUID(fqName string) []string
 	Put(ps ...*protein.ProtobufSchema) error
 }
