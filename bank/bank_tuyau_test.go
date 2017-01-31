@@ -17,6 +17,7 @@ package bank
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/znly/protein/protoscan"
@@ -58,6 +59,7 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 		for _, ps := range schemas {
 			assert.Nil(t, ty.Put(ps)) // feed it all the local schemas
 		}
+		time.Sleep(time.Millisecond * 20)
 		canceller() // we're done
 	}()
 
@@ -71,13 +73,26 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	// the RAM-based Pipe, our Bank should now be able to retrieve any schema
 	// directly from its underlying KV store.
 
+	var expectedUID string
+	var revUIDs []string
 	// `.protein.TestSchema` should be in there
-	schemas, err = ty.Get("PROT-b4f1216c74d15da21b72e7064e8a5ad1e023ee64e016a09884b01f9c2622da4b")
+	expectedUID = "PROT-b4f1216c74d15da21b72e7064e8a5ad1e023ee64e016a09884b01f9c2622da4b"
+	revUIDs = ty.FQNameToUID(".protein.TestSchema")
+	assert.NotEmpty(t, revUIDs)
+	assert.Equal(t, 1, len(revUIDs))
+	assert.Equal(t, expectedUID, revUIDs[0])
+	schemas, err = ty.Get(revUIDs[0])
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schemas)
 	assert.Equal(t, 2, len(schemas)) // `.protein.TestSchema` + nested `DepsEntry`
+
 	// `.protein.TestSchema.DepsEntry` should be in there
-	schemas, err = ty.Get("PROT-2eef830874406d6ccf9a9ae9ac787d4be60f105695fd10a91f73a84d43a235b4")
+	expectedUID = "PROT-2eef830874406d6ccf9a9ae9ac787d4be60f105695fd10a91f73a84d43a235b4"
+	revUIDs = ty.FQNameToUID(".protein.TestSchema.DepsEntry")
+	assert.NotEmpty(t, revUIDs)
+	assert.Equal(t, 1, len(revUIDs))
+	assert.Equal(t, expectedUID, revUIDs[0])
+	schemas, err = ty.Get(revUIDs[0])
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schemas)
 	assert.Equal(t, 1, len(schemas)) // `.protein.TestSchema.DepsEntry` only

@@ -30,6 +30,8 @@ type Tuyau struct {
 	tc tuyau.Client
 
 	schemas map[string]*protein.ProtobufSchema
+	// reverse-mapping of fully-qualified names to UIDs
+	revmap map[string][]string
 }
 
 // NewTuyau returns a new Tuyau that uses `tc` as its underlying client for
@@ -40,6 +42,7 @@ func NewTuyau(tc tuyau.Client) *Tuyau {
 	return &Tuyau{
 		tc:      tc,
 		schemas: map[string]*protein.ProtobufSchema{},
+		revmap:  map[string][]string{},
 	}
 }
 
@@ -125,6 +128,18 @@ func (t *Tuyau) Get(uid string) (map[string]*protein.ProtobufSchema, error) {
 	return schemas, nil
 }
 
+// FQNameToUID returns the UID associated with the given fully-qualified name.
+//
+// It is possible that multiple versions of a schema identified by a FQ name
+// are currently available in the bank; in which case all of the associated UIDs
+// will be returned to the caller, *in random order*.
+//
+// The reverse-mapping is pre-computed; don't hesitate to call this method, it'll
+// be real fast.
+//
+// It returns nil if `fqName` doesn't match any schema in the bank.
+func (t *Tuyau) FQNameToUID(fqName string) []string { return t.revmap[fqName] }
+
 // Put synchronously adds the specified ProtobufSchemas to the local in-memory
 // cache; then pushes them to the underlying tuyau client's pipe.
 // Whether this push is synchronous or not depends on the implementation
@@ -142,10 +157,12 @@ func (t *Tuyau) Put(pss ...*protein.ProtobufSchema) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
+		uid := ps.GetUID()
 		blobs = append(blobs, &tuyaudb.Blob{
-			Key: ps.GetUID(), Data: b, TTL: 0, Flags: 0,
+			Key: uid, Data: b, TTL: 0, Flags: 0,
 		})
-		t.schemas[ps.GetUID()] = ps
+		t.schemas[uid] = ps
+		t.revmap[ps.GetFQName()] = append(t.revmap[ps.GetFQName()], uid)
 	}
 	return t.tc.Push(blobs...)
 }
