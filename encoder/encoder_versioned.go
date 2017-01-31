@@ -16,26 +16,47 @@ package encoder
 
 import (
 	"github.com/gogo/protobuf/proto"
-	"github.com/znly/tuyauDB/client"
+	"github.com/pkg/errors"
+	"github.com/znly/protein"
+	"github.com/znly/protein/bank"
 )
 
 // -----------------------------------------------------------------------------
 
-// Versioned implements an Encoder that integrates with with znly/tuyauDB
-// in order to add support for versioned protobuf objects via a central registry.
+// Versioned implements an Encoder that embeds a Bank in order to augment the
+// protobuf payloads that it encodes with additional versioning metadata.
 type Versioned struct {
-	client client.Client
+	b bank.Bank
 }
 
-func New(c client.Client) *Versioned {
-	return nil
-}
+func NewVersioned(b bank.Bank) *Versioned { return &Versioned{b: b} }
 
 // -----------------------------------------------------------------------------
 
-func (c *Versioned) Encode(o proto.Message) ([]byte, error) {
-	return nil, nil
-}
-func (c *Versioned) EncodeAs(o proto.Message, hash []byte) ([]byte, error) {
-	return nil, nil
+// Encode marshals the given protobuf message then wraps it up into a
+// ProtobufPayload object that adds additional versioning metadata.
+//
+// Encode uses the message's fully-qualified name to reverse-lookup its UID.
+// Note that a single FQ-name might point to multiple UIDs if multiple versions
+// of the associated message are currently availaible in the bank.
+// When this happens, the first UID from the returned list will be used (and
+// since this list is randomly-ordered, effectively a random UID will be used).
+func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
+	// marshal the actual protobuf message
+	payload, err := proto.Marshal(o)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	// find the first UID associated with the fully-qualified name of `o`
+	uids := v.b.FQNameToUID("." + proto.MessageName(o))
+	if len(uids) <= 0 {
+		return nil, errors.Errorf("`%s`: FQ-name not found in bank")
+	}
+	// wrap the marshaled payload within a ProtobufPayload message
+	pp := &protein.ProtobufPayload{
+		UID:     uids[0],
+		Payload: payload,
+	}
+	// marshal the ProtobufPayload
+	return proto.Marshal(pp)
 }
