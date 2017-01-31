@@ -2,17 +2,6 @@
 // source: protobuf_schema.proto
 // DO NOT EDIT!
 
-/*
-Package protein is a generated protocol buffer package.
-
-It is generated from these files:
-	protobuf_schema.proto
-	test_schema.proto
-
-It has these top-level messages:
-	ProtobufSchema
-	TestSchema
-*/
 package protein
 
 import proto "github.com/gogo/protobuf/proto"
@@ -29,12 +18,6 @@ import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 // ProtobufSchema is a versioned protobuf Message or Enum descriptor that can
 // be used to decode protobuf payloads at runtime.
