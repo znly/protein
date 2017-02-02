@@ -16,6 +16,7 @@ package wirer
 
 import (
 	"reflect"
+	"unsafe"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
@@ -68,12 +69,55 @@ func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
 
 // -----------------------------------------------------------------------------
 
-func (v *Versioned) DecodeStruct(
-	payload []byte, strucType reflect.Type,
-) (*reflect.Value, error) {
-	return nil, nil
+// We need to access protobuf's internal decoding machinery: the `go:linkname`
+// directive instructs the compiler to declare a local symbol as an alias
+// for an external one, even if it's private.
+// This allows us to bind to the private `unmarshalType` method of the
+// `proto.Buffer` class, which does the actual work of decoding a binary payload
+// into an instance of the specified `reflect.Type`.
+//
+// `unmarshalType` is actually a method of the `proto.Buffer` class, hence the
+// `b` given as first parameter will be used as "this".
+//
+//go:linkname unmarshalType github.com/gogo/protobuf/proto.(*Buffer).unmarshalType
+func unmarshalType(b *proto.Buffer,
+	st reflect.Type, prop *proto.StructProperties, is_group bool,
+	base unsafe.Pointer, // implicitly casted to a `proto.structPointer`
+) error
+
+// DecodeStruct decodes the `payload` into a dynamically-defined structure
+// type.
+func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
+	var structType reflect.Type
+	if structType.Kind() != reflect.Struct {
+		return nil, errors.Errorf("`%s`: not a struct type", structType)
+	}
+
+	// allocate a new structure using the given type definition, the
+	// returned `reflect.Value`'s underlying type is a pointer to struct
+	obj := reflect.New(structType)
+
+	b := proto.NewBuffer(payload)
+	unmarshalType(b,
+		// the structure definition, computed at runtime
+		structType,
+		// the protobuf properties of the struct, computed via its struct tags
+		proto.GetProperties(structType),
+		// is_group, deprecated
+		false,
+		// the address we want to deserialize to
+		unsafe.Pointer(obj.Elem().Addr().Pointer()),
+	)
+
+	return &obj, nil
 }
 
+// -----------------------------------------------------------------------------
+
 func (v *Versioned) DecodeMessage(payload []byte, dst proto.Message) error {
-	return nil
+	var ps protein.ProtobufPayload
+	if err := proto.Unmarshal(payload, &ps); err != nil {
+		return errors.WithStack(err)
+	}
+	return proto.Unmarshal(ps.Payload, dst)
 }
