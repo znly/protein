@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encoder
+package wirer
 
 import (
 	"context"
@@ -32,7 +32,7 @@ import (
 
 // -----------------------------------------------------------------------------
 
-func TestEncoder_Versioned_Encode(t *testing.T) {
+func TestWirer_Versioned_Encode(t *testing.T) {
 	// fetched locally instanciated schemas
 	schemas, err := protoscan.ScanSchemas()
 	assert.Nil(t, err)

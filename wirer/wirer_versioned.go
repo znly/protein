@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encoder
+package wirer
 
 import (
+	"reflect"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/znly/protein"
@@ -23,8 +25,11 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// Versioned implements an Encoder that embeds a Bank in order to augment the
-// protobuf payloads that it encodes with additional versioning metadata.
+// Versioned implements a Wirer that integrates with a Bank in order to augment
+// the protobuf payloads that it encodes with additional versioning metadata.
+//
+// These metadata are then used by the internal decoder of the versioned Wirer
+// to determinate how to decode an incoming payload on the wire.
 type Versioned struct {
 	b bank.Bank
 }
@@ -59,4 +64,16 @@ func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
 	}
 	// marshal the ProtobufPayload
 	return proto.Marshal(pp)
+}
+
+// -----------------------------------------------------------------------------
+
+func (v *Versioned) DecodeStruct(
+	payload []byte, strucType reflect.Type,
+) (*reflect.Value, error) {
+	return nil, nil
+}
+
+func (v *Versioned) DecodeMessage(payload []byte, dst proto.Message) error {
+	return nil
 }

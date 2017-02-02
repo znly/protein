@@ -12,19 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package decoder
-
-import "github.com/gogo/protobuf/proto"
-
-// -----------------------------------------------------------------------------
-
-// Implementers of the Decoder interface expose methods to decode protobuf
-// messages.
-//
-// The default implementation, as seen in decoder/decoder_versioned.go,
-// integrates with znly/tuyauDB in order to add support for versioned protobuf
-// objects via a central registry.
-type Decoder interface {
-	Decode(payload []byte) (map[string]interface{}, error)
-	DecodeAs(payload []byte, dst proto.Message) error
-}
+// Package wirer provides the interfaces & classes that expose methods
+// to encode & decode protobuf messages.
+package wirer

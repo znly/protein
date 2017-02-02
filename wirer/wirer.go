@@ -12,18 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package encoder
+package wirer
 
-import "github.com/gogo/protobuf/proto"
+import (
+	"reflect"
+
+	"github.com/gogo/protobuf/proto"
+)
 
 // -----------------------------------------------------------------------------
 
-// Implementers of the Encoder interface expose a single method to encode a
-// protobuf message.
+// Implementers of the Wirer interface expose methods to encode & decode
+// protobuf messages.
 //
-// The default implementation, as seen in encoder/encoder_versioned.go,
-// implements an Encoder that embeds a Bank in order to augment the
+// The default implementation, as seen in wirer/wirer_versioned.go,
+// implements a Wirer that integrates with a Bank in order to augment the
 // protobuf payloads that it encodes with additional versioning metadata.
-type Encoder interface {
+//
+// These metadata are then used by the internal decoder of the versioned Wirer
+// to determinate how to decode an incoming payload on the wire.
+type Wirer interface {
 	Encode(o proto.Message) ([]byte, error)
+
+	DecodeStruct(payload []byte, structType reflect.Type) (*reflect.Value, error)
+	DecodeMessage(payload []byte, dst proto.Message) error
 }
