@@ -43,14 +43,14 @@ message OtherTestSchemaXXX {
 }
 
 message TestSchemaXXX {
-	message NestedSchema {
+	message NestedEntry {
 		string key = 1;
 		string value = 2;
 	}
 
 	string uid = 1;
 	repeated string fq_name = 2;
-	map<string, NestedSchema> deps = 4;
+	map<string, NestedEntry> deps = 4;
 	map<int32, string> ids = 12;
 
 	oneof descr {
@@ -61,5 +61,5 @@ message TestSchemaXXX {
 	google.protobuf.Timestamp ts = 7;
 	OtherTestSchemaXXX ots = 9;
 
-	repeated NestedSchema nss = 8;
+	repeated NestedEntry nss = 8;
 }
