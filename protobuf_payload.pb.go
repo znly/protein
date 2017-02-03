@@ -9,11 +9,14 @@ It is generated from these files:
 	protobuf_payload.proto
 	protobuf_schema.proto
 	test_schema.proto
+	test_schema_xxx.proto
 
 It has these top-level messages:
 	ProtobufPayload
 	ProtobufSchema
 	TestSchema
+	OtherTestSchemaXXX
+	TestSchemaXXX
 */
 package protein
 
