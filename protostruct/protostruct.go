@@ -35,58 +35,119 @@ func CreateStructType(
 ) (*reflect.Type, error) {
 	pss, err := b.Get(schemaUID)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
+	}
+	// map[FQName]schemaUID
+	pssRevMap := make(map[string]string, len(pss))
+	for uid, ps := range pss {
+		pssRevMap[ps.GetFQName()] = uid
 	}
 
+	// pre-allocations are mucho importante here
+	structFields := make(map[string][]reflect.StructField, len(pss))
 	structTypes := make(map[string]reflect.Type, len(pss))
-	// map[schemaUID][]schemaUID
-	//delayedTypes := map[string][]string{}
 
-	// for every dep, build the corresponding structure type
+	if err := buildScalarTypes(pss, structFields); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	if err := buildCustomTypes(
+		pss[schemaUID], pss, pssRevMap, structFields, structTypes,
+	); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	structType := structTypes[schemaUID]
+	return &structType, nil
+}
+
+func buildScalarTypes(
+	pss map[string]*protein.ProtobufSchema,
+	structFields map[string][]reflect.StructField,
+) error {
 	for uid, ps := range pss {
 		msg, ok := ps.GetDescr().(*protein.ProtobufSchema_Message)
 		if !ok {
 			continue
 		}
 
-		fields := msg.Message.GetField()
-		structFields := make([]reflect.StructField, 0, len(fields))
-		for _, f := range fields {
+		fields := make([]reflect.StructField, 0, len(msg.Message.GetField()))
+		for _, f := range msg.Message.GetField() {
+			if len(f.GetTypeName()) > 0 { // message or enum
+				continue
+			}
+
 			// name
 			fName := fieldName(f)
-
 			// type
 			var fType reflect.Type
-			if depName := f.GetTypeName(); len(depName) > 0 { // message or enum
-				_ = uid
-			} else { // everything else
-				t, err := fieldType(f)
-				if err != nil {
-					return nil, err
-				}
-				fType = t
+			t, err := fieldType(f)
+			if err != nil {
+				return errors.WithStack(err)
 			}
-
-			//tag
+			fType = t
+			// tag
 			fTag, err := fieldTag(msg.Message, f)
 			if err != nil {
-				return nil, err
+				return errors.WithStack(err)
 			}
 
-			if f.GetTypeName() == "" {
-				structFields = append(structFields, reflect.StructField{
-					Name: fName,
-					Type: fType,
-					Tag:  fTag,
-				})
-			}
+			fields = append(fields, reflect.StructField{
+				Name: fName,
+				Type: fType,
+				Tag:  fTag,
+			})
 		}
-
-		structTypes[uid] = reflect.StructOf(structFields)
+		structFields[uid] = fields
 	}
 
-	structType := structTypes[schemaUID]
-	return &structType, nil
+	return nil
+}
+
+func buildCustomTypes(
+	ps *protein.ProtobufSchema,
+	pss map[string]*protein.ProtobufSchema,
+	pssRevMap map[string]string,
+	structFields map[string][]reflect.StructField,
+	structTypes map[string]reflect.Type,
+) error {
+	for uid := range ps.GetDeps() {
+		if err := buildCustomTypes(
+			pss[uid], pss, pssRevMap, structFields, structTypes,
+		); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+	msg, ok := ps.GetDescr().(*protein.ProtobufSchema_Message)
+	if !ok {
+		return nil
+	}
+
+	fields := structFields[ps.GetUID()]
+	for _, f := range msg.Message.GetField() {
+		if len(f.GetTypeName()) <= 0 { // neither message nor enum
+			continue
+		}
+
+		// name
+		fName := fieldName(f)
+		// type
+		fType := structTypes[pssRevMap[f.GetTypeName()]]
+		// tag
+		fTag, err := fieldTag(msg.Message, f)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		fields = append(fields, reflect.StructField{
+			Name: fName,
+			Type: fType,
+			Tag:  fTag,
+		})
+	}
+
+	structTypes[ps.GetUID()] = reflect.StructOf(fields)
+	return nil
 }
 
 // -----------------------------------------------------------------------------
@@ -112,7 +173,6 @@ func fieldName(f *descriptor.FieldDescriptorProto) string {
 }
 
 func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
-	// TODO(cmc): stars?
 	switch f.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		t = reflect.TypeOf(float64(0))
