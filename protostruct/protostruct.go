@@ -18,6 +18,8 @@ import (
 	"reflect"
 	"strings"
 
+	_ "unsafe" // go:linkname
+
 	"github.com/fatih/camelcase"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
@@ -66,11 +68,16 @@ func CreateStructType(
 			}
 
 			//tag
+			fTag, err := fieldTag(msg.Message, f)
+			if err != nil {
+				return nil, err
+			}
 
 			if f.GetTypeName() == "" {
 				structFields = append(structFields, reflect.StructField{
 					Name: fName,
 					Type: fType,
+					Tag:  fTag,
 				})
 			}
 		}
@@ -117,10 +124,12 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 		t = reflect.TypeOf(uint64(0))
 	case descriptor.FieldDescriptorProto_TYPE_INT32:
 		t = reflect.TypeOf(int32(0))
+	case descriptor.FieldDescriptorProto_TYPE_UINT32:
+		t = reflect.TypeOf(uint32(0))
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		t = reflect.TypeOf(float64(0))
+		t = reflect.TypeOf(uint64(0))
 	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
-		t = reflect.TypeOf(float32(0))
+		t = reflect.TypeOf(uint32(0))
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
 		t = reflect.TypeOf(bool(false))
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
@@ -137,17 +146,15 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 		)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		t = reflect.TypeOf([]byte{})
-	case descriptor.FieldDescriptorProto_TYPE_UINT32:
-		t = reflect.TypeOf(uint32(0))
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		err = errors.Wrapf(
 			ErrFieldTypeNotSupported,
 			"`%s`: field type not supported", f.GetType(),
 		)
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
-		t = reflect.TypeOf(float32(0))
+		t = reflect.TypeOf(int32(0))
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-		t = reflect.TypeOf(float64(0))
+		t = reflect.TypeOf(int64(0))
 	case descriptor.FieldDescriptorProto_TYPE_SINT32:
 		t = reflect.TypeOf(int32(0))
 	case descriptor.FieldDescriptorProto_TYPE_SINT64:
@@ -157,43 +164,73 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 	return t, err
 }
 
-// From https://github.com/golang/lint/blob/master/lint.go
-var _commonAcronyms = map[string]bool{
-	"API":   true,
-	"ASCII": true,
-	"CPU":   true,
-	"CSS":   true,
-	"DNS":   true,
-	"EOF":   true,
-	"FQ":    true, // fully-qualified
-	"GUID":  true,
-	"HTML":  true,
-	"HTTP":  true,
-	"HTTPS": true,
-	"ID":    true,
-	"IP":    true,
-	"JSON":  true,
-	"LHS":   true,
-	"QPS":   true,
-	"RAM":   true,
-	"RHS":   true,
-	"RPC":   true,
-	"SLA":   true,
-	"SMTP":  true,
-	"SQL":   true,
-	"SSH":   true,
-	"TCP":   true,
-	"TLS":   true,
-	"TTL":   true,
-	"UDP":   true,
-	"UI":    true,
-	"UID":   true,
-	"UUID":  true,
-	"URI":   true,
-	"URL":   true,
-	"UTF8":  true,
-	"VM":    true,
-	"XML":   true,
-	"XSRF":  true,
-	"XSS":   true,
+// -----------------------------------------------------------------------------
+
+// We need to access protobuf's internal decoding machinery: the `go:linkname`
+// directive instructs the compiler to declare a local symbol as an alias
+// for an external one, even if it's private.
+// This allows us to bind to the private `goTag` method of the
+// `generator.Generator` class, which does the actual work of computing the
+// necessary struct tags for a given protobuf field.
+//
+// `goTag` is actually a method of the `generator.Generator` class, hence the
+// `g` given as first parameter will be used as "this".
+//
+//go:linkname goTag github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag
+func goTag(b *generator.Generator,
+	d *generator.Descriptor, f *descriptor.FieldDescriptorProto, wt string,
+) string
+
+func fieldTag(
+	d *descriptor.DescriptorProto, f *descriptor.FieldDescriptorProto,
+) (reflect.StructTag, error) {
+	var wt string
+	switch f.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		wt = "fixed64"
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		wt = "fixed32"
+	case descriptor.FieldDescriptorProto_TYPE_INT64:
+		wt = "varint"
+	case descriptor.FieldDescriptorProto_TYPE_UINT64:
+		wt = "varint"
+	case descriptor.FieldDescriptorProto_TYPE_INT32:
+		wt = "varint"
+	case descriptor.FieldDescriptorProto_TYPE_UINT32:
+		wt = "varint"
+	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
+		wt = "fixed64"
+	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
+		wt = "fixed32"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		wt = "varint"
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		wt = "bytes"
+	case descriptor.FieldDescriptorProto_TYPE_GROUP:
+		wt = "group"
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		wt = "bytes"
+	case descriptor.FieldDescriptorProto_TYPE_BYTES:
+		wt = "bytes"
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		wt = "varint"
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
+		wt = "fixed32"
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		wt = "fixed64"
+	case descriptor.FieldDescriptorProto_TYPE_SINT32:
+		wt = "zigzag32"
+	case descriptor.FieldDescriptorProto_TYPE_SINT64:
+		wt = "zigzag64"
+	default:
+		return "", errors.Wrapf(
+			ErrFieldTypeNotSupported,
+			"`%s`: field type not supported", f.GetType(),
+		)
+	}
+
+	g := &generator.Generator{}
+	tag := goTag(g, &generator.Descriptor{DescriptorProto: d}, f, wt)
+
+	return reflect.StructTag(`protobuf:"` + tag + `"`), nil
 }
