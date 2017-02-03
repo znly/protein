@@ -22,6 +22,7 @@ import (
 	_ "unsafe" // go:linkname
 
 	"github.com/fatih/camelcase"
+	"github.com/gogo/protobuf/gogoproto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
@@ -134,6 +135,7 @@ func buildCustomTypes(
 		if len(f.GetTypeName()) <= 0 { // neither message nor enum
 			continue
 		}
+		fmt.Println(f.GetName(), f.GetTypeName())
 
 		// name
 		fName := fieldName(f)
@@ -150,7 +152,10 @@ func buildCustomTypes(
 				strings.Replace(string(entryTags[0]), "protobuf", "protobuf_key", -1),
 				strings.Replace(string(entryTags[1]), "protobuf", "protobuf_val", -1),
 			))
+		} else if gogoproto.IsNullable(f) {
+			fType = reflect.PtrTo(fType)
 		}
+		fmt.Println(f, f.GetLabel(), f.GetOptions(), gogoproto.IsNullable(f))
 
 		fields = append(fields, reflect.StructField{
 			Name: fName,

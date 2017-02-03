@@ -58,8 +58,8 @@ message TestSchemaXXX {
 		bytes  buf = 31;
 	}
 
-	google.protobuf.Timestamp ts = 7;
+	google.protobuf.Timestamp ts = 7 [(gogoproto.nullable) = false];
 	OtherTestSchemaXXX ots = 9;
 
-	repeated NestedEntry nss = 8;
+	repeated NestedEntry nss = 8 [(gogoproto.nullable) = false];
 }
