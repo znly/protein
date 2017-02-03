@@ -135,7 +135,6 @@ func buildCustomTypes(
 		if len(f.GetTypeName()) <= 0 { // neither message nor enum
 			continue
 		}
-		fmt.Println(f.GetName(), f.GetTypeName())
 
 		// name
 		fName := fieldName(f)
@@ -155,7 +154,6 @@ func buildCustomTypes(
 		} else if gogoproto.IsNullable(f) {
 			fType = reflect.PtrTo(fType)
 		}
-		fmt.Println(f, f.GetLabel(), f.GetOptions(), gogoproto.IsNullable(f))
 
 		fields = append(fields, reflect.StructField{
 			Name: fName,
@@ -179,15 +177,6 @@ func buildCustomTypes(
 }
 
 // -----------------------------------------------------------------------------
-
-func findSchemaUID(fqName string, pss map[string]*protein.ProtobufSchema) string {
-	for _, ps := range pss {
-		if fqName == ps.GetFQName() {
-			return ps.GetUID()
-		}
-	}
-	return ""
-}
 
 func fieldName(f *descriptor.FieldDescriptorProto) string {
 	name := generator.CamelCase(f.GetName())

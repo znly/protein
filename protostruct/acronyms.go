@@ -26,6 +26,8 @@ var _commonAcronyms = map[string]bool{
 	"DNS":   true,
 	"EOF":   true,
 	"FQ":    true, // new addition: "Fully-Qualified"
+	"FQN":   true, // new addition: "Fully-Qualified Name"
+	"FQDN":  true, // new addition: "Fully-Qualified Domain Name"
 	"GUID":  true,
 	"HTML":  true,
 	"HTTP":  true,
@@ -45,6 +47,7 @@ var _commonAcronyms = map[string]bool{
 	"TCP":   true,
 	"TLS":   true,
 	"TTL":   true,
+	"TS":    true, // new addition: "Timestamp"
 	"UDP":   true,
 	"UI":    true,
 	"UID":   true,
