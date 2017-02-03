@@ -48,7 +48,7 @@ func CreateStructType(
 	structFields := make(map[string][]reflect.StructField, len(pss))
 	structTypes := make(map[string]reflect.Type, len(pss))
 
-	nestedMapTags := make(map[string][2]reflect.StructTag)
+	mapEntryTags := make(map[string][2]reflect.StructTag)
 
 	if err := buildScalarTypes(pss, structFields); err != nil {
 		return nil, errors.WithStack(err)
@@ -56,7 +56,7 @@ func CreateStructType(
 
 	if err := buildCustomTypes(
 		pss[schemaUID], pss, pssRevMap,
-		structFields, structTypes, nestedMapTags,
+		structFields, structTypes, mapEntryTags,
 	); err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -114,12 +114,12 @@ func buildCustomTypes(
 	pssRevMap map[string]string,
 	structFields map[string][]reflect.StructField,
 	structTypes map[string]reflect.Type,
-	nestedMapTags map[string][2]reflect.StructTag,
+	mapEntryTags map[string][2]reflect.StructTag,
 ) error {
 	for uid := range ps.GetDeps() {
 		if err := buildCustomTypes(
 			pss[uid], pss, pssRevMap,
-			structFields, structTypes, nestedMapTags,
+			structFields, structTypes, mapEntryTags,
 		); err != nil {
 			return errors.WithStack(err)
 		}
@@ -145,9 +145,10 @@ func buildCustomTypes(
 			return errors.WithStack(err)
 		}
 		if fType.Kind() == reflect.Map {
-			nestedTags := nestedMapTags[pssRevMap[f.GetTypeName()]]
-			fTag = reflect.StructTag(fmt.Sprintf("%s %s %s",
-				fTag, nestedTags[0], nestedTags[1],
+			entryTags := mapEntryTags[pssRevMap[f.GetTypeName()]]
+			fTag = reflect.StructTag(fmt.Sprintf("%s %s %s", fTag,
+				strings.Replace(string(entryTags[0]), "protobuf", "protobuf_key", -1),
+				strings.Replace(string(entryTags[1]), "protobuf", "protobuf_val", -1),
 			))
 		}
 
@@ -162,7 +163,7 @@ func buildCustomTypes(
 		structTypes[ps.GetUID()] = reflect.MapOf(
 			reflect.Type(fields[0].Type), reflect.Type(fields[1].Type),
 		)
-		nestedMapTags[ps.GetUID()] = [2]reflect.StructTag{
+		mapEntryTags[ps.GetUID()] = [2]reflect.StructTag{
 			fields[0].Tag, fields[1].Tag,
 		}
 	} else { // everything else
