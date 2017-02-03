@@ -49,8 +49,9 @@ message TestSchemaXXX {
 	}
 
 	string uid = 1;
-	string fq_name = 2;
+	repeated string fq_name = 2;
 	map<string, NestedSchema> deps = 4;
+	map<int32, string> ids = 12;
 
 	oneof descr {
 		string str = 30;
