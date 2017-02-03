@@ -74,10 +74,15 @@ func main() {
 	_ = b
 
 	structType, err := protostruct.CreateStructType(
-		b, b.FQNameToUID(".protein.TestSchema")[0],
+		b, b.FQNameToUID(".protein.TestSchemaXXX")[0],
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(*structType)
+
+	fmt.Println("type", (*structType).Name(), "struct {")
+	for i := 0; i < (*structType).NumField(); i++ {
+		fmt.Println("\t", (*structType).Field(i))
+	}
+	fmt.Println("}")
 }

@@ -19,9 +19,10 @@ package protostruct
 type Error int
 
 const (
-	ErrUnknown               Error = iota // unknown error
-	ErrSchemaNotMessageType  Error = iota // schema is not of messsage type
-	ErrFieldTypeNotSupported Error = iota // field type not supported
+	ErrUnknown                Error = iota // unknown error
+	ErrSchemaNotMessageType   Error = iota // schema is not of messsage type
+	ErrFieldTypeNotSupported  Error = iota // field type not supported
+	ErrFieldLabelNotSupported Error = iota // field label not supported
 )
 
 // IsProtostructError returns true if `e` is a protostruct.Error.
@@ -35,6 +36,8 @@ func (e Error) Error() string {
 		return "error: schema is not of message type"
 	case ErrFieldTypeNotSupported:
 		return "error: this field type is not supported"
+	case ErrFieldLabelNotSupported:
+		return "error: this kind of field label is not supported"
 	default:
 		return "error: wat"
 	}

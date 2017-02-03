@@ -15,6 +15,7 @@
 package protostruct
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -77,6 +78,7 @@ func buildScalarTypes(
 				continue
 			}
 
+			fmt.Println(f)
 			// name
 			fName := fieldName(f)
 			// type
@@ -129,6 +131,7 @@ func buildCustomTypes(
 			continue
 		}
 
+		fmt.Println(f)
 		// name
 		fName := fieldName(f)
 		// type
@@ -219,6 +222,20 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 		t = reflect.TypeOf(int32(0))
 	case descriptor.FieldDescriptorProto_TYPE_SINT64:
 		t = reflect.TypeOf(int64(0))
+	}
+
+	switch f.GetLabel() {
+	case descriptor.FieldDescriptorProto_LABEL_OPTIONAL:
+		// do nothing?
+	case descriptor.FieldDescriptorProto_LABEL_REQUIRED:
+		// do nothing?
+	case descriptor.FieldDescriptorProto_LABEL_REPEATED:
+		t = reflect.SliceOf(t)
+	default:
+		err = errors.Wrapf(
+			ErrFieldLabelNotSupported,
+			"`%s`: field label not supported", f.GetLabel(),
+		)
 	}
 
 	return t, err
