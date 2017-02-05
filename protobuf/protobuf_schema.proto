@@ -35,6 +35,8 @@ option (gogoproto.onlyone_all) = false;
 
 // -----------------------------------------------------------------------------
 
+
+
 // ProtobufSchema is a versioned protobuf Message or Enum descriptor that can
 // be used to decode protobuf payloads at runtime.
 message ProtobufSchema {

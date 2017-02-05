@@ -48,18 +48,29 @@ message TestSchemaXXX {
 		string value = 2;
 	}
 
-	string uid = 1;
-	repeated string fq_name = 2;
+	string uid = 1 [(gogoproto.customname) = "SchemaUID"];
+	repeated string fq_name = 2 [(gogoproto.customname) = "FQNames"];
 	map<string, NestedEntry> deps = 4;
-	map<int32, string> ids = 12;
+	map<int32, string> ids = 12; // will generate `Ids` instead of `IDs`
 
-	oneof descr {
-		string str = 30;
-		bytes  buf = 31;
-	}
+	// ONEOF not supported yet
+	// oneof descr {
+	// 	string str = 30;
+	// 	bytes  buf = 31;
+	// }
 
 	google.protobuf.Timestamp ts = 7 [(gogoproto.nullable) = false];
+
 	OtherTestSchemaXXX ots = 9;
 
 	repeated NestedEntry nss = 8 [(gogoproto.nullable) = false];
+
+	enum WeatherType {
+		SUN   = 0;
+		CLOUD = 1;
+		RAIN  = 2;
+		SNOW  = 3;
+	}
+	// ENUM isn't supported yet
+	// repeated WeatherType weathers = 13;
 }
