@@ -188,6 +188,9 @@ func fieldName(f *descriptor.FieldDescriptorProto) string {
 	for i, p := range parts {
 		if p = strings.ToUpper(p); _commonAcronyms[p] {
 			parts[i] = p
+		} else if p[len(p)-1] == 'S' && _commonAcronyms[p[:len(p)-1]] {
+			// IDS -> IDs
+			parts[i] = p[:len(p)-1] + "s"
 		}
 	}
 	return strings.Join(parts, "")
