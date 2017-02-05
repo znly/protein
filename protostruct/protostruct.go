@@ -325,8 +325,19 @@ func fieldTag(
 	}
 
 	g := &generator.Generator{}
-	tag := goTag(g, &generator.Descriptor{DescriptorProto: d}, f, wt)
-	tag = tag[:len(tag)-1] + `,proto3"` // protein only supports proto3
+	tagProto := goTag(g, &generator.Descriptor{DescriptorProto: d}, f, wt)
+	// protein only supports proto3
+	tagProto = `protobuf:` + tagProto[:len(tagProto)-1] + `,proto3"`
 
-	return reflect.StructTag(`protobuf:` + tag + ``), nil
+	tagJSON := `json:"`
+	if jn := f.GetJsonName(); len(jn) > 0 {
+		tagJSON += jn
+	}
+	if gogoproto.IsNullable(f) {
+		tagJSON += ",omitempty"
+	}
+	tagJSON += `"`
+
+	tags := strings.Join([]string{tagProto, tagJSON}, " ")
+	return reflect.StructTag(tags), nil
 }
