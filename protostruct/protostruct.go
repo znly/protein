@@ -179,6 +179,10 @@ func buildCustomTypes(
 // -----------------------------------------------------------------------------
 
 func fieldName(f *descriptor.FieldDescriptorProto) string {
+	if gogoproto.IsCustomName(f) { // custom names bypass everything
+		return gogoproto.GetCustomName(f)
+	}
+
 	name := generator.CamelCase(f.GetName())
 	parts := camelcase.Split(name)
 	for i, p := range parts {
