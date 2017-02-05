@@ -326,12 +326,22 @@ func fieldTag(
 
 	g := &generator.Generator{}
 	tagProto := goTag(g, &generator.Descriptor{DescriptorProto: d}, f, wt)
-	// protein only supports proto3
-	tagProto = `protobuf:` + tagProto[:len(tagProto)-1] + `,proto3"`
+	tagProto = `protobuf:` + tagProto
+	// the following condition has been imported from gogoprotobuf's
+	// `protoc-gen-go/generator/generator.go`
+	if f.GetType() != descriptor.FieldDescriptorProto_TYPE_MESSAGE &&
+		f.GetType() != descriptor.FieldDescriptorProto_TYPE_GROUP &&
+		!f.IsRepeated() {
+		tagProto = tagProto[:len(tagProto)-1] + `,proto3"`
+	}
 
 	tagJSON := `json:"`
 	if jn := f.GetJsonName(); len(jn) > 0 {
-		tagJSON += jn
+		jnParts := camelcase.Split(jn)
+		for i, jnp := range jnParts {
+			jnParts[i] = strings.ToLower(jnp)
+		}
+		tagJSON += strings.Join(jnParts, "_")
 	}
 	if gogoproto.IsNullable(f) {
 		tagJSON += ",omitempty"
