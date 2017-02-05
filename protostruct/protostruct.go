@@ -146,11 +146,7 @@ func buildCustomTypes(
 			return errors.WithStack(err)
 		}
 		if fType.Kind() == reflect.Map {
-			entryTags := mapEntryTags[pssRevMap[f.GetTypeName()]]
-			fTag = reflect.StructTag(fmt.Sprintf("%s %s %s", fTag,
-				strings.Replace(string(entryTags[0]), "protobuf", "protobuf_key", -1),
-				strings.Replace(string(entryTags[1]), "protobuf", "protobuf_val", -1),
-			))
+			fTag = fieldTagEntries(fTag, mapEntryTags[pssRevMap[f.GetTypeName()]])
 		} else if gogoproto.IsNullable(f) {
 			fType = reflect.PtrTo(fType)
 		}
@@ -353,4 +349,28 @@ func fieldTag(
 
 	tags := strings.Join([]string{tagProto, tagJSON}, " ")
 	return reflect.StructTag(tags), nil
+}
+
+func fieldTagEntries(
+	tag reflect.StructTag, entryTags [2]reflect.StructTag,
+) reflect.StructTag {
+	tag = reflect.StructTag(fmt.Sprintf("%s %s %s", tag,
+		strings.Replace(string(entryTags[0]), "protobuf", "protobuf_key", -1),
+		strings.Replace(string(entryTags[1]), "protobuf", "protobuf_val", -1),
+	))
+
+	jsonTagFound := false
+	tagParts := strings.Split(string(tag), " ")
+	tagPartsClean := make([]string, 0, len(tagParts))
+	for _, t := range tagParts {
+		if strings.HasPrefix(t, "json:") {
+			if jsonTagFound {
+				continue
+			}
+			jsonTagFound = true
+		}
+		tagPartsClean = append(tagPartsClean, t)
+	}
+
+	return reflect.StructTag(strings.Join(tagPartsClean, " "))
 }
