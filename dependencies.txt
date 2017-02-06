@@ -23,10 +23,10 @@ cb6bfca970f6908083f26f39a79009d608efd5cd github.com/klauspost/crc32
 248dadf4e9068a0b3e79f02ed0a610d935de5302 github.com/pkg/errors
 1f30fe9094a513ce4c700b9a54458bbb0c96996c github.com/rcrowley/go-metrics
 61b1601d40a5d2eafd9721562cd5660016ba20e9 github.com/teh-cmc/gools/zerocopy
-303c5aba9eea5999430b7f465cfa5f7696c3e6ed github.com/znly/tuyauDB
-303c5aba9eea5999430b7f465cfa5f7696c3e6ed github.com/znly/tuyauDB/client
-303c5aba9eea5999430b7f465cfa5f7696c3e6ed github.com/znly/tuyauDB/kv
-303c5aba9eea5999430b7f465cfa5f7696c3e6ed github.com/znly/tuyauDB/pipe
+a3bcfa66217c0dd460f34c3ba8cf29c5e79e61b0 github.com/znly/tuyauDB
+a3bcfa66217c0dd460f34c3ba8cf29c5e79e61b0 github.com/znly/tuyauDB/client
+a3bcfa66217c0dd460f34c3ba8cf29c5e79e61b0 github.com/znly/tuyauDB/kv
+a3bcfa66217c0dd460f34c3ba8cf29c5e79e61b0 github.com/znly/tuyauDB/pipe
 c2c54e542fb797ad986b31721e1baedf214ca413 github.com/kardianos/osext
 f6a740d52f961c60348ebb109adde9f4635d7540 github.com/fatih/camelcase
 265e960d45b331a5055057ef0f29088cf1eb91ce github.com/gogo/protobuf/protoc-gen-gogo/generator
