@@ -45,7 +45,7 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	assert.NotNil(t, cs)
 
 	// build a simple TuyauDB Service to sync-up the underlying Pipe & KV
-	// components (i.e. what's pushed into the pipe should en up in the kv
+	// components (i.e. what's pushed into the pipe should end up in the kv
 	// store)
 	ctx, canceller := context.WithCancel(context.Background())
 	s, err := tuyau_service.NewSimple(cs)
