@@ -6,18 +6,20 @@ import (
 	"log"
 	"time"
 
-	protein_bank "github.com/znly/protein/bank"
+	"github.com/znly/protein/bank"
 	"github.com/znly/protein/protoscan"
 	"github.com/znly/protein/protostruct"
 	tuyau_client "github.com/znly/tuyauDB/client"
 	tuyau_kv "github.com/znly/tuyauDB/kv"
 	tuyau_pipe "github.com/znly/tuyauDB/pipe"
 	tuyau_service "github.com/znly/tuyauDB/service"
+
+	_ "github.com/znly/protein/protobuf/schemas/test"
 )
 
 // -----------------------------------------------------------------------------
 
-func buildBank() protein_bank.Bank {
+func buildBank() bank.Bank {
 	// fetched locally instanciated schemas
 	schemas, err := protoscan.ScanSchemas()
 	if err != nil {
@@ -45,7 +47,7 @@ func buildBank() protein_bank.Bank {
 	go s.Run(ctx)
 
 	// build the actual Bank that integrates with the TuyauDB Client
-	ty := protein_bank.NewTuyau(cs)
+	ty := bank.NewTuyau(cs)
 	go func() {
 		for _, ps := range schemas {
 			if err := ty.Put(ps); err != nil {
@@ -74,7 +76,7 @@ func main() {
 	_ = b
 
 	structType, err := protostruct.CreateStructType(
-		b, b.FQNameToUID(".protein.TestSchemaXXX")[0],
+		b, b.FQNameToUID(".test.TestSchemaXXX")[0],
 	)
 	if err != nil {
 		log.Fatal(err)
