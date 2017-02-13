@@ -21,6 +21,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/stretchr/testify/assert"
+
+	_ "github.com/znly/protein/protobuf/schemas/test"
 )
 
 // -----------------------------------------------------------------------------
@@ -34,14 +36,14 @@ import (
 // you'd have to modify the following expected values in order to fix the
 // tests.. That is, if you're sure about what you're doing.
 var (
-	tsKnownName = ".protein.TestSchema"
-	deKnownName = ".protein.TestSchema.DepsEntry"
+	tsKnownName = ".test.TestSchema"
+	deKnownName = ".test.TestSchema.DepsEntry"
 
-	tsKnownHashSingle = "PROT-2753996d0e285237fff2af4b58540aba12bd11b547d06b2dd6142f98caca3d52"
-	deKnownHashSingle = "PROT-5cec2045c9d6fb4a8300c9a0957194facd02b5386b31a02ac048860fb1383223"
+	tsKnownHashSingle = "PROT-d12b5690ec5877c9c5f6c84b57523b14291b46de50ffaf487a8a3f04d8198bff"
+	deKnownHashSingle = "PROT-39b441710129f5f7e4c92863b02173db7aa71658799031d6a1dedca260842dfa"
 
-	tsKnownHashRecurse = "PROT-b4f1216c74d15da21b72e7064e8a5ad1e023ee64e016a09884b01f9c2622da4b"
-	deKnownHashRecurse = "PROT-2eef830874406d6ccf9a9ae9ac787d4be60f105695fd10a91f73a84d43a235b4"
+	tsKnownHashRecurse = "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"
+	deKnownHashRecurse = "PROT-d278f5561f05e68f6e68fcbc6b801d29a69b4bf6044bf3e6242ea8fe388ebd6e"
 )
 
 // -----------------------------------------------------------------------------
@@ -67,7 +69,7 @@ func _collectTestSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, dtsByName)
 
-	// should at least find 2 messages types here: `.protoscan.TestSchema`
+	// should at least find 2 messages types here: `.test.TestSchema`
 	// and its nested `DepsEntry` message
 	assert.True(t, len(dtsByName) >= 2)
 	assert.NotNil(t, dtsByName[tsKnownName])
@@ -194,7 +196,7 @@ func TestProtoscan_NewDescriptorTrees(t *testing.T) {
 	dtsByUID, err := NewDescriptorTrees(fdps)
 	assert.Nil(t, err)
 
-	// should at least find the `.protoscan.TestSchema` and its nested
+	// should at least find the `.test.TestSchema` and its nested
 	// `DepsEntry` message in the DescriptorTrees
 	assert.NotEmpty(t, dtsByUID)
 	assert.NotNil(t, dtsByUID[tsKnownHashRecurse])

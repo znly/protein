@@ -23,7 +23,6 @@ protobuf: protobuf-clean
 		   --gogofaster_out=${PATH_SCHEMAS}/                             \
 		   ${SCHEMAS}
 	sed -i '' 's#google_protobuf "google/protobuf"#google_protobuf "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"#g' ${PATH_SCHEMAS}/*.pb.go
-	sed -i '' 's#google_protobuf1 "google/protobuf"#google_protobuf1 "github.com/gogo/protobuf/types"#g' ${PATH_SCHEMAS}/*.pb.go
 	sed -i '' 's#"protobuf/gogoproto"#"github.com/gogo/protobuf/gogoproto"#g' ${PATH_SCHEMAS}/*.pb.go
 
 protobuf-test-clean:
@@ -36,7 +35,6 @@ protobuf-test: protobuf-test-clean
 		   --proto_path=${PATH_PROTOS}/                          \
 		   --gogofaster_out=${PATH_SCHEMAS_TEST}/                      \
 		   ${SCHEMAS_TEST}
-	sed -i '' 's#google_protobuf "google/protobuf"#google_protobuf "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"#g' ${PATH_SCHEMAS_TEST}/*.pb.go
-	sed -i '' 's#google_protobuf1 "google/protobuf"#google_protobuf1 "github.com/gogo/protobuf/types"#g' ${PATH_SCHEMAS_TEST}/*.pb.go
+	sed -i '' 's#google_protobuf "google/protobuf"#google_protobuf "github.com/gogo/protobuf/types"#g' ${PATH_SCHEMAS_TEST}/*.pb.go
 	sed -i '' 's#"protobuf/gogoproto"#"github.com/gogo/protobuf/gogoproto"#g' ${PATH_SCHEMAS_TEST}/*.pb.go
 

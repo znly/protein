@@ -22,7 +22,7 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
-	"github.com/znly/protein"
+	"github.com/znly/protein/protobuf/schemas"
 	"github.com/znly/protein/protoscan/internal/objfile"
 )
 
@@ -49,7 +49,7 @@ import (
 //
 // Have a look at 'protoscan.go' and 'descriptor_tree.go' for more information
 // about how all of this works; the code is heavily documented.
-func ScanSchemas(failOnDuplicate ...bool) (map[string]*protein.ProtobufSchema, error) {
+func ScanSchemas(failOnDuplicate ...bool) (map[string]*schemas.ProtobufSchema, error) {
 	fod := true
 	if len(failOnDuplicate) > 0 {
 		fod = failOnDuplicate[0]
@@ -95,19 +95,19 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*protein.ProtobufSchema, e
 		return nil, errors.WithStack(err)
 	}
 
-	// builds slice of protein.ProtobufSchema objects
-	pss := make(map[string]*protein.ProtobufSchema, len(dtsByUID))
+	// builds slice of schemas.ProtobufSchema objects
+	pss := make(map[string]*schemas.ProtobufSchema, len(dtsByUID))
 	for uid, dt := range dtsByUID {
-		ps := &protein.ProtobufSchema{
+		ps := &schemas.ProtobufSchema{
 			UID:    uid,
 			FQName: dt.FQName(),
 			Deps:   map[string]string{},
 		}
 		switch descr := dt.descr.(type) {
 		case *descriptor.DescriptorProto:
-			ps.Descr = &protein.ProtobufSchema_Message{descr}
+			ps.Descr = &schemas.ProtobufSchema_Message{descr}
 		case *descriptor.EnumDescriptorProto:
-			ps.Descr = &protein.ProtobufSchema_Enum{descr}
+			ps.Descr = &schemas.ProtobufSchema_Enum{descr}
 		default:
 			return nil, errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
 		}
