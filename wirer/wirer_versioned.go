@@ -20,8 +20,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/znly/protein"
 	"github.com/znly/protein/bank"
+	"github.com/znly/protein/protobuf/schemas"
 )
 
 // -----------------------------------------------------------------------------
@@ -59,7 +59,7 @@ func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
 		return nil, errors.Errorf("`%s`: FQ-name not found in bank")
 	}
 	// wrap the marshaled payload within a ProtobufPayload message
-	pp := &protein.ProtobufPayload{
+	pp := &schemas.ProtobufPayload{
 		UID:     uids[0],
 		Payload: payload,
 	}
@@ -115,7 +115,7 @@ func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
 // -----------------------------------------------------------------------------
 
 func (v *Versioned) DecodeMessage(payload []byte, dst proto.Message) error {
-	var ps protein.ProtobufPayload
+	var ps schemas.ProtobufPayload
 	if err := proto.Unmarshal(payload, &ps); err != nil {
 		return errors.WithStack(err)
 	}

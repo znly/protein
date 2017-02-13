@@ -21,8 +21,9 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/znly/protein"
 	"github.com/znly/protein/bank"
+	"github.com/znly/protein/protobuf/schemas"
+	"github.com/znly/protein/protobuf/schemas/test"
 	"github.com/znly/protein/protoscan"
 	tuyau_client "github.com/znly/tuyauDB/client"
 	tuyau_kv "github.com/znly/tuyauDB/kv"
@@ -34,12 +35,12 @@ import (
 
 func TestWirer_Versioned_Encode(t *testing.T) {
 	// fetched locally instanciated schemas
-	schemas, err := protoscan.ScanSchemas()
+	schems, err := protoscan.ScanSchemas()
 	assert.Nil(t, err)
-	assert.NotEmpty(t, schemas)
+	assert.NotEmpty(t, schems)
 
 	// build the underlying TuyauDB components: Client{Pipe, KV}
-	bufSize := uint(len(schemas) + 1) // cannot block that way
+	bufSize := uint(len(schems) + 1) // cannot block that way
 	cs, err := tuyau_client.New(tuyau_client.TYPE_SIMPLE,
 		tuyau_pipe.NewRAMConstructor(bufSize),
 		tuyau_kv.NewRAMConstructor(),
@@ -59,7 +60,7 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	// build the actual Bank that integrates with the TuyauDB Client
 	ty := bank.NewTuyau(cs)
 	go func() {
-		for _, ps := range schemas {
+		for _, ps := range schems {
 			assert.Nil(t, ty.Put(ps)) // feed it all the local schemas
 		}
 		time.Sleep(time.Millisecond * 20)
@@ -76,7 +77,7 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	// the RAM-based Pipe, our Bank should now be able to retrieve any schema
 	// directly from its underlying KV store.
 
-	tsExpected := &protein.TestSchema{
+	tsExpected := &test.TestSchema{
 		Uid:    "test-uuid",
 		FqName: "test-schema",
 		Deps: map[string]string{
@@ -87,10 +88,10 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, payload)
 
-	var pp protein.ProtobufPayload
-	var ts protein.TestSchema
+	var pp schemas.ProtobufPayload
+	var ts test.TestSchema
 	assert.Nil(t, proto.Unmarshal(payload, &pp))
-	uidExpected := "PROT-b4f1216c74d15da21b72e7064e8a5ad1e023ee64e016a09884b01f9c2622da4b"
+	uidExpected := "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"
 	assert.Equal(t, uidExpected, pp.GetUID())
 	assert.NotEmpty(t, pp.GetPayload())
 	assert.Nil(t, proto.Unmarshal(pp.GetPayload(), &ts))
