@@ -25,6 +25,8 @@ import (
 	tuyau_kv "github.com/znly/tuyauDB/kv"
 	tuyau_pipe "github.com/znly/tuyauDB/pipe"
 	tuyau_service "github.com/znly/tuyauDB/service"
+
+	_ "github.com/znly/protein/protobuf/schemas/test"
 )
 
 // -----------------------------------------------------------------------------
@@ -75,27 +77,27 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 
 	var expectedUID string
 	var revUIDs []string
-	// `.protein.TestSchema` should be in there
-	expectedUID = "PROT-b4f1216c74d15da21b72e7064e8a5ad1e023ee64e016a09884b01f9c2622da4b"
-	revUIDs = ty.FQNameToUID(".protein.TestSchema")
+	// `.test.TestSchema` should be in there
+	expectedUID = "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"
+	revUIDs = ty.FQNameToUID(".test.TestSchema")
 	assert.NotEmpty(t, revUIDs)
 	assert.Equal(t, 1, len(revUIDs))
 	assert.Equal(t, expectedUID, revUIDs[0])
 	schemas, err = ty.Get(revUIDs[0])
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schemas)
-	assert.Equal(t, 2, len(schemas)) // `.protein.TestSchema` + nested `DepsEntry`
+	assert.Equal(t, 2, len(schemas)) // `.test.TestSchema` + nested `DepsEntry`
 
-	// `.protein.TestSchema.DepsEntry` should be in there
-	expectedUID = "PROT-2eef830874406d6ccf9a9ae9ac787d4be60f105695fd10a91f73a84d43a235b4"
-	revUIDs = ty.FQNameToUID(".protein.TestSchema.DepsEntry")
+	// `.test.TestSchema.DepsEntry` should be in there
+	expectedUID = "PROT-d278f5561f05e68f6e68fcbc6b801d29a69b4bf6044bf3e6242ea8fe388ebd6e"
+	revUIDs = ty.FQNameToUID(".test.TestSchema.DepsEntry")
 	assert.NotEmpty(t, revUIDs)
 	assert.Equal(t, 1, len(revUIDs))
 	assert.Equal(t, expectedUID, revUIDs[0])
 	schemas, err = ty.Get(revUIDs[0])
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schemas)
-	assert.Equal(t, 1, len(schemas)) // `.protein.TestSchema.DepsEntry` only
+	assert.Equal(t, 1, len(schemas)) // `.test.TestSchema.DepsEntry` only
 
 	// destroy the underlying TuyauDB components
 	err1, err2 := cs.Close()

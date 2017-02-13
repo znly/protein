@@ -17,9 +17,9 @@ package bank
 import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/znly/protein"
-	tuyaudb "github.com/znly/tuyauDB"
-	tuyau "github.com/znly/tuyauDB/client"
+	"github.com/znly/protein/protobuf/schemas"
+	tuyau "github.com/znly/tuyauDB"
+	tuyau_client "github.com/znly/tuyauDB/client"
 )
 
 // -----------------------------------------------------------------------------
@@ -27,9 +27,9 @@ import (
 // Tuyau implements a Bank that integrates with znly/tuyauDB in order to keep
 // its local in-memory cache in sync with a TuyauDB store.
 type Tuyau struct {
-	tc tuyau.Client
+	tc tuyau_client.Client
 
-	schemas map[string]*protein.ProtobufSchema
+	schems map[string]*schemas.ProtobufSchema
 	// reverse-mapping of fully-qualified names to UIDs
 	revmap map[string][]string
 }
@@ -38,11 +38,11 @@ type Tuyau struct {
 // accessing a TuyauDB store.
 //
 // It is the caller's responsibility to close the client once he's done with it.
-func NewTuyau(tc tuyau.Client) *Tuyau {
+func NewTuyau(tc tuyau_client.Client) *Tuyau {
 	return &Tuyau{
-		tc:      tc,
-		schemas: map[string]*protein.ProtobufSchema{},
-		revmap:  map[string][]string{},
+		tc:     tc,
+		schems: map[string]*schemas.ProtobufSchema{},
+		revmap: map[string][]string{},
 	}
 }
 
@@ -64,38 +64,38 @@ func NewTuyau(tc tuyau.Client) *Tuyau {
 //   round-trips.
 //   A "schemas not found" error is returned if one or more dependencies couldn't
 //   be found.
-func (t *Tuyau) Get(uid string) (map[string]*protein.ProtobufSchema, error) {
-	schemas := map[string]*protein.ProtobufSchema{}
+func (t *Tuyau) Get(uid string) (map[string]*schemas.ProtobufSchema, error) {
+	schems := map[string]*schemas.ProtobufSchema{}
 
 	// get root schema
-	if s, ok := schemas[uid]; ok { // try the in-memory cache first..
-		schemas[uid] = s
+	if s, ok := schems[uid]; ok { // try the in-memory cache first..
+		schems[uid] = s
 	} else { // ..then fallback on the remote tuyauDB store
 		b, err := t.tc.Get(uid)
 		if err != nil {
 			return nil, errors.Wrapf(err, "`%s`: schema not found", uid)
 		}
-		var root protein.ProtobufSchema
+		var root schemas.ProtobufSchema
 		if err := proto.Unmarshal(b.Data, &root); err != nil {
 			return nil, errors.Wrapf(err, "`%s`: invalid schema", uid)
 		}
-		schemas[uid] = &root
+		schems[uid] = &root
 	}
 
 	// get dependency schemas
-	deps := schemas[uid].GetDeps()
+	deps := schems[uid].GetDeps()
 
 	// try the in-memory cache first..
 	psNotFound := make(map[string]struct{}, len(deps))
 	for depUID := range deps {
-		if s, ok := schemas[depUID]; ok {
-			schemas[depUID] = s
+		if s, ok := schems[depUID]; ok {
+			schems[depUID] = s
 			continue
 		}
 		psNotFound[depUID] = struct{}{}
 	}
 	if len(psNotFound) <= 0 { // found everything need in local cache!
-		return schemas, nil
+		return schems, nil
 	}
 
 	// ..then fallback on the remote tuyauDB store
@@ -118,14 +118,14 @@ func (t *Tuyau) Get(uid string) (map[string]*protein.ProtobufSchema, error) {
 		return nil, err
 	}
 	for _, b := range blobs {
-		var ps protein.ProtobufSchema
+		var ps schemas.ProtobufSchema
 		if err := proto.Unmarshal(b.Data, &ps); err != nil {
 			return nil, errors.Wrapf(err, "`%s`: invalid schema (dependency)", b.Key)
 		}
-		schemas[b.Key] = &ps
+		schems[b.Key] = &ps
 	}
 
-	return schemas, nil
+	return schems, nil
 }
 
 // FQNameToUID returns the UID associated with the given fully-qualified name.
@@ -148,8 +148,8 @@ func (t *Tuyau) FQNameToUID(fqName string) []string { return t.revmap[fqName] }
 // Put doesn't care about pre-existing keys: if a schema with the same key
 // already exist, it will be overwritten; both in the local cache as well in the
 // TuyauDB store.
-func (t *Tuyau) Put(pss ...*protein.ProtobufSchema) error {
-	blobs := make([]*tuyaudb.Blob, 0, len(pss))
+func (t *Tuyau) Put(pss ...*schemas.ProtobufSchema) error {
+	blobs := make([]*tuyau.Blob, 0, len(pss))
 	var b []byte
 	var err error
 	for _, ps := range pss {
@@ -158,10 +158,10 @@ func (t *Tuyau) Put(pss ...*protein.ProtobufSchema) error {
 			return errors.WithStack(err)
 		}
 		uid := ps.GetUID()
-		blobs = append(blobs, &tuyaudb.Blob{
+		blobs = append(blobs, &tuyau.Blob{
 			Key: uid, Data: b, TTL: 0, Flags: 0,
 		})
-		t.schemas[uid] = ps
+		t.schems[uid] = ps
 		t.revmap[ps.GetFQName()] = append(t.revmap[ps.GetFQName()], uid)
 	}
 	return t.tc.Push(blobs...)

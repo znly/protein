@@ -14,7 +14,7 @@
 
 package bank
 
-import "github.com/znly/protein"
+import "github.com/znly/protein/protobuf/schemas"
 
 // -----------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@ import "github.com/znly/protein"
 // znly/tuyauDB in order to keep its local in-memory cache in sync with a
 // TuyauDB store.
 type Bank interface {
-	Get(uid string) (map[string]*protein.ProtobufSchema, error)
+	Get(uid string) (map[string]*schemas.ProtobufSchema, error)
 	FQNameToUID(fqName string) []string
-	Put(ps ...*protein.ProtobufSchema) error
+	Put(ps ...*schemas.ProtobufSchema) error
 }
