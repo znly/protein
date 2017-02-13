@@ -26,14 +26,14 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
-	"github.com/znly/protein"
-	protein_bank "github.com/znly/protein/bank"
+	"github.com/znly/protein/bank"
+	"github.com/znly/protein/protobuf/schemas"
 )
 
 // -----------------------------------------------------------------------------
 
 func CreateStructType(
-	b protein_bank.Bank, schemaUID string,
+	b bank.Bank, schemaUID string,
 ) (*reflect.Type, error) {
 	pss, err := b.Get(schemaUID)
 	if err != nil {
@@ -67,11 +67,11 @@ func CreateStructType(
 }
 
 func buildScalarTypes(
-	pss map[string]*protein.ProtobufSchema,
+	pss map[string]*schemas.ProtobufSchema,
 	structFields map[string][]reflect.StructField,
 ) error {
 	for uid, ps := range pss {
-		msg, ok := ps.GetDescr().(*protein.ProtobufSchema_Message)
+		msg, ok := ps.GetDescr().(*schemas.ProtobufSchema_Message)
 		if !ok {
 			continue
 		}
@@ -110,8 +110,8 @@ func buildScalarTypes(
 }
 
 func buildCustomTypes(
-	ps *protein.ProtobufSchema,
-	pss map[string]*protein.ProtobufSchema,
+	ps *schemas.ProtobufSchema,
+	pss map[string]*schemas.ProtobufSchema,
 	pssRevMap map[string]string,
 	structFields map[string][]reflect.StructField,
 	structTypes map[string]reflect.Type,
@@ -125,7 +125,7 @@ func buildCustomTypes(
 			return errors.WithStack(err)
 		}
 	}
-	msg, ok := ps.GetDescr().(*protein.ProtobufSchema_Message)
+	msg, ok := ps.GetDescr().(*schemas.ProtobufSchema_Message)
 	if !ok {
 		return nil
 	}

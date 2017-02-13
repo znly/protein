@@ -21,13 +21,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/znly/protein"
-	protein_bank "github.com/znly/protein/bank"
+	"github.com/znly/protein/bank"
 	"github.com/znly/protein/protoscan"
 	tuyau_client "github.com/znly/tuyauDB/client"
 	tuyau_kv "github.com/znly/tuyauDB/kv"
 	tuyau_pipe "github.com/znly/tuyauDB/pipe"
 	tuyau_service "github.com/znly/tuyauDB/service"
+
+	"github.com/znly/protein/protobuf/schemas/test"
 )
 
 // -----------------------------------------------------------------------------
@@ -57,7 +58,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	go s.Run(ctx)
 
 	// build the actual Bank that integrates with the TuyauDB Client
-	ty := protein_bank.NewTuyau(cs)
+	ty := bank.NewTuyau(cs)
 	go func() {
 		for _, ps := range schemas {
 			assert.Nil(t, ty.Put(ps)) // feed it all the local schemas
@@ -78,7 +79,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 
 	// ------- ^^^^^ need helpers for all this boilerplate
 
-	expectedType := reflect.TypeOf(protein.TestSchemaXXX{})
+	expectedType := reflect.TypeOf(test.TestSchemaXXX{})
 	assert.True(t, expectedType.Kind() == reflect.Struct)
 	expectedFields := make(map[string]reflect.StructField, expectedType.NumField())
 	for i := 0; i < expectedType.NumField(); i++ {
@@ -87,7 +88,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	}
 	assert.NotEmpty(t, expectedFields)
 
-	uids := ty.FQNameToUID(".protein.TestSchemaXXX")
+	uids := ty.FQNameToUID(".test.TestSchemaXXX")
 	assert.NotEmpty(t, uids)
 	actualType, err := CreateStructType(ty, uids[0])
 	assert.Nil(t, err)
@@ -133,7 +134,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	// Attributes:
 	//   - name: "deps"
 	//   - custom_name: ""
-	//   - type: map<string, .protein.TestSchemaXXX.NestedEntry>
+	//   - type: map<string, .test.TestSchemaXXX.NestedEntry>
 	//   - custom_type: ""
 	//   - id: 4
 	expectedField = expectedFields["Deps"]
@@ -175,7 +176,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	// Attributes:
 	//   - name: "ots"
 	//   - custom_name: ""
-	//   - type: .protein.OtherTestSchemaXXX
+	//   - type: .test.OtherTestSchemaXXX
 	//   - custom_type: ""
 	//   - id: 9
 	expectedField = expectedFields["Ots"]
@@ -189,7 +190,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	// Attributes:
 	//   - name: "nss"
 	//   - custom_name: ""
-	//   - type: repeated .protein.TestSchemaXXX.NestedEntry
+	//   - type: repeated .test.TestSchemaXXX.NestedEntry
 	//   - custom_type: ""
 	//   - id: 8
 	expectedField = expectedFields["Nss"]
