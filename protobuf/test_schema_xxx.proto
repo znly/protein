@@ -21,7 +21,7 @@
 
 syntax = "proto3";
 
-package protein;
+package test;
 
 import "google/protobuf/timestamp.proto";
 import "protobuf/gogoproto/gogo.proto";

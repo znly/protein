@@ -14,7 +14,7 @@
 
 syntax = "proto3";
 
-package protein;
+package schemas;
 
 import "google/protobuf/descriptor.proto";
 import "protobuf/gogoproto/gogo.proto";
@@ -34,8 +34,6 @@ option (gogoproto.stringer_all) = false;
 option (gogoproto.onlyone_all) = false;
 
 // -----------------------------------------------------------------------------
-
-
 
 // ProtobufSchema is a versioned protobuf Message or Enum descriptor that can
 // be used to decode protobuf payloads at runtime.

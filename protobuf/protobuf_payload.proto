@@ -14,7 +14,7 @@
 
 syntax = "proto3";
 
-package protein;
+package schemas;
 
 import "protobuf/gogoproto/gogo.proto";
 
