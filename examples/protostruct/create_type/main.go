@@ -26,9 +26,9 @@ func buildBank() protein_bank.Bank {
 
 	// build the underlying TuyauDB components: Client{Pipe, KV}
 	bufSize := uint(len(schemas) + 1) // cannot block that way
-	cs, err := tuyau_client.NewSimple(
-		tuyau_pipe.NewRAM(bufSize, bufSize),
-		tuyau_kv.NewRAM(),
+	cs, err := tuyau_client.New(tuyau_client.TYPE_SIMPLE,
+		tuyau_pipe.NewRAMConstructor(bufSize),
+		tuyau_kv.NewRAMConstructor(),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -38,11 +38,11 @@ func buildBank() protein_bank.Bank {
 	// components (i.e. what's pushed into the pipe should en up in the kv
 	// store)
 	ctx, canceller := context.WithCancel(context.Background())
-	s, err := tuyau_service.NewSimple(cs)
+	s, err := tuyau_service.NewSimple(cs, 10)
 	if err != nil {
 		log.Fatal(err)
 	}
-	go s.Run(ctx, 0)
+	go s.Run(ctx)
 
 	// build the actual Bank that integrates with the TuyauDB Client
 	ty := protein_bank.NewTuyau(cs)
