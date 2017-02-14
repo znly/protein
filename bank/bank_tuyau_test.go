@@ -26,6 +26,7 @@ import (
 	tuyau_pipe "github.com/znly/tuyauDB/pipe"
 	tuyau_service "github.com/znly/tuyauDB/service"
 
+	"github.com/znly/protein/protobuf/schemas"
 	_ "github.com/znly/protein/protobuf/schemas/test"
 )
 
@@ -33,12 +34,12 @@ import (
 
 func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	// fetched locally instanciated schemas
-	schemas, err := protoscan.ScanSchemas()
+	schems, err := protoscan.ScanSchemas()
 	assert.Nil(t, err)
-	assert.NotEmpty(t, schemas)
+	assert.NotEmpty(t, schems)
 
 	// build the underlying TuyauDB components: Client{Pipe, KV}
-	bufSize := uint(len(schemas) + 1) // cannot block that way
+	bufSize := uint(len(schems) + 1) // cannot block that way
 	cs, err := tuyau_client.New(
 		tuyau_pipe.NewRAMConstructor(bufSize),
 		tuyau_kv.NewRAMConstructor(),
@@ -59,9 +60,11 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	// build the actual Bank that integrates with the TuyauDB Client
 	ty := NewTuyau(cs)
 	go func() {
-		for _, ps := range schemas {
-			assert.Nil(t, ty.Put(ps)) // feed it all the local schemas
+		schemsL := make([]*schemas.ProtobufSchema, 0, len(schems))
+		for _, ps := range schems {
+			schemsL = append(schemsL, ps)
 		}
+		assert.Nil(t, ty.Put(schemsL...)) // feed it all the local schemas
 		time.Sleep(time.Millisecond * 20)
 		canceller() // we're done
 	}()
@@ -84,10 +87,10 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	assert.NotEmpty(t, revUIDs)
 	assert.Equal(t, 1, len(revUIDs))
 	assert.Equal(t, expectedUID, revUIDs[0])
-	schemas, err = ty.Get(revUIDs[0])
+	schems, err = ty.Get(revUIDs[0])
 	assert.Nil(t, err)
-	assert.NotEmpty(t, schemas)
-	assert.Equal(t, 2, len(schemas)) // `.test.TestSchema` + nested `DepsEntry`
+	assert.NotEmpty(t, schems)
+	assert.Equal(t, 2, len(schems)) // `.test.TestSchema` + nested `DepsEntry`
 
 	// `.test.TestSchema.DepsEntry` should be in there
 	expectedUID = "PROT-d278f5561f05e68f6e68fcbc6b801d29a69b4bf6044bf3e6242ea8fe388ebd6e"
@@ -95,10 +98,10 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	assert.NotEmpty(t, revUIDs)
 	assert.Equal(t, 1, len(revUIDs))
 	assert.Equal(t, expectedUID, revUIDs[0])
-	schemas, err = ty.Get(revUIDs[0])
+	schems, err = ty.Get(revUIDs[0])
 	assert.Nil(t, err)
-	assert.NotEmpty(t, schemas)
-	assert.Equal(t, 1, len(schemas)) // `.test.TestSchema.DepsEntry` only
+	assert.NotEmpty(t, schems)
+	assert.Equal(t, 1, len(schems)) // `.test.TestSchema.DepsEntry` only
 
 	// destroy the underlying TuyauDB components
 	err1, err2, err3 := cs.Close()

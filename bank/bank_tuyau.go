@@ -20,6 +20,7 @@ import (
 	"github.com/znly/protein/protobuf/schemas"
 	tuyau "github.com/znly/tuyauDB"
 	tuyau_client "github.com/znly/tuyauDB/client"
+	tuyau_kv "github.com/znly/tuyauDB/kv"
 )
 
 // -----------------------------------------------------------------------------
@@ -148,6 +149,8 @@ func (t *Tuyau) FQNameToUID(fqName string) []string { return t.revmap[fqName] }
 // Put doesn't care about pre-existing keys: if a schema with the same key
 // already exist, it will be overwritten; both in the local cache as well in the
 // TuyauDB store.
+//
+// TODO(cmc): note about CAS that doesn't matter here
 func (t *Tuyau) Put(pss ...*schemas.ProtobufSchema) error {
 	blobs := make([]*tuyau.Blob, 0, len(pss))
 	var b []byte
@@ -164,5 +167,18 @@ func (t *Tuyau) Put(pss ...*schemas.ProtobufSchema) error {
 		t.schems[uid] = ps
 		t.revmap[ps.GetFQName()] = append(t.revmap[ps.GetFQName()], uid)
 	}
-	return t.c.Push(blobs...)
+	if err := t.c.Push(blobs...); err != nil {
+		return errors.WithStack(err)
+	}
+	if err := t.c.SetMulti(blobs); err != nil {
+		if errors.Cause(err) != tuyau_kv.ErrOpNotSupported {
+			return errors.WithStack(err)
+		}
+		for _, b := range blobs {
+			if err := t.c.Set(b); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+	}
+	return nil
 }
