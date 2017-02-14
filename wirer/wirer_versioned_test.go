@@ -41,9 +41,10 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 
 	// build the underlying TuyauDB components: Client{Pipe, KV}
 	bufSize := uint(len(schems) + 1) // cannot block that way
-	cs, err := tuyau_client.New(tuyau_client.TYPE_SIMPLE,
+	cs, err := tuyau_client.New(
 		tuyau_pipe.NewRAMConstructor(bufSize),
 		tuyau_kv.NewRAMConstructor(),
+		nil,
 	)
 	assert.Nil(t, err)
 	assert.NotNil(t, cs)
@@ -52,7 +53,7 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	// components (i.e. what's pushed into the pipe should en up in the kv
 	// store)
 	ctx, canceller := context.WithCancel(context.Background())
-	s, err := tuyau_service.NewSimple(cs, 10)
+	s, err := tuyau_service.New(cs, 10)
 	assert.Nil(t, err)
 	assert.NotNil(t, s)
 	go s.Run(ctx)

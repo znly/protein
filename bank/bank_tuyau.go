@@ -27,20 +27,20 @@ import (
 // Tuyau implements a Bank that integrates with znly/tuyauDB in order to keep
 // its local in-memory cache in sync with a TuyauDB store.
 type Tuyau struct {
-	tc tuyau_client.Client
+	c *tuyau_client.Client
 
 	schems map[string]*schemas.ProtobufSchema
 	// reverse-mapping of fully-qualified names to UIDs
 	revmap map[string][]string
 }
 
-// NewTuyau returns a new Tuyau that uses `tc` as its underlying client for
+// NewTuyau returns a new Tuyau that uses `c` as its underlying client for
 // accessing a TuyauDB store.
 //
 // It is the caller's responsibility to close the client once he's done with it.
-func NewTuyau(tc tuyau_client.Client) *Tuyau {
+func NewTuyau(c *tuyau_client.Client) *Tuyau {
 	return &Tuyau{
-		tc:     tc,
+		c:      c,
 		schems: map[string]*schemas.ProtobufSchema{},
 		revmap: map[string][]string{},
 	}
@@ -71,7 +71,7 @@ func (t *Tuyau) Get(uid string) (map[string]*schemas.ProtobufSchema, error) {
 	if s, ok := schems[uid]; ok { // try the in-memory cache first..
 		schems[uid] = s
 	} else { // ..then fallback on the remote tuyauDB store
-		b, err := t.tc.Get(uid)
+		b, err := t.c.Get(uid)
 		if err != nil {
 			return nil, errors.Wrapf(err, "`%s`: schema not found", uid)
 		}
@@ -103,7 +103,7 @@ func (t *Tuyau) Get(uid string) (map[string]*schemas.ProtobufSchema, error) {
 	for depUID := range psNotFound {
 		psToFetch = append(psToFetch, depUID)
 	}
-	blobs, err := t.tc.GetMulti(psToFetch)
+	blobs, err := t.c.GetMulti(psToFetch)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -164,5 +164,5 @@ func (t *Tuyau) Put(pss ...*schemas.ProtobufSchema) error {
 		t.schems[uid] = ps
 		t.revmap[ps.GetFQName()] = append(t.revmap[ps.GetFQName()], uid)
 	}
-	return t.tc.Push(blobs...)
+	return t.c.Push(blobs...)
 }

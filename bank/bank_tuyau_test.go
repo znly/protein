@@ -39,9 +39,10 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 
 	// build the underlying TuyauDB components: Client{Pipe, KV}
 	bufSize := uint(len(schemas) + 1) // cannot block that way
-	cs, err := tuyau_client.New(tuyau_client.TYPE_SIMPLE,
+	cs, err := tuyau_client.New(
 		tuyau_pipe.NewRAMConstructor(bufSize),
 		tuyau_kv.NewRAMConstructor(),
+		nil,
 	)
 	assert.Nil(t, err)
 	assert.NotNil(t, cs)
@@ -50,7 +51,7 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	// components (i.e. what's pushed into the pipe should end up in the kv
 	// store)
 	ctx, canceller := context.WithCancel(context.Background())
-	s, err := tuyau_service.NewSimple(cs, 10)
+	s, err := tuyau_service.New(cs, 10)
 	assert.Nil(t, err)
 	assert.NotNil(t, s)
 	go s.Run(ctx)
@@ -100,7 +101,8 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	assert.Equal(t, 1, len(schemas)) // `.test.TestSchema.DepsEntry` only
 
 	// destroy the underlying TuyauDB components
-	err1, err2 := cs.Close()
+	err1, err2, err3 := cs.Close()
 	assert.Nil(t, err1)
 	assert.Nil(t, err2)
+	assert.Nil(t, err3)
 }
