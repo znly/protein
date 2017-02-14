@@ -39,7 +39,7 @@ type Tuyau struct {
 // accessing a TuyauDB store.
 //
 // It is the caller's responsibility to close the client once he's done with it.
-func NewTuyau(c *tuyau_client.Client) *Tuyau {
+func NewTuyau(c *tuyau_client.Client) Bank {
 	return &Tuyau{
 		c:      c,
 		schems: map[string]*schemas.ProtobufSchema{},
