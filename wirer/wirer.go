@@ -34,6 +34,6 @@ import (
 type Wirer interface {
 	Encode(o proto.Message) ([]byte, error)
 
-	DecodeStruct(payload []byte, structType reflect.Type) (*reflect.Value, error)
+	DecodeStruct(payload []byte) (*reflect.Value, error)
 	DecodeMessage(payload []byte, dst proto.Message) error
 }

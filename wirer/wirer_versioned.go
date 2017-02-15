@@ -114,6 +114,7 @@ func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
 
 // -----------------------------------------------------------------------------
 
+// TODO(cmc): doc & test
 func (v *Versioned) DecodeMessage(payload []byte, dst proto.Message) error {
 	var ps schemas.ProtobufPayload
 	if err := proto.Unmarshal(payload, &ps); err != nil {

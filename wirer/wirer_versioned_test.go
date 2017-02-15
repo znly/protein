@@ -61,9 +61,11 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	// build the actual Bank that integrates with the TuyauDB Client
 	ty := bank.NewTuyau(cs)
 	go func() {
+		schemsL := make([]*schemas.ProtobufSchema, 0, len(schems))
 		for _, ps := range schems {
-			assert.Nil(t, ty.Put(ps)) // feed it all the local schemas
+			schemsL = append(schemsL, ps)
 		}
+		assert.Nil(t, ty.Put(schemsL...)) // feed it all the local schemas
 		time.Sleep(time.Millisecond * 20)
 		canceller() // we're done
 	}()
