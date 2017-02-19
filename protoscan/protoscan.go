@@ -15,12 +15,12 @@
 package protoscan
 
 import (
+	"os"
 	"reflect"
 	"strings"
 	"unsafe"
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
 	"github.com/znly/protein/protobuf/schemas"
 	"github.com/znly/protein/protoscan/internal/objfile"
@@ -160,7 +160,7 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*schemas.ProtobufSchema, e
 func BindProtofileSymbols() (map[string]*map[string][]byte, error) {
 	var protoFilesBindings map[string]*map[string][]byte
 
-	binPath, err := osext.Executable()
+	binPath, err := os.Executable()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
