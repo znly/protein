@@ -56,7 +56,7 @@ func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
 	// find the first UID associated with the fully-qualified name of `o`
 	uids := v.b.FQNameToUID("." + proto.MessageName(o))
 	if len(uids) <= 0 {
-		return nil, errors.Errorf("`%s`: FQ-name not found in bank")
+		return nil, errors.Errorf("`%s`: FQ-name not found in bank", proto.MessageName(o))
 	}
 	// wrap the marshaled payload within a ProtobufPayload message
 	pp := &schemas.ProtobufPayload{
