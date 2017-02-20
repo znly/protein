@@ -62,7 +62,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	ty := bank.NewTuyau(cs)
 	go func() {
 		for _, ps := range schemas {
-			assert.Nil(t, ty.Put(ps)) // feed it all the local schemas
+			assert.Nil(t, ty.Put(context.Background(), ps)) // feed it all the local schemas
 		}
 		time.Sleep(time.Millisecond * 20)
 		canceller() // we're done

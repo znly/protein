@@ -15,6 +15,7 @@
 package protostruct
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -35,7 +36,7 @@ import (
 func CreateStructType(
 	b bank.Bank, schemaUID string,
 ) (*reflect.Type, error) {
-	pss, err := b.Get(schemaUID)
+	pss, err := b.Get(context.Background(), schemaUID)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
