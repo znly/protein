@@ -65,7 +65,8 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 		for _, ps := range schems {
 			schemsL = append(schemsL, ps)
 		}
-		assert.Nil(t, ty.Put(schemsL...)) // feed it all the local schemas
+		// feed it all the local schemas
+		assert.Nil(t, ty.Put(context.Background(), schemsL...))
 		time.Sleep(time.Millisecond * 20)
 		canceller() // we're done
 	}()

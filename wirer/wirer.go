@@ -28,7 +28,6 @@ import (
 // The default implementation, as seen in wirer/wirer_versioned.go,
 // implements a Wirer that integrates with a Bank in order to augment the
 // protobuf payloads that it encodes with additional versioning metadata.
-//
 // These metadata are then used by the internal decoder of the versioned Wirer
 // to determinate how to decode an incoming payload on the wire.
 type Wirer interface {
