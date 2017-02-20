@@ -15,6 +15,8 @@
 package bank
 
 import (
+	"context"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/znly/protein/protobuf/schemas"
@@ -65,14 +67,14 @@ func NewTuyau(c *tuyau_client.Client) Bank {
 //   round-trips.
 //   A "schemas not found" error is returned if one or more dependencies couldn't
 //   be found.
-func (t *Tuyau) Get(uid string) (map[string]*schemas.ProtobufSchema, error) {
+func (t *Tuyau) Get(ctx context.Context, uid string) (map[string]*schemas.ProtobufSchema, error) {
 	schems := map[string]*schemas.ProtobufSchema{}
 
 	// get root schema
 	if s, ok := schems[uid]; ok { // try the in-memory cache first..
 		schems[uid] = s
 	} else { // ..then fallback on the remote tuyauDB store
-		b, err := t.c.Get(uid)
+		b, err := t.c.Get(ctx, uid)
 		if err != nil {
 			return nil, errors.Wrapf(err, "`%s`: schema not found", uid)
 		}
@@ -95,7 +97,7 @@ func (t *Tuyau) Get(uid string) (map[string]*schemas.ProtobufSchema, error) {
 		}
 		psNotFound[depUID] = struct{}{}
 	}
-	if len(psNotFound) <= 0 { // found everything need in local cache!
+	if len(psNotFound) <= 0 { // found everything needed in local cache!
 		return schems, nil
 	}
 
@@ -104,7 +106,7 @@ func (t *Tuyau) Get(uid string) (map[string]*schemas.ProtobufSchema, error) {
 	for depUID := range psNotFound {
 		psToFetch = append(psToFetch, depUID)
 	}
-	blobs, err := t.c.GetMulti(psToFetch)
+	blobs, err := t.c.GetMulti(ctx, psToFetch)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -151,7 +153,7 @@ func (t *Tuyau) FQNameToUID(fqName string) []string { return t.revmap[fqName] }
 // TuyauDB store.
 //
 // TODO(cmc): note about CAS that doesn't matter here
-func (t *Tuyau) Put(pss ...*schemas.ProtobufSchema) error {
+func (t *Tuyau) Put(ctx context.Context, pss ...*schemas.ProtobufSchema) error {
 	blobs := make([]*tuyau_schemas.Blob, 0, len(pss))
 	var b []byte
 	var err error
@@ -167,15 +169,15 @@ func (t *Tuyau) Put(pss ...*schemas.ProtobufSchema) error {
 		t.schems[uid] = ps
 		t.revmap[ps.GetFQName()] = append(t.revmap[ps.GetFQName()], uid)
 	}
-	if err := t.c.Push(blobs...); err != nil {
+	if err := t.c.Push(ctx, blobs...); err != nil {
 		return errors.WithStack(err)
 	}
-	if err := t.c.SetMulti(blobs); err != nil {
+	if err := t.c.SetMulti(ctx, blobs); err != nil {
 		if errors.Cause(err) != tuyau_kv.ErrOpNotSupported {
 			return errors.WithStack(err)
 		}
 		for _, b := range blobs {
-			if err := t.c.Set(b); err != nil {
+			if err := t.c.Set(ctx, b); err != nil {
 				return errors.WithStack(err)
 			}
 		}

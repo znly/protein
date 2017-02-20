@@ -64,7 +64,7 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 		for _, ps := range schems {
 			schemsL = append(schemsL, ps)
 		}
-		assert.Nil(t, ty.Put(schemsL...)) // feed it all the local schemas
+		assert.Nil(t, ty.Put(context.Background(), schemsL...)) // feed it all the local schemas
 		time.Sleep(time.Millisecond * 20)
 		canceller() // we're done
 	}()
@@ -87,7 +87,7 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	assert.NotEmpty(t, revUIDs)
 	assert.Equal(t, 1, len(revUIDs))
 	assert.Equal(t, expectedUID, revUIDs[0])
-	schems, err = ty.Get(revUIDs[0])
+	schems, err = ty.Get(context.Background(), revUIDs[0])
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schems)
 	assert.Equal(t, 2, len(schems)) // `.test.TestSchema` + nested `DepsEntry`
@@ -98,14 +98,8 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	assert.NotEmpty(t, revUIDs)
 	assert.Equal(t, 1, len(revUIDs))
 	assert.Equal(t, expectedUID, revUIDs[0])
-	schems, err = ty.Get(revUIDs[0])
+	schems, err = ty.Get(context.Background(), revUIDs[0])
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schems)
 	assert.Equal(t, 1, len(schems)) // `.test.TestSchema.DepsEntry` only
-
-	// destroy the underlying TuyauDB components
-	err1, err2, err3 := cs.Close()
-	assert.Nil(t, err1)
-	assert.Nil(t, err2)
-	assert.Nil(t, err3)
 }
