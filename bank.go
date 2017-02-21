@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bank
+package protein
 
-import (
-	"context"
-
-	"github.com/znly/protein/protobuf/schemas"
-)
+import "context"
 
 // -----------------------------------------------------------------------------
 
 // Implementers of the Bank interface expose methods to store and retrieve
 // ProtobufSchemas.
 //
-// The default implementation, as seen in bank/tuyau.go, integrates with
+// The default implementation, as seen in bank/bank_tuyau.go, integrates with
 // znly/tuyauDB in order to keep its local in-memory cache in sync with a
 // TuyauDB store.
+//
+// TODO(cmc): better doc.
 type Bank interface {
-	Get(ctx context.Context, uid string) (map[string]*schemas.ProtobufSchema, error)
+	Get(ctx context.Context, uid string) (map[string]*ProtobufSchema, error)
 	FQNameToUID(fqName string) []string
-	Put(ctx context.Context, ps ...*schemas.ProtobufSchema) error
+	Put(ctx context.Context, ps ...*ProtobufSchema) error
 }

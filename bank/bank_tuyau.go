@@ -19,9 +19,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/znly/protein/protobuf/schemas"
+	"github.com/znly/protein"
 	tuyau "github.com/znly/tuyauDB"
-	tuyau_client "github.com/znly/tuyauDB/client"
 )
 
 // -----------------------------------------------------------------------------
@@ -29,9 +28,9 @@ import (
 // Tuyau implements a Bank that integrates with znly/tuyauDB in order to keep
 // its local in-memory cache in sync with a TuyauDB store.
 type Tuyau struct {
-	c *tuyau_client.Client
+	c *tuyau.Client
 
-	schems map[string]*schemas.ProtobufSchema
+	schemas map[string]*protein.ProtobufSchema
 	// reverse-mapping of fully-qualified names to UIDs
 	revmap map[string][]string
 }
@@ -40,11 +39,11 @@ type Tuyau struct {
 // accessing a TuyauDB store.
 //
 // It is the caller's responsibility to close the client once he's done with it.
-func NewTuyau(c *tuyau_client.Client) Bank {
+func NewTuyau(c *tuyau.Client) *Tuyau {
 	return &Tuyau{
-		c:      c,
-		schems: map[string]*schemas.ProtobufSchema{},
-		revmap: map[string][]string{},
+		c:       c,
+		schemas: map[string]*protein.ProtobufSchema{},
+		revmap:  map[string][]string{},
 	}
 }
 
@@ -66,38 +65,38 @@ func NewTuyau(c *tuyau_client.Client) Bank {
 //   round-trips.
 //   A "schemas not found" error is returned if one or more dependencies couldn't
 //   be found.
-func (t *Tuyau) Get(ctx context.Context, uid string) (map[string]*schemas.ProtobufSchema, error) {
-	schems := map[string]*schemas.ProtobufSchema{}
+func (t *Tuyau) Get(ctx context.Context, uid string) (map[string]*protein.ProtobufSchema, error) {
+	schemas := map[string]*protein.ProtobufSchema{}
 
 	// get root schema
-	if s, ok := schems[uid]; ok { // try the in-memory cache first..
-		schems[uid] = s
+	if s, ok := schemas[uid]; ok { // try the in-memory cache first..
+		schemas[uid] = s
 	} else { // ..then fallback on the remote tuyauDB store
 		b, err := t.c.Get(ctx, uid)
 		if err != nil {
 			return nil, errors.Wrapf(err, "`%s`: schema not found", uid)
 		}
-		var root schemas.ProtobufSchema
+		var root protein.ProtobufSchema
 		if err := proto.Unmarshal(b.Data, &root); err != nil {
 			return nil, errors.Wrapf(err, "`%s`: invalid schema", uid)
 		}
-		schems[uid] = &root
+		schemas[uid] = &root
 	}
 
 	// get dependency schemas
-	deps := schems[uid].GetDeps()
+	deps := schemas[uid].GetDeps()
 
 	// try the in-memory cache first..
 	psNotFound := make(map[string]struct{}, len(deps))
 	for depUID := range deps {
-		if s, ok := schems[depUID]; ok {
-			schems[depUID] = s
+		if s, ok := schemas[depUID]; ok {
+			schemas[depUID] = s
 			continue
 		}
 		psNotFound[depUID] = struct{}{}
 	}
 	if len(psNotFound) <= 0 { // found everything needed in local cache!
-		return schems, nil
+		return schemas, nil
 	}
 
 	// ..then fallback on the remote tuyauDB store
@@ -120,14 +119,14 @@ func (t *Tuyau) Get(ctx context.Context, uid string) (map[string]*schemas.Protob
 		return nil, err
 	}
 	for _, b := range blobs {
-		var ps schemas.ProtobufSchema
+		var ps protein.ProtobufSchema
 		if err := proto.Unmarshal(b.Data, &ps); err != nil {
 			return nil, errors.Wrapf(err, "`%s`: invalid schema (dependency)", b.Key)
 		}
-		schems[b.Key] = &ps
+		schemas[b.Key] = &ps
 	}
 
-	return schems, nil
+	return schemas, nil
 }
 
 // FQNameToUID returns the UID associated with the given fully-qualified name.
@@ -152,7 +151,7 @@ func (t *Tuyau) FQNameToUID(fqName string) []string { return t.revmap[fqName] }
 // TuyauDB store.
 //
 // TODO(cmc): note about CAS that doesn't matter here
-func (t *Tuyau) Put(ctx context.Context, pss ...*schemas.ProtobufSchema) error {
+func (t *Tuyau) Put(ctx context.Context, pss ...*protein.ProtobufSchema) error {
 	blobs := make([]*tuyau.Blob, 0, len(pss))
 	var b []byte
 	var err error
@@ -165,7 +164,7 @@ func (t *Tuyau) Put(ctx context.Context, pss ...*schemas.ProtobufSchema) error {
 		blobs = append(blobs, &tuyau.Blob{
 			Key: uid, Data: b, TTL: 0, Flags: 0,
 		})
-		t.schems[uid] = ps
+		t.schemas[uid] = ps
 		t.revmap[ps.GetFQName()] = append(t.revmap[ps.GetFQName()], uid)
 	}
 	if err := t.c.Push(ctx, blobs...); err != nil {

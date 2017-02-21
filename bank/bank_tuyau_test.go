@@ -20,14 +20,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/znly/protein"
 	"github.com/znly/protein/protoscan"
-	tuyau_client "github.com/znly/tuyauDB/client"
+	tuyau "github.com/znly/tuyauDB"
 	tuyau_kv "github.com/znly/tuyauDB/kv"
 	tuyau_pipe "github.com/znly/tuyauDB/pipe"
 	tuyau_service "github.com/znly/tuyauDB/service"
 
-	"github.com/znly/protein/protobuf/schemas"
-	_ "github.com/znly/protein/protobuf/schemas/test"
+	_ "github.com/znly/protein/protobuf/test"
 )
 
 // -----------------------------------------------------------------------------
@@ -40,7 +40,7 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 
 	// build the underlying TuyauDB components: Client{Pipe, KV}
 	bufSize := uint(len(schems) + 1) // cannot block that way
-	cs, err := tuyau_client.New(
+	cs, err := tuyau.NewClient(
 		tuyau_pipe.NewRAMConstructor(bufSize),
 		tuyau_kv.NewRAMConstructor(),
 		nil,
@@ -60,7 +60,7 @@ func TestBank_Tuyau_RAM_PutGet(t *testing.T) {
 	// build the actual Bank that integrates with the TuyauDB Client
 	ty := NewTuyau(cs)
 	go func() {
-		schemsL := make([]*schemas.ProtobufSchema, 0, len(schems))
+		schemsL := make([]*protein.ProtobufSchema, 0, len(schems))
 		for _, ps := range schems {
 			schemsL = append(schemsL, ps)
 		}
