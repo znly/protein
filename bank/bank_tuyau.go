@@ -20,9 +20,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/znly/protein/protobuf/schemas"
+	tuyau "github.com/znly/tuyauDB"
 	tuyau_client "github.com/znly/tuyauDB/client"
-	tuyau_kv "github.com/znly/tuyauDB/kv"
-	tuyau_schemas "github.com/znly/tuyauDB/protobuf/schemas"
 )
 
 // -----------------------------------------------------------------------------
@@ -154,7 +153,7 @@ func (t *Tuyau) FQNameToUID(fqName string) []string { return t.revmap[fqName] }
 //
 // TODO(cmc): note about CAS that doesn't matter here
 func (t *Tuyau) Put(ctx context.Context, pss ...*schemas.ProtobufSchema) error {
-	blobs := make([]*tuyau_schemas.Blob, 0, len(pss))
+	blobs := make([]*tuyau.Blob, 0, len(pss))
 	var b []byte
 	var err error
 	for _, ps := range pss {
@@ -163,7 +162,7 @@ func (t *Tuyau) Put(ctx context.Context, pss ...*schemas.ProtobufSchema) error {
 			return errors.WithStack(err)
 		}
 		uid := ps.GetUID()
-		blobs = append(blobs, &tuyau_schemas.Blob{
+		blobs = append(blobs, &tuyau.Blob{
 			Key: uid, Data: b, TTL: 0, Flags: 0,
 		})
 		t.schems[uid] = ps
@@ -173,7 +172,7 @@ func (t *Tuyau) Put(ctx context.Context, pss ...*schemas.ProtobufSchema) error {
 		return errors.WithStack(err)
 	}
 	if err := t.c.SetMulti(ctx, blobs); err != nil {
-		if errors.Cause(err) != tuyau_kv.ErrOpNotSupported {
+		if errors.Cause(err) != tuyau.KVErrOpNotSupported {
 			return errors.WithStack(err)
 		}
 		for _, b := range blobs {
