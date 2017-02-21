@@ -1,6 +1,6 @@
 PATH_PROTOS=${GOPATH}/src/github.com/znly/protein/protobuf
-PATH_SCHEMAS=${PATH_PROTOS}/schemas
-PATH_SCHEMAS_TEST=${PATH_SCHEMAS}/test
+PATH_SCHEMAS=${PATH_PROTOS}/..
+PATH_SCHEMAS_TEST=${PATH_PROTOS}/test
 
 SCHEMAS=                   \
 	${PATH_PROTOS}/protobuf_payload.proto \

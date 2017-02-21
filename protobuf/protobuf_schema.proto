@@ -14,7 +14,7 @@
 
 syntax = "proto3";
 
-package schemas;
+package protein;
 
 import "google/protobuf/descriptor.proto";
 import "protobuf/gogoproto/gogo.proto";
