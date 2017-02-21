@@ -21,11 +21,11 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/znly/protein"
 	"github.com/znly/protein/bank"
-	"github.com/znly/protein/protobuf/schemas"
-	"github.com/znly/protein/protobuf/schemas/test"
+	"github.com/znly/protein/protobuf/test"
 	"github.com/znly/protein/protoscan"
-	tuyau_client "github.com/znly/tuyauDB/client"
+	tuyau "github.com/znly/tuyauDB"
 	tuyau_kv "github.com/znly/tuyauDB/kv"
 	tuyau_pipe "github.com/znly/tuyauDB/pipe"
 	tuyau_service "github.com/znly/tuyauDB/service"
@@ -39,9 +39,9 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schems)
 
-	// build the underlying TuyauDB components: Client{Pipe, KV}
+	// build the underlying TuyauDB components: Client{Pipe, KV, CAS}
 	bufSize := uint(len(schems) + 1) // cannot block that way
-	cs, err := tuyau_client.New(
+	cs, err := tuyau.NewClient(
 		tuyau_pipe.NewRAMConstructor(bufSize),
 		tuyau_kv.NewRAMConstructor(),
 		nil,
@@ -61,7 +61,7 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	// build the actual Bank that integrates with the TuyauDB Client
 	ty := bank.NewTuyau(cs)
 	go func() {
-		schemsL := make([]*schemas.ProtobufSchema, 0, len(schems))
+		schemsL := make([]*protein.ProtobufSchema, 0, len(schems))
 		for _, ps := range schems {
 			schemsL = append(schemsL, ps)
 		}
@@ -92,7 +92,7 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, payload)
 
-	var pp schemas.ProtobufPayload
+	var pp protein.ProtobufPayload
 	var ts test.TestSchema
 	assert.Nil(t, proto.Unmarshal(payload, &pp))
 	uidExpected := "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"

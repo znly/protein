@@ -20,8 +20,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/znly/protein/bank"
-	"github.com/znly/protein/protobuf/schemas"
+	"github.com/znly/protein"
 )
 
 // -----------------------------------------------------------------------------
@@ -32,10 +31,10 @@ import (
 // These metadata are then used by the internal decoder of the versioned Wirer
 // to determinate how to decode an incoming payload on the wire.
 type Versioned struct {
-	b bank.Bank
+	b protein.Bank
 }
 
-func NewVersioned(b bank.Bank) *Versioned { return &Versioned{b: b} }
+func NewVersioned(b protein.Bank) *Versioned { return &Versioned{b: b} }
 
 // -----------------------------------------------------------------------------
 
@@ -59,7 +58,7 @@ func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
 		return nil, errors.Errorf("`%s`: FQ-name not found in bank", proto.MessageName(o))
 	}
 	// wrap the marshaled payload within a ProtobufPayload message
-	pp := &schemas.ProtobufPayload{
+	pp := &protein.ProtobufPayload{
 		UID:     uids[0],
 		Payload: payload,
 	}
@@ -116,7 +115,7 @@ func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
 
 // TODO(cmc): doc & test
 func (v *Versioned) DecodeMessage(payload []byte, dst proto.Message) error {
-	var ps schemas.ProtobufPayload
+	var ps protein.ProtobufPayload
 	if err := proto.Unmarshal(payload, &ps); err != nil {
 		return errors.WithStack(err)
 	}
