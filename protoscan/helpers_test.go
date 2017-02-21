@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/znly/protein/protobuf/schemas/test"
+	"github.com/znly/protein/protobuf/test"
 )
 
 // -----------------------------------------------------------------------------

@@ -22,7 +22,7 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/stretchr/testify/assert"
 
-	_ "github.com/znly/protein/protobuf/schemas/test"
+	_ "github.com/znly/protein/protobuf/test"
 )
 
 // -----------------------------------------------------------------------------
