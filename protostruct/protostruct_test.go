@@ -23,12 +23,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/znly/protein/bank"
 	"github.com/znly/protein/protoscan"
-	tuyau_client "github.com/znly/tuyauDB/client"
+	tuyau "github.com/znly/tuyauDB"
 	tuyau_kv "github.com/znly/tuyauDB/kv"
 	tuyau_pipe "github.com/znly/tuyauDB/pipe"
 	tuyau_service "github.com/znly/tuyauDB/service"
 
-	"github.com/znly/protein/protobuf/schemas/test"
+	"github.com/znly/protein/protobuf/test"
 )
 
 // -----------------------------------------------------------------------------
@@ -39,9 +39,9 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schemas)
 
-	// build the underlying TuyauDB components: Client{Pipe, KV}
+	// build the underlying TuyauDB components: Client{Pipe, KV, CAS}
 	bufSize := uint(len(schemas) + 1) // cannot block that way
-	cs, err := tuyau_client.New(
+	cs, err := tuyau.NewClient(
 		tuyau_pipe.NewRAMConstructor(bufSize),
 		tuyau_kv.NewRAMConstructor(),
 		nil,
@@ -78,7 +78,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	// the RAM-based Pipe, our Bank should now be able to retrieve any schema
 	// directly from its underlying KV store.
 
-	// ------- ^^^^^ need helpers for all this boilerplate
+	// ------- ^^^^^ TODO(cmc): need helpers for all this boilerplate.
 
 	expectedType := reflect.TypeOf(test.TestSchemaXXX{})
 	assert.True(t, expectedType.Kind() == reflect.Struct)
