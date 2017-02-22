@@ -38,7 +38,12 @@ func NewVersioned(b protein.Bank) *Versioned { return &Versioned{b: b} }
 
 // -----------------------------------------------------------------------------
 
-// Encode marshals the given protobuf message then wraps it up into a
+// TODO(cmc): Explain why this is necessary.
+func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
+	return v.EncodeWithName(o, proto.MessageName(o))
+}
+
+// EncodeWithName marshals the given protobuf message then wraps it up into a
 // ProtobufPayload object that adds additional versioning metadata.
 //
 // Encode uses the message's fully-qualified name to reverse-lookup its UID.
@@ -46,16 +51,20 @@ func NewVersioned(b protein.Bank) *Versioned { return &Versioned{b: b} }
 // of the associated message are currently availaible in the bank.
 // When this happens, the first UID from the returned list will be used (and
 // since this list is randomly-ordered, effectively a random UID will be used).
-func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
+//
+// TODO(cmc): explain this mess.
+func (v *Versioned) EncodeWithName(
+	o proto.Message, fqName string,
+) ([]byte, error) {
 	// marshal the actual protobuf message
 	payload, err := proto.Marshal(o)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 	// find the first UID associated with the fully-qualified name of `o`
-	uids := v.b.FQNameToUID("." + proto.MessageName(o))
+	uids := v.b.FQNameToUID("." + fqName)
 	if len(uids) <= 0 {
-		return nil, errors.Errorf("`%s`: FQ-name not found in bank", proto.MessageName(o))
+		return nil, errors.Errorf("`%s`: FQ-name not found in bank", fqName)
 	}
 	// wrap the marshaled payload within a ProtobufPayload message
 	pp := &protein.ProtobufPayload{

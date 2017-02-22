@@ -32,6 +32,7 @@ import (
 // to determinate how to decode an incoming payload on the wire.
 type Wirer interface {
 	Encode(o proto.Message) ([]byte, error)
+	EncodeWithName(o proto.Message, fqName string) ([]byte, error)
 
 	DecodeStruct(payload []byte) (*reflect.Value, error)
 	DecodeMessage(payload []byte, dst proto.Message) error

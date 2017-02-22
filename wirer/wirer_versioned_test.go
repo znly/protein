@@ -56,7 +56,7 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	s, err := tuyau_service.New(cs, 10)
 	assert.Nil(t, err)
 	assert.NotNil(t, s)
-	go s.Run(ctx)
+	go s.Run(ctx, 10)
 
 	// build the actual Bank that integrates with the TuyauDB Client
 	ty := bank.NewTuyau(cs)
