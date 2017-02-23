@@ -33,6 +33,8 @@ import (
 
 // -----------------------------------------------------------------------------
 
+// TODO(cmc): add benchmarks
+
 func TestWirer_Versioned_Encode(t *testing.T) {
 	// fetched locally instanciated schemas
 	schems, err := protoscan.ScanSchemas()

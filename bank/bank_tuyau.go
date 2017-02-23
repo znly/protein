@@ -171,9 +171,10 @@ func (t *Tuyau) Put(ctx context.Context, pss ...*protein.ProtobufSchema) error {
 		return errors.WithStack(err)
 	}
 	if err := t.c.SetMulti(ctx, blobs); err != nil {
-		if errors.Cause(err) != tuyau.KVErrOpNotSupported {
-			return errors.WithStack(err)
-		}
+		// NOTE: if SetMulti fails for any reason, this fallbacks to multiple
+		//       Set operations. This doesn't only check for KVErrOpNotSupported
+		//       errors because some redis implementations such as Netflix's
+		//       Dynomite simply crash the connection if they don't support it.
 		for _, b := range blobs {
 			if err := t.c.Set(ctx, b); err != nil {
 				return errors.WithStack(err)
