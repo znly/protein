@@ -1,0 +1,12 @@
+global
+    linkname mess with vendoring :/
+    vendoring at root folder mess?!
+
+protostruct
+    cover all edge cases
+
+wirer
+    no reflect.value pointer
+
+bank
+    RAM implem
