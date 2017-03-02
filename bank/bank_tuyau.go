@@ -155,6 +155,8 @@ func (t *Tuyau) Put(ctx context.Context, pss ...*protein.ProtobufSchema) error {
 	blobs := make([]*tuyau.Blob, 0, len(pss))
 	var b []byte
 	var err error
+
+	// in-memory push
 	for _, ps := range pss {
 		b, err = proto.Marshal(ps)
 		if err != nil {
@@ -167,9 +169,13 @@ func (t *Tuyau) Put(ctx context.Context, pss ...*protein.ProtobufSchema) error {
 		t.schemas[uid] = ps
 		t.revmap[ps.GetFQName()] = append(t.revmap[ps.GetFQName()], uid)
 	}
-	if err := t.c.Push(ctx, blobs...); err != nil {
+
+	// asynchronous push
+	if err := t.c.Push(ctx, nil, blobs...); err != nil {
 		return errors.WithStack(err)
 	}
+
+	// synchronous push
 	if err := t.c.SetMulti(ctx, blobs); err != nil {
 		// NOTE: if SetMulti fails for any reason, this fallbacks to multiple
 		//       Set operations. This doesn't only check for KVErrOpNotSupported
