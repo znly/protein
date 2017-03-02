@@ -25,10 +25,10 @@ import (
 	"github.com/znly/protein/bank"
 	"github.com/znly/protein/protobuf/test"
 	"github.com/znly/protein/protoscan"
-	tuyau "github.com/znly/tuyauDB"
-	tuyau_kv "github.com/znly/tuyauDB/kv"
-	tuyau_pipe "github.com/znly/tuyauDB/pipe"
-	tuyau_service "github.com/znly/tuyauDB/service"
+	tuyaudb "github.com/znly/tuyauDB"
+	tuyaudb_kv "github.com/znly/tuyauDB/kv"
+	tuyaudb_pipe "github.com/znly/tuyauDB/pipe"
+	tuyaudb_service "github.com/znly/tuyauDB/service"
 )
 
 // -----------------------------------------------------------------------------
@@ -43,9 +43,9 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 
 	// build the underlying TuyauDB components: Client{Pipe, KV, CAS}
 	bufSize := uint(len(schems) + 1) // cannot block that way
-	cs, err := tuyau.NewClient(
-		tuyau_pipe.NewRAMConstructor(bufSize),
-		tuyau_kv.NewRAMConstructor(),
+	cs, err := tuyaudb.NewClient(
+		tuyaudb_pipe.NewRAMConstructor(bufSize),
+		tuyaudb_kv.NewRAMConstructor(),
 		nil,
 	)
 	assert.Nil(t, err)
@@ -55,7 +55,7 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 	// components (i.e. what's pushed into the pipe should en up in the kv
 	// store)
 	ctx, canceller := context.WithCancel(context.Background())
-	s, err := tuyau_service.New(cs, 10)
+	s, err := tuyaudb_service.New(cs, 10, false)
 	assert.Nil(t, err)
 	assert.NotNil(t, s)
 	go s.Run(ctx, 10)
