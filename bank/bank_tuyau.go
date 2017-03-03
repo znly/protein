@@ -69,7 +69,7 @@ func (t *Tuyau) Get(ctx context.Context, uid string) (map[string]*protein.Protob
 	schemas := map[string]*protein.ProtobufSchema{}
 
 	// get root schema
-	if s, ok := schemas[uid]; ok { // try the in-memory cache first..
+	if s, ok := t.schemas[uid]; ok { // try the in-memory cache first..
 		schemas[uid] = s
 	} else { // ..then fallback on the remote tuyauDB store
 		b, err := t.c.Get(ctx, uid)
@@ -81,6 +81,7 @@ func (t *Tuyau) Get(ctx context.Context, uid string) (map[string]*protein.Protob
 			return nil, errors.Wrapf(err, "`%s`: invalid schema", uid)
 		}
 		schemas[uid] = &root
+		t.schemas[uid] = &root
 	}
 
 	// get dependency schemas
@@ -89,7 +90,7 @@ func (t *Tuyau) Get(ctx context.Context, uid string) (map[string]*protein.Protob
 	// try the in-memory cache first..
 	psNotFound := make(map[string]struct{}, len(deps))
 	for depUID := range deps {
-		if s, ok := schemas[depUID]; ok {
+		if s, ok := t.schemas[depUID]; ok {
 			schemas[depUID] = s
 			continue
 		}
@@ -124,6 +125,7 @@ func (t *Tuyau) Get(ctx context.Context, uid string) (map[string]*protein.Protob
 			return nil, errors.Wrapf(err, "`%s`: invalid schema (dependency)", b.Key)
 		}
 		schemas[b.Key] = &ps
+		t.schemas[b.Key] = &ps
 	}
 
 	return schemas, nil
