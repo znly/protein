@@ -21,6 +21,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/znly/protein"
+	"github.com/znly/protein/protostruct"
 )
 
 // -----------------------------------------------------------------------------
@@ -96,21 +97,28 @@ func unmarshalType(b *proto.Buffer,
 // DecodeStruct decodes the `payload` into a dynamically-defined structure
 // type.
 func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
-	var structType reflect.Type
-	if structType.Kind() != reflect.Struct {
+	var metaPayload protein.ProtobufPayload
+	if err := proto.Unmarshal(payload, &metaPayload); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	structType, err := protostruct.CreateStructType(v.b, metaPayload.GetUID())
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if (*structType).Kind() != reflect.Struct {
 		return nil, errors.Errorf("`%s`: not a struct type", structType)
 	}
 
 	// allocate a new structure using the given type definition, the
 	// returned `reflect.Value`'s underlying type is a pointer to struct
-	obj := reflect.New(structType)
+	obj := reflect.New(*structType)
 
 	b := proto.NewBuffer(payload)
 	unmarshalType(b,
 		// the structure definition, computed at runtime
-		structType,
+		*structType,
 		// the protobuf properties of the struct, computed via its struct tags
-		proto.GetProperties(structType),
+		proto.GetProperties(*structType),
 		// is_group, deprecated
 		false,
 		// the address we want to deserialize to
