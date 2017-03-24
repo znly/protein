@@ -97,11 +97,11 @@ func unmarshalType(b *proto.Buffer,
 // DecodeStruct decodes the `payload` into a dynamically-defined structure
 // type.
 func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
-	var metaPayload protein.ProtobufPayload
-	if err := proto.Unmarshal(payload, &metaPayload); err != nil {
+	var pp protein.ProtobufPayload
+	if err := proto.Unmarshal(payload, &pp); err != nil {
 		return nil, errors.WithStack(err)
 	}
-	structType, err := protostruct.CreateStructType(v.b, metaPayload.GetUID())
+	structType, err := protostruct.CreateStructType(v.b, pp.GetUID())
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -113,7 +113,7 @@ func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
 	// returned `reflect.Value`'s underlying type is a pointer to struct
 	obj := reflect.New(*structType)
 
-	b := proto.NewBuffer(payload)
+	b := proto.NewBuffer(pp.GetPayload())
 	unmarshalType(b,
 		// the structure definition, computed at runtime
 		*structType,
