@@ -10,3 +10,12 @@ wirer
 
 bank
     RAM implem
+
+--
+
+v1
+    remove linknames
+    remove reflect.value ptrs
+    simplify banking
+    runtime decoding
+    doc
