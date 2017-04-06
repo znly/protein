@@ -35,3 +35,5 @@ docker.conf.json
 target/
 zlunch/
 yarn.lock
+
+vendor/

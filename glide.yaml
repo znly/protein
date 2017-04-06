@@ -1,0 +1,27 @@
+package: github.com/znly/protein
+import:
+- package: github.com/Sirupsen/logrus
+  version: ^0.11.5
+- package: github.com/fatih/camelcase
+- package: github.com/gogo/protobuf
+  version: ^0.4.0
+  subpackages:
+  - gogoproto
+  - proto
+  - protoc-gen-gogo/descriptor
+  - protoc-gen-gogo/generator
+  - sortkeys
+  - types
+- package: github.com/pkg/errors
+  version: ^0.8.0
+- package: github.com/znly/tuyauDB
+  version: ^0.11.3
+  subpackages:
+  - kv
+  - pipe
+  - service
+testImport:
+- package: github.com/stretchr/testify
+  version: ^1.1.4
+  subpackages:
+  - assert
