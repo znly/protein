@@ -106,7 +106,7 @@ func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
 		return nil, errors.WithStack(err)
 	}
 	if (*structType).Kind() != reflect.Struct {
-		return nil, errors.Errorf("`%s`: not a struct type", structType)
+		return nil, errors.Errorf("`%s`: not a struct type", *structType)
 	}
 
 	// allocate a new structure using the given type definition, the
