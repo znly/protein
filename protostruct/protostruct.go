@@ -270,10 +270,11 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 // `goTag` is actually a method of the `generator.Generator` class, hence the
 // `g` given as first parameter will be used as "this".
 //
-//go:linkname goTag github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag
-func goTag(b *generator.Generator,
-	d *generator.Descriptor, f *descriptor.FieldDescriptorProto, wt string,
-) string
+// Due to the way Go mangles symbol names when using vendoring, the go:linkname
+// clause is automatically generated via linkname-gen[1].
+// [1] https://github.com/znly/linkname-gen.
+//
+//go:generate linkname-gen -symbol "github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag" -def "func goTag(*generator.Generator, *generator.Descriptor, *descriptor.FieldDescriptorProto, string) string"
 
 func fieldTag(
 	d *descriptor.DescriptorProto, f *descriptor.FieldDescriptorProto,
