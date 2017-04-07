@@ -1,3 +1,5 @@
+// +build ignore
+
 // Copyright © 2016 Zenly <hello@zen.ly>.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
