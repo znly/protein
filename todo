@@ -17,3 +17,6 @@ v1
     simplify banking
     runtime decoding
     doc
+    remove the need for proto.MessageName
+    overall, removed the coupling with TuyauDB
+    make wirer root-level?
