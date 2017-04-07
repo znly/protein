@@ -244,7 +244,7 @@ func (v *Versioned) EncodeWithName(
 // directive instructs the compiler to declare a local symbol as an alias
 // for an external one, even if it's private.
 // This allows us to bind to the private `unmarshalType` method of the
-// `generator.Generator` class, which does the actual work of computing the
+// `proto.Buffer` class, which does the actual work of computing the
 // necessary struct tags for a given protobuf field.
 //
 // `unmarshalType` is actually a method of the `proto.Buffer` class, hence the

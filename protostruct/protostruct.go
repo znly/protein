@@ -20,8 +20,6 @@ import (
 	"reflect"
 	"strings"
 
-	_ "unsafe" // go:linkname
-
 	"github.com/fatih/camelcase"
 	"github.com/gogo/protobuf/gogoproto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
