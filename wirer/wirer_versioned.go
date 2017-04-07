@@ -82,17 +82,17 @@ func (v *Versioned) EncodeWithName(
 // directive instructs the compiler to declare a local symbol as an alias
 // for an external one, even if it's private.
 // This allows us to bind to the private `unmarshalType` method of the
-// `proto.Buffer` class, which does the actual work of decoding a binary payload
-// into an instance of the specified `reflect.Type`.
+// `generator.Generator` class, which does the actual work of computing the
+// necessary struct tags for a given protobuf field.
 //
 // `unmarshalType` is actually a method of the `proto.Buffer` class, hence the
 // `b` given as first parameter will be used as "this".
 //
-//go:linkname unmarshalType github.com/gogo/protobuf/proto.(*Buffer).unmarshalType
-func unmarshalType(b *proto.Buffer,
-	st reflect.Type, prop *proto.StructProperties, is_group bool,
-	base unsafe.Pointer, // implicitly casted to a `proto.structPointer`
-) error
+// Due to the way Go mangles symbol names when using vendoring, the go:linkname
+// clause is automatically generated via linkname-gen[1].
+// [1] https://github.com/znly/linkname-gen.
+//
+//go:generate linkname-gen -symbol "github.com/gogo/protobuf/proto.(*Buffer).unmarshalType" -def "func unmarshalType(*proto.Buffer, reflect.Type, *proto.StructProperties, bool, unsafe.Pointer) error"
 
 // DecodeStruct decodes the `payload` into a dynamically-defined structure
 // type.
