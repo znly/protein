@@ -1,5 +1,4 @@
 global
-    linkname mess with vendoring :/
     vendoring at root folder mess?!
 
 protostruct
@@ -14,7 +13,6 @@ bank
 --
 
 v1
-    remove linknames
     remove reflect.value ptrs
     simplify banking
     runtime decoding
