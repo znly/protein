@@ -56,6 +56,8 @@ type descriptorNode struct {
 	hashRecursive []byte
 }
 
+func (dn *descriptorNode) Descr() proto.Message { return dn.descr }
+
 // -----------------------------------------------------------------------------
 
 // A DescriptorTree is a dependency tree of Message/Enum descriptors.

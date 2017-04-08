@@ -54,10 +54,10 @@ func TestTranscoder_localCache(t *testing.T) {
 	assert.NotEmpty(t, revUIDs)
 	assert.Equal(t, 1, len(revUIDs))
 	assert.Equal(t, expectedUID, revUIDs[0])
-	schems, err = trc.get(context.Background(), revUIDs[0])
+	schemas, err := trc.get(context.Background(), revUIDs[0])
 	assert.Nil(t, err)
-	assert.NotEmpty(t, schems)
-	assert.Equal(t, 2, len(schems)) // `.test.TestSchema` + nested `DepsEntry`
+	assert.NotEmpty(t, schemas)
+	assert.Equal(t, 2, len(schemas)) // `.test.TestSchema` + nested `DepsEntry`
 
 	// `.test.TestSchema.DepsEntry` should be in there
 	expectedUID = "PROT-d278f5561f05e68f6e68fcbc6b801d29a69b4bf6044bf3e6242ea8fe388ebd6e"
@@ -65,10 +65,10 @@ func TestTranscoder_localCache(t *testing.T) {
 	assert.NotEmpty(t, revUIDs)
 	assert.Equal(t, 1, len(revUIDs))
 	assert.Equal(t, expectedUID, revUIDs[0])
-	schems, err = trc.get(context.Background(), revUIDs[0])
+	schemas, err = trc.get(context.Background(), revUIDs[0])
 	assert.Nil(t, err)
-	assert.NotEmpty(t, schems)
-	assert.Equal(t, 1, len(schems)) // `.test.TestSchema.DepsEntry` only
+	assert.NotEmpty(t, schemas)
+	assert.Equal(t, 1, len(schemas)) // `.test.TestSchema.DepsEntry` only
 }
 
 // -----------------------------------------------------------------------------

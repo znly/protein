@@ -21,7 +21,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/znly/protein/protoscan"
 )
 
 // -----------------------------------------------------------------------------
@@ -56,7 +55,7 @@ func NewTranscoder(ctx context.Context,
 	getter func(ctx context.Context, uid string) ([]byte, error),
 	setter func(ctx context.Context, uid string, data []byte) error,
 ) (*Transcoder, error) {
-	schemas, err := protoscan.ScanSchemas()
+	schemas, err := ScanSchemas()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
