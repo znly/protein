@@ -15,11 +15,13 @@
 package protein
 
 import (
+	"context"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/znly/protein"
 	"github.com/znly/protein/protobuf/test"
 )
 
@@ -27,7 +29,22 @@ import (
 
 // TODO(cmc): add benchmarks
 
-func TestWirer_Versioned_Encode(t *testing.T) {
+var trc *Transcoder
+
+func TestMain(m *testing.M) {
+	var err error
+	trc, err = NewTranscoder(context.Background(),
+		func(ctx context.Context, uid string) ([]byte, error) { return nil, nil },
+		func(ctx context.Context, uid string, data []byte) error { return nil },
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	os.Exit(m.Run())
+}
+
+func TestTranscoder_Encode(t *testing.T) {
 	tsExpected := &test.TestSchema{
 		Uid:    "test-uuid",
 		FqName: "test-schema",
@@ -35,11 +52,11 @@ func TestWirer_Versioned_Encode(t *testing.T) {
 			"test": "schema",
 		},
 	}
-	payload, err := NewVersioned(ty).Encode(tsExpected)
+	payload, err := trc.Encode(tsExpected)
 	assert.Nil(t, err)
 	assert.NotNil(t, payload)
 
-	var pp protein.ProtobufPayload
+	var pp ProtobufPayload
 	var ts test.TestSchema
 	assert.Nil(t, proto.Unmarshal(payload, &pp))
 	uidExpected := "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"

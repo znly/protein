@@ -52,6 +52,7 @@ func NewTranscoder(ctx context.Context,
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	//schemas := map[string]*ProtobufSchema{}
 
 	if setter == nil || getter == nil {
 		// TODO(cmc): real error
@@ -274,9 +275,8 @@ func (t *Transcoder) EncodeWithName(
 //
 //go:generate linkname-gen -symbol "github.com/gogo/protobuf/proto.(*Buffer).unmarshalType" -def "func unmarshalType(*proto.Buffer, reflect.Type, *proto.StructProperties, bool, unsafe.Pointer) error"
 
-// DecodeStruct decodes the `payload` into a dynamically-defined structure
-// type.
-func (t *Transcoder) DecodeStruct(payload []byte) (*reflect.Value, error) {
+// Decode decodes the `payload` into a dynamically-defined structure type.
+func (t *Transcoder) Decode(payload []byte) (*reflect.Value, error) {
 	var pp ProtobufPayload
 	if err := proto.Unmarshal(payload, &pp); err != nil {
 		return nil, errors.WithStack(err)
@@ -313,7 +313,7 @@ func (t *Transcoder) DecodeStruct(payload []byte) (*reflect.Value, error) {
 // -----------------------------------------------------------------------------
 
 // TODO(cmc): doc & test
-func (t *Transcoder) DecodeMessage(payload []byte, dst proto.Message) error {
+func (t *Transcoder) DecodeAs(payload []byte, dst proto.Message) error {
 	var ps ProtobufPayload
 	if err := proto.Unmarshal(payload, &ps); err != nil {
 		return errors.WithStack(err)

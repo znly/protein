@@ -21,3 +21,4 @@ v1
     overall, removed the coupling with TuyauDB
     make wirer root-level?
     benchmarks
+    customizable hasher
