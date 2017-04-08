@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package wirer
+package protein
 
 import (
 	"context"
@@ -21,19 +21,20 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/znly/protein"
+	"github.com/znly/protein/protoscan"
 )
 
 // -----------------------------------------------------------------------------
 
 // TODO(cmc)
-// Versioned implements a Wirer that integrates with a Bank in order to augment
+//
+// Transcoder implements a Wirer that integrates with a Bank in order to augment
 // the protobuf payloads that it encodes with additional versioning metadata.
 //
 // These metadata are then used by the internal decoder of the versioned Wirer
 // to determinate how to decode an incoming payload on the wire.
-type Versioned struct {
-	schemas map[string]*protein.ProtobufSchema
+type Transcoder struct {
+	schemas map[string]*ProtobufSchema
 	// reverse-mapping of fully-qualified names to UIDs
 	revmap map[string][]string
 
@@ -43,18 +44,35 @@ type Versioned struct {
 }
 
 // TODO(cmc)
-func NewVersioned(
+func NewTranscoder(ctx context.Context,
 	getter func(ctx context.Context, uid string) ([]byte, error),
 	setter func(ctx context.Context, uid string, data []byte) error,
-) *Versioned {
-	// TODO(cmc): do protoscan here?
-	return &Versioned{
-		schemas: map[string]*protein.ProtobufSchema{},
+) (*Transcoder, error) {
+	schemas, err := protoscan.ScanSchemas()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	if setter == nil || getter == nil {
+		// TODO(cmc): real error
+		return nil, errors.New("getter and/or setter cannot be nil")
+	}
+
+	t := &Transcoder{
+		schemas: schemas,
 		revmap:  map[string][]string{},
 
-		getter: getter, // TODO(cmc): check nil?
-		setter: setter, // TODO(cmc): check nil?
+		getter: getter, setter: setter,
 	}
+	pss := make([]*ProtobufSchema, 0, len(schemas))
+	for _, ps := range schemas {
+		pss = append(pss, ps)
+	}
+	if err := t.set(ctx, pss...); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return t, nil
 }
 
 // -----------------------------------------------------------------------------
@@ -77,25 +95,25 @@ func NewVersioned(
 //   round-trips.
 //   A "schemas not found" error is returned if one or more dependencies couldn't
 //   be found.
-func (v *Versioned) get(
+func (t *Transcoder) get(
 	ctx context.Context, uid string,
-) (map[string]*protein.ProtobufSchema, error) {
-	schemas := map[string]*protein.ProtobufSchema{}
+) (map[string]*ProtobufSchema, error) {
+	schemas := map[string]*ProtobufSchema{}
 
 	// get root schema
-	if s, ok := v.schemas[uid]; ok { // try the local cache first..
+	if s, ok := t.schemas[uid]; ok { // try the local cache first..
 		schemas[uid] = s
 	} else { // ..then fallback on user-defined getter
-		b, err := v.getter(ctx, uid)
+		b, err := t.getter(ctx, uid)
 		if err != nil {
 			return nil, errors.Wrapf(err, "`%s`: schema not found", uid)
 		}
-		var root protein.ProtobufSchema
+		var root ProtobufSchema
 		if err := proto.Unmarshal(b, &root); err != nil {
 			return nil, errors.Wrapf(err, "`%s`: invalid schema", uid)
 		}
 		schemas[uid] = &root
-		v.schemas[uid] = &root // upsert local cache just in case
+		t.schemas[uid] = &root // upsert local cache just in case
 	}
 
 	// get dependencies
@@ -104,7 +122,7 @@ func (v *Versioned) get(
 	// try the local cache first..
 	psNotFound := make(map[string]struct{}, len(deps))
 	for depUID := range deps {
-		if s, ok := v.schemas[depUID]; ok {
+		if s, ok := t.schemas[depUID]; ok {
 			schemas[depUID] = s
 			continue
 		}
@@ -118,17 +136,17 @@ func (v *Versioned) get(
 	var err error
 	for depUID := range psNotFound {
 		var b []byte
-		b, err = v.getter(ctx, depUID)
+		b, err = t.getter(ctx, depUID)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 		delete(psNotFound, depUID) // it's been found!
-		var ps protein.ProtobufSchema
+		var ps ProtobufSchema
 		if err := proto.Unmarshal(b, &ps); err != nil {
 			return nil, errors.Wrapf(err, "`%s`: invalid schema (dependency)", depUID)
 		}
 		schemas[depUID] = &ps
-		v.schemas[depUID] = &ps // upsert local cache just in case
+		t.schemas[depUID] = &ps // upsert local cache just in case
 	}
 	if len(psNotFound) > 0 {
 		err := errors.Errorf("one or more dependencies couldn't be found")
@@ -151,8 +169,8 @@ func (v *Versioned) get(
 // Put doesn't care about pre-existing keys: if a schema with the same key
 // already exist, it will be overwritten; both in the local cache as well in the
 // TuyauDB store.
-func (v *Versioned) set(
-	ctx context.Context, pss ...*protein.ProtobufSchema,
+func (t *Transcoder) set(
+	ctx context.Context, pss ...*ProtobufSchema,
 ) error {
 	// serialization + local cache & reverse-mapping
 	var b []byte
@@ -168,9 +186,9 @@ func (v *Versioned) set(
 			return errors.WithStack(err)
 		}
 		uid := ps.GetUID()
-		v.schemas[uid] = ps
-		v.revmap[ps.GetFQName()] = append(v.revmap[ps.GetFQName()], uid)
-		if err := v.setter(ctx, uid, b); err != nil {
+		t.schemas[uid] = ps
+		t.revmap[ps.GetFQName()] = append(t.revmap[ps.GetFQName()], uid)
+		if err := t.setter(ctx, uid, b); err != nil {
 			return errors.WithStack(err)
 		}
 	}
@@ -189,11 +207,11 @@ func (v *Versioned) set(
 // be real fast.
 //
 // It returns nil if `fqName` doesn't match any schema in the bank.
-func (v *Versioned) FQNameToUID(fqName string) []string { return v.revmap[fqName] }
+func (t *Transcoder) FQNameToUID(fqName string) []string { return t.revmap[fqName] }
 
 // TODO(cmc)
-func (v *Versioned) UIDToFQName(uid string) string {
-	if s, ok := v.schemas[uid]; ok {
+func (t *Transcoder) UIDToFQName(uid string) string {
+	if s, ok := t.schemas[uid]; ok {
 		return s.GetFQName()
 	}
 	return ""
@@ -202,8 +220,8 @@ func (v *Versioned) UIDToFQName(uid string) string {
 // -----------------------------------------------------------------------------
 
 // TODO(cmc): Explain why this is necessary.
-func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
-	return v.EncodeWithName(o, proto.MessageName(o))
+func (t *Transcoder) Encode(o proto.Message) ([]byte, error) {
+	return t.EncodeWithName(o, proto.MessageName(o))
 }
 
 // EncodeWithName marshals the given protobuf message then wraps it up into a
@@ -216,7 +234,7 @@ func (v *Versioned) Encode(o proto.Message) ([]byte, error) {
 // since this list is randomly-ordered, effectively a random UID will be used).
 //
 // TODO(cmc): explain this mess.
-func (v *Versioned) EncodeWithName(
+func (t *Transcoder) EncodeWithName(
 	o proto.Message, fqName string,
 ) ([]byte, error) {
 	// marshal the actual protobuf message
@@ -225,12 +243,12 @@ func (v *Versioned) EncodeWithName(
 		return nil, errors.WithStack(err)
 	}
 	// find the first UID associated with the fully-qualified name of `o`
-	uids := v.FQNameToUID("." + fqName)
+	uids := t.FQNameToUID("." + fqName)
 	if len(uids) <= 0 {
 		return nil, errors.Errorf("`%s`: FQ-name not found in bank", fqName)
 	}
 	// wrap the marshaled payload within a ProtobufPayload message
-	pp := &protein.ProtobufPayload{
+	pp := &ProtobufPayload{
 		UID:     uids[0],
 		Payload: payload,
 	}
@@ -258,14 +276,14 @@ func (v *Versioned) EncodeWithName(
 
 // DecodeStruct decodes the `payload` into a dynamically-defined structure
 // type.
-func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
-	var pp protein.ProtobufPayload
+func (t *Transcoder) DecodeStruct(payload []byte) (*reflect.Value, error) {
+	var pp ProtobufPayload
 	if err := proto.Unmarshal(payload, &pp); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	var structType *reflect.Type
 	var err error
-	//structType, err := protostruct.CreateStructType(v.b, pp.GetUID())
+	//structType, err := protostruct.CreateStructType(t.b, pp.GetUID())
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -295,8 +313,8 @@ func (v *Versioned) DecodeStruct(payload []byte) (*reflect.Value, error) {
 // -----------------------------------------------------------------------------
 
 // TODO(cmc): doc & test
-func (v *Versioned) DecodeMessage(payload []byte, dst proto.Message) error {
-	var ps protein.ProtobufPayload
+func (t *Transcoder) DecodeMessage(payload []byte, dst proto.Message) error {
+	var ps ProtobufPayload
 	if err := proto.Unmarshal(payload, &ps); err != nil {
 		return errors.WithStack(err)
 	}
