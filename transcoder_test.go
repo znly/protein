@@ -34,8 +34,7 @@ var trc *Transcoder
 func TestMain(m *testing.M) {
 	var err error
 	trc, err = NewTranscoder(context.Background(),
-		func(ctx context.Context, uid string) ([]byte, error) { return nil, nil },
-		func(ctx context.Context, uid string, data []byte) error { return nil },
+		TranscoderGetterNoOp, TranscoderSetterNoOp,
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -43,6 +42,36 @@ func TestMain(m *testing.M) {
 
 	os.Exit(m.Run())
 }
+
+// -----------------------------------------------------------------------------
+
+func TestTranscoder_localCache(t *testing.T) {
+	var expectedUID string
+	var revUIDs []string
+	// `.test.TestSchema` should be in there
+	expectedUID = "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"
+	revUIDs = trc.FQNameToUID(".test.TestSchema")
+	assert.NotEmpty(t, revUIDs)
+	assert.Equal(t, 1, len(revUIDs))
+	assert.Equal(t, expectedUID, revUIDs[0])
+	schems, err = trc.get(context.Background(), revUIDs[0])
+	assert.Nil(t, err)
+	assert.NotEmpty(t, schems)
+	assert.Equal(t, 2, len(schems)) // `.test.TestSchema` + nested `DepsEntry`
+
+	// `.test.TestSchema.DepsEntry` should be in there
+	expectedUID = "PROT-d278f5561f05e68f6e68fcbc6b801d29a69b4bf6044bf3e6242ea8fe388ebd6e"
+	revUIDs = trc.FQNameToUID(".test.TestSchema.DepsEntry")
+	assert.NotEmpty(t, revUIDs)
+	assert.Equal(t, 1, len(revUIDs))
+	assert.Equal(t, expectedUID, revUIDs[0])
+	schems, err = trc.get(context.Background(), revUIDs[0])
+	assert.Nil(t, err)
+	assert.NotEmpty(t, schems)
+	assert.Equal(t, 1, len(schems)) // `.test.TestSchema.DepsEntry` only
+}
+
+// -----------------------------------------------------------------------------
 
 func TestTranscoder_Encode(t *testing.T) {
 	tsExpected := &test.TestSchema{

@@ -44,6 +44,14 @@ type Transcoder struct {
 }
 
 // TODO(cmc)
+var TranscoderGetterNoOp = func(context.Context, string) ([]byte, error) {
+	return nil, nil
+}
+var TranscoderSetterNoOp = func(context.Context, string, []byte) error {
+	return nil
+}
+
+// TODO(cmc)
 func NewTranscoder(ctx context.Context,
 	getter func(ctx context.Context, uid string) ([]byte, error),
 	setter func(ctx context.Context, uid string, data []byte) error,
@@ -52,7 +60,6 @@ func NewTranscoder(ctx context.Context,
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	//schemas := map[string]*ProtobufSchema{}
 
 	if setter == nil || getter == nil {
 		// TODO(cmc): real error
