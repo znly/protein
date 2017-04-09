@@ -20,8 +20,9 @@ v1
     remove the need for proto.MessageName
     overall, removed the coupling with TuyauDB
     make wirer root-level?
-    benchmarks
+    benchmarks encoding/decoding vs. vanilla
     customizable hasher
     structtypes caching
     race tests
     remove protobuf-generated doc noise
+    store protobufschemas withing protobufpayloads

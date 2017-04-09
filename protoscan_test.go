@@ -27,29 +27,30 @@ import (
 
 // TODO(cmc)
 func ExampleScanSchemas() {
-	schemas, err := ScanSchemas()
+	sm, err := ScanSchemas()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, s := range schemas {
-		fmt.Printf("[%s] %s\n", s.GetUID(), s.GetFQName())
-		for uid, name := range s.GetDeps() {
+	sm.ForEach(func(ps *ProtobufSchema) error {
+		fmt.Printf("[%s] %s\n", ps.GetUID(), ps.GetFQName())
+		for uid, name := range ps.GetDeps() {
 			fmt.Printf("\tdepends on: [%s] %s\n", uid, name)
 		}
-	}
+		return nil
+	})
 }
 
 // -----------------------------------------------------------------------------
 
 func TestProtoscan_ScanSchemas(t *testing.T) {
-	schemas, err := ScanSchemas()
+	sm, err := ScanSchemas()
 	assert.Nil(t, err)
 
 	// should at least find the `.protoscan.TestSchema` and its nested
 	// `DepsEntry` message in the returned protobuf schemas
 
-	ps := schemas[protoscan.TEST_TSKnownHashRecurse]
+	ps := sm.GetByUID(protoscan.TEST_TSKnownHashRecurse)
 	assert.NotNil(t, ps)
 	assert.Equal(t, protoscan.TEST_TSKnownName, ps.GetFQName())
 	assert.Equal(t, protoscan.TEST_TSKnownHashRecurse, ps.GetUID())
@@ -57,7 +58,7 @@ func TestProtoscan_ScanSchemas(t *testing.T) {
 	assert.NotEmpty(t, ps.GetDeps())
 	assert.NotNil(t, ps.GetDeps()[protoscan.TEST_DEKnownHashRecurse])
 
-	de := schemas[protoscan.TEST_DEKnownHashRecurse]
+	de := sm.GetByUID(protoscan.TEST_DEKnownHashRecurse)
 	assert.NotNil(t, de)
 	assert.Equal(t, protoscan.TEST_DEKnownName, de.GetFQName())
 	assert.Equal(t, protoscan.TEST_DEKnownHashRecurse, de.GetUID())

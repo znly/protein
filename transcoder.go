@@ -19,7 +19,9 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/gogo/protobuf/proto"
+	proto_gogo "github.com/gogo/protobuf/proto"
+	proto_vanilla "github.com/golang/protobuf/proto"
+
 	"github.com/pkg/errors"
 )
 
@@ -156,12 +158,9 @@ func (t *Transcoder) get(
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc): Explain why this is necessary.
-func (t *Transcoder) Encode(o proto.Message) ([]byte, error) {
-	return t.EncodeWithName(o, proto.MessageName(o))
-}
-
-// EncodeWithName marshals the given protobuf message then wraps it up into a
+// TODO(cmc)
+//
+// Encode marshals the given protobuf message then wraps it up into a
 // ProtobufPayload object that adds additional versioning metadata.
 //
 // Encode uses the message's fully-qualified name to reverse-lookup its UID.
@@ -169,28 +168,38 @@ func (t *Transcoder) Encode(o proto.Message) ([]byte, error) {
 // of the associated message are currently availaible in the bank.
 // When this happens, the first UID from the returned list will be used (and
 // since this list is randomly-ordered, effectively a random UID will be used).
-//
-// TODO(cmc): explain this mess.
-func (t *Transcoder) EncodeWithName(
-	o proto.Message, fqName string,
-) ([]byte, error) {
+// this won't do remote calls
+func (t *Transcoder) Encode(msg proto_gogo.Message, fqName ...string) ([]byte, error) {
 	// marshal the actual protobuf message
-	payload, err := proto.Marshal(o)
+	payload, err := proto_gogo.Marshal(msg)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	// find the first UID associated with the fully-qualified name of `o`
-	uids := t.FQNameToUID("." + fqName)
-	if len(uids) <= 0 {
-		return nil, errors.Errorf("`%s`: FQ-name not found in bank", fqName)
+
+	// TODO(cmc): explain this mess
+	var fqn string
+	if len(fqName) > 0 {
+		fqn = fqName[0]
+	} else if fqn = proto_vanilla.MessageName(msg); len(fqn) > 0 {
+	} else if fqn = proto_gogo.MessageName(msg); len(fqn) > 0 {
+	} else {
+		// TODO(cmc): real error
+		return nil, errors.Errorf("cannot encode, unknown protobuf schema")
+	}
+
+	// find the first UID associated with the fully-qualified name of `msg`
+	ps := t.sm.GetByFQName("." + fqn)
+	if ps == nil {
+		// TODO(cmc): real error
+		return nil, errors.Errorf("`%s`: FQ-name not found", fqn)
 	}
 	// wrap the marshaled payload within a ProtobufPayload message
 	pp := &ProtobufPayload{
-		UID:     uids[0],
+		UID:     ps.UID,
 		Payload: payload,
 	}
 	// marshal the ProtobufPayload
-	return proto.Marshal(pp)
+	return proto_gogo.Marshal(pp)
 }
 
 // -----------------------------------------------------------------------------
@@ -199,10 +208,10 @@ func (t *Transcoder) EncodeWithName(
 // directive instructs the compiler to declare a local symbol as an alias
 // for an external one, even if it's private.
 // This allows us to bind to the private `unmarshalType` method of the
-// `proto.Buffer` class, which does the actual work of computing the
+// `proto_gogo.Buffer` class, which does the actual work of computing the
 // necessary struct tags for a given protobuf field.
 //
-// `unmarshalType` is actually a method of the `proto.Buffer` class, hence the
+// `unmarshalType` is actually a method of the `proto_gogo.Buffer` class, hence the
 // `b` given as first parameter will be used as "this".
 //
 // Due to the way Go mangles symbol names when using vendoring, the go:linkname
@@ -214,7 +223,7 @@ func (t *Transcoder) EncodeWithName(
 // Decode decodes the `payload` into a dynamically-defined structure type.
 func (t *Transcoder) Decode(payload []byte) (*reflect.Value, error) {
 	var pp ProtobufPayload
-	if err := proto.Unmarshal(payload, &pp); err != nil {
+	if err := proto_gogo.Unmarshal(payload, &pp); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	var structType *reflect.Type
@@ -231,12 +240,12 @@ func (t *Transcoder) Decode(payload []byte) (*reflect.Value, error) {
 	// returned `reflect.Value`'s underlying type is a pointer to struct
 	obj := reflect.New(*structType)
 
-	b := proto.NewBuffer(pp.GetPayload())
+	b := proto_gogo.NewBuffer(pp.GetPayload())
 	unmarshalType(b,
 		// the structure definition, computed at runtime
 		*structType,
 		// the protobuf properties of the struct, computed via its struct tags
-		proto.GetProperties(*structType),
+		proto_gogo.GetProperties(*structType),
 		// is_group, deprecated
 		false,
 		// the address we want to deserialize to
@@ -247,10 +256,10 @@ func (t *Transcoder) Decode(payload []byte) (*reflect.Value, error) {
 }
 
 // TODO(cmc): doc & test
-func (t *Transcoder) DecodeAs(payload []byte, dst proto.Message) error {
+func (t *Transcoder) DecodeAs(payload []byte, dst proto_gogo.Message) error {
 	var ps ProtobufPayload
-	if err := proto.Unmarshal(payload, &ps); err != nil {
+	if err := proto_gogo.Unmarshal(payload, &ps); err != nil {
 		return errors.WithStack(err)
 	}
-	return proto.Unmarshal(ps.Payload, dst)
+	return proto_gogo.Unmarshal(ps.Payload, dst)
 }
