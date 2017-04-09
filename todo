@@ -13,16 +13,11 @@ bank
 --
 
 v1
-    remove reflect.value ptrs
-    simplify banking
     runtime decoding
     doc & comments
-    remove the need for proto.MessageName
-    overall, removed the coupling with TuyauDB
-    make wirer root-level?
     benchmarks encoding/decoding vs. vanilla
     customizable hasher
     structtypes caching
     race tests
     remove protobuf-generated doc noise
-    store protobufschemas withing protobufpayloads
+    store protobufschemas within protobufpayloads

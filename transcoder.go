@@ -221,38 +221,38 @@ func (t *Transcoder) Encode(msg proto_gogo.Message, fqName ...string) ([]byte, e
 //go:generate linkname-gen -symbol "github.com/gogo/protobuf/proto.(*Buffer).unmarshalType" -def "func unmarshalType(*proto.Buffer, reflect.Type, *proto.StructProperties, bool, unsafe.Pointer) error"
 
 // Decode decodes the `payload` into a dynamically-defined structure type.
-func (t *Transcoder) Decode(payload []byte) (*reflect.Value, error) {
+func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	var pp ProtobufPayload
 	if err := proto_gogo.Unmarshal(payload, &pp); err != nil {
-		return nil, errors.WithStack(err)
+		return reflect.ValueOf(nil), errors.WithStack(err)
 	}
-	var structType *reflect.Type
+	var structType reflect.Type
 	var err error
 	//structType, err := protostruct.CreateStructType(t.b, pp.GetUID())
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return reflect.ValueOf(nil), errors.WithStack(err)
 	}
-	if (*structType).Kind() != reflect.Struct {
-		return nil, errors.Errorf("`%s`: not a struct type", *structType)
+	if structType.Kind() != reflect.Struct {
+		return reflect.ValueOf(nil), errors.Errorf("`%s`: not a struct type", structType)
 	}
 
 	// allocate a new structure using the given type definition, the
 	// returned `reflect.Value`'s underlying type is a pointer to struct
-	obj := reflect.New(*structType)
+	obj := reflect.New(structType)
 
 	b := proto_gogo.NewBuffer(pp.GetPayload())
 	unmarshalType(b,
 		// the structure definition, computed at runtime
-		*structType,
+		structType,
 		// the protobuf properties of the struct, computed via its struct tags
-		proto_gogo.GetProperties(*structType),
+		proto_gogo.GetProperties(structType),
 		// is_group, deprecated
 		false,
 		// the address we want to deserialize to
 		unsafe.Pointer(obj.Elem().Addr().Pointer()),
 	)
 
-	return &obj, nil
+	return obj, nil
 }
 
 // TODO(cmc): doc & test
