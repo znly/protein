@@ -4,12 +4,6 @@ global
 protostruct
     cover all edge cases
 
-wirer
-    no reflect.value pointer
-
-bank
-    RAM implem
-
 --
 
 v1

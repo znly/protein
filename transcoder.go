@@ -16,6 +16,7 @@ package protein
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"unsafe"
 
@@ -43,12 +44,14 @@ type Transcoder struct {
 
 // TODO(cmc)
 var (
-	TranscoderGetterNoOp = func(context.Context, string) (*ProtobufSchema, error) {
-		return nil, nil
+	TranscoderGetterNoOp = func(ctx context.Context, uid string) (*ProtobufSchema, error) {
+		// TODO(cmc): real error
+		return nil, errors.New(fmt.Sprintf("`%s`: schema not found", uid))
 	}
 	TranscoderSetterNoOp = func(context.Context, *ProtobufSchema) error {
 		return nil
 	}
+	// TODO(cmc): add helpers
 )
 
 // TODO(cmc)
@@ -126,8 +129,9 @@ func (t *Transcoder) get(
 	for depUID := range deps {
 		if ps := t.sm.GetByUID(depUID); ps != nil {
 			schemas[depUID] = ps
+		} else {
+			psNotFound[depUID] = struct{}{}
 		}
-		psNotFound[depUID] = struct{}{}
 	}
 	if len(psNotFound) <= 0 { // found everything needed in local cache!
 		return schemas, nil
