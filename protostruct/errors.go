@@ -20,6 +20,7 @@ type Error int
 
 const (
 	ErrUnknown                Error = iota // unknown error
+	ErrSchemaNotFound         Error = iota // schema's UID not found
 	ErrSchemaNotMessageType   Error = iota // schema is not of messsage type
 	ErrFieldTypeNotSupported  Error = iota // field type not supported
 	ErrFieldLabelNotSupported Error = iota // field label not supported
@@ -32,6 +33,8 @@ func (e Error) Error() string {
 	switch e {
 	case ErrUnknown:
 		return "error: unknown"
+	case ErrSchemaNotFound:
+		return "error: no such schema UID"
 	case ErrSchemaNotMessageType:
 		return "error: schema is not of message type"
 	case ErrFieldTypeNotSupported:

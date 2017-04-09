@@ -16,12 +16,86 @@ package protein
 
 import (
 	"reflect"
+	"sync"
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/log"
 	"github.com/znly/protein/protoscan"
 )
+
+// -----------------------------------------------------------------------------
+
+// TODO(cmc)
+type SchemaMap struct {
+	lock *sync.RWMutex
+	// map[schemaUID]ProtobufSchema
+	schemaMap map[string]*ProtobufSchema
+	// reverse-mapping of fully-qualified names to UIDs
+	// map[FQNname][]{schemaUID}
+	revmap map[string][]string
+}
+
+// TODO(cmc)
+func NewSchemaMap() *SchemaMap {
+	return &SchemaMap{
+		lock:      &sync.RWMutex{},
+		schemaMap: make(map[string]*ProtobufSchema, 0),
+		revmap:    make(map[string][]string, 0),
+	}
+}
+
+// TODO(cmc)
+func (sm *SchemaMap) Add(schemas map[string]*ProtobufSchema) *SchemaMap {
+	sm.lock.Lock()
+	for _, s := range schemas {
+		sm.schemaMap[s.UID] = s
+		sm.revmap[s.FQName] = append(sm.revmap[s.FQName], s.UID)
+	}
+	sm.lock.Unlock() // avoid defer()
+	return sm
+}
+
+// TODO(cmc)
+func (sm *SchemaMap) Size() int {
+	sm.lock.RLock()
+	sz := len(sm.schemaMap)
+	sm.lock.RUnlock() // avoid defer()
+	return sz
+}
+
+// TODO(cmc)
+func (sm *SchemaMap) ForEach(f func(s *ProtobufSchema) error) error {
+	sm.lock.RLock()
+	for _, s := range sm.schemaMap {
+		if err := f(s); err != nil {
+			sm.lock.RUnlock() // avoid defer()
+			return errors.WithStack(err)
+		}
+	}
+	sm.lock.RUnlock() // avoid defer()
+	return nil
+}
+
+// TODO(cmc)
+func (sm *SchemaMap) GetByUID(uid string) *ProtobufSchema {
+	sm.lock.RLock()
+	s := sm.schemaMap[uid]
+	sm.lock.RUnlock() // avoid defer()
+	return s
+}
+
+// TODO(cmc)
+func (sm *SchemaMap) GetByFQName(fqName string) *ProtobufSchema {
+	sm.lock.RLock()
+	uids := sm.revmap[fqName]
+	if len(uids) <= 0 {
+		return nil
+	}
+	s := sm.schemaMap[uids[0]]
+	sm.lock.RUnlock() // avoid defer()
+	return s
+}
 
 // -----------------------------------------------------------------------------
 
@@ -46,7 +120,7 @@ import (
 //
 // Have a look at the `protoscan` sub-package for more information about how all
 // of this works; the code is heavily documented.
-func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
+func ScanSchemas(failOnDuplicate ...bool) (*SchemaMap, error) {
 	fod := true
 	if len(failOnDuplicate) > 0 {
 		fod = failOnDuplicate[0]
@@ -76,6 +150,7 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 			//   are going to take a turn for the worst pretty soon; hence you're
 			//   better off crashing right now
 			if _, ok := fdps[file]; ok && fod {
+				// TODO(cmc): real error
 				return nil, errors.Errorf("`%s` is instanciated multiple times", file)
 			}
 			fdp, err := protoscan.UnzipAndUnmarshal(descr)
@@ -92,7 +167,6 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	// builds slice of ProtobufSchema objects
 	pss := make(map[string]*ProtobufSchema, len(dtsByUID))
 	for uid, dt := range dtsByUID {
 		ps := &ProtobufSchema{
@@ -118,5 +192,5 @@ func ScanSchemas(failOnDuplicate ...bool) (map[string]*ProtobufSchema, error) {
 		pss[uid] = ps
 	}
 
-	return pss, nil
+	return NewSchemaMap().Add(pss), nil
 }

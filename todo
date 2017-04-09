@@ -16,9 +16,12 @@ v1
     remove reflect.value ptrs
     simplify banking
     runtime decoding
-    doc
+    doc & comments
     remove the need for proto.MessageName
     overall, removed the coupling with TuyauDB
     make wirer root-level?
     benchmarks
     customizable hasher
+    structtypes caching
+    race tests
+    remove protobuf-generated doc noise

@@ -15,7 +15,6 @@
 package protostruct
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -30,12 +29,17 @@ import (
 
 // -----------------------------------------------------------------------------
 
+// TODO(cmc)
 func CreateStructType(
-	b protein.Bank, schemaUID string,
-) (*reflect.Type, error) {
-	pss, err := b.Get(context.Background(), schemaUID)
-	if err != nil {
-		return nil, errors.WithStack(err)
+	schemaUID string,
+	// map[schemaUID]ProtobufSchema
+	schemas map[string]*protein.ProtobufSchema,
+) (reflect.Type, error) {
+
+	pss, ok := schemas[schemaUID]
+	if !ok {
+		err := errors.Wrapf(ErrSchemaNotFound, "`%s`: schema not found", schemaUID)
+		return reflect.Type{}, err
 	}
 	// map[FQName]schemaUID
 	pssRevMap := make(map[string]string, len(pss))
@@ -60,10 +64,10 @@ func CreateStructType(
 		return nil, errors.WithStack(err)
 	}
 
-	structType := structTypes[schemaUID]
-	return &structType, nil
+	return structTypes[schemaUID], nil
 }
 
+// TODO(cmc)
 func buildScalarTypes(
 	pss map[string]*protein.ProtobufSchema,
 	structFields map[string][]reflect.StructField,
@@ -107,6 +111,7 @@ func buildScalarTypes(
 	return nil
 }
 
+// TODO(cmc)
 func buildCustomTypes(
 	ps *protein.ProtobufSchema,
 	pss map[string]*protein.ProtobufSchema,
@@ -172,6 +177,7 @@ func buildCustomTypes(
 
 // -----------------------------------------------------------------------------
 
+// TODO(cmc)
 func fieldName(f *descriptor.FieldDescriptorProto) string {
 	if gogoproto.IsCustomName(f) { // custom names bypass everything
 		return gogoproto.GetCustomName(f)
@@ -190,6 +196,7 @@ func fieldName(f *descriptor.FieldDescriptorProto) string {
 	return strings.Join(parts, "")
 }
 
+// TODO(cmc)
 func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 	switch f.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
@@ -350,6 +357,7 @@ func fieldTag(
 	return reflect.StructTag(tags), nil
 }
 
+// TODO(cmc)
 func fieldTagEntries(
 	tag reflect.StructTag, entryTags [2]reflect.StructTag,
 ) reflect.StructTag {

@@ -45,6 +45,7 @@ func TestMain(m *testing.M) {
 
 // -----------------------------------------------------------------------------
 
+// TODO(cmc): complete this
 func TestTranscoder_localCache(t *testing.T) {
 	var expectedUID string
 	var revUIDs []string
@@ -94,3 +95,9 @@ func TestTranscoder_Encode(t *testing.T) {
 	assert.Nil(t, proto.Unmarshal(pp.GetPayload(), &ts))
 	assert.Equal(t, tsExpected, &ts)
 }
+
+// -----------------------------------------------------------------------------
+
+// TODO(cmc)
+func TestTranscoder_Decode(t *testing.T)   {}
+func TestTranscoder_DecodeAs(t *testing.T) {}

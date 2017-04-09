@@ -33,53 +33,50 @@ import (
 // These metadata are then used by the internal decoder of the versioned Wirer
 // to determinate how to decode an incoming payload on the wire.
 type Transcoder struct {
-	schemas map[string]*ProtobufSchema
-	// reverse-mapping of fully-qualified names to UIDs
-	revmap map[string][]string
-
+	sm *SchemaMap
 	// TODO(cmc)
-	getter func(ctx context.Context, uid string) ([]byte, error)
-	setter func(ctx context.Context, uid string, data []byte) error
+	getter func(ctx context.Context, uid string) (*ProtobufSchema, error)
+	setter func(ctx context.Context, ps *ProtobufSchema) error
 }
 
 // TODO(cmc)
-var TranscoderGetterNoOp = func(context.Context, string) ([]byte, error) {
-	return nil, nil
-}
-var TranscoderSetterNoOp = func(context.Context, string, []byte) error {
-	return nil
-}
+var (
+	TranscoderGetterNoOp = func(context.Context, string) (*ProtobufSchema, error) {
+		return nil, nil
+	}
+	TranscoderSetterNoOp = func(context.Context, *ProtobufSchema) error {
+		return nil
+	}
+)
 
 // TODO(cmc)
 func NewTranscoder(ctx context.Context,
-	getter func(ctx context.Context, uid string) ([]byte, error),
-	setter func(ctx context.Context, uid string, data []byte) error,
+	getter func(ctx context.Context, uid string) (*ProtobufSchema, error),
+	setter func(ctx context.Context, ps *ProtobufSchema) error,
 ) (*Transcoder, error) {
-	schemas, err := ScanSchemas()
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
 	if setter == nil || getter == nil {
 		// TODO(cmc): real error
 		return nil, errors.New("getter and/or setter cannot be nil")
 	}
 
-	t := &Transcoder{
-		schemas: schemas,
-		revmap:  map[string][]string{},
-
-		getter: getter, setter: setter,
-	}
-	pss := make([]*ProtobufSchema, 0, len(schemas))
-	for _, ps := range schemas {
-		pss = append(pss, ps)
-	}
-	if err := t.set(ctx, pss...); err != nil {
+	sm, err := ScanSchemas()
+	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	sm.ForEach(func(s *ProtobufSchema) error {
+		select {
+		case <-ctx.Done():
+			return errors.WithStack(ctx.Err())
+		default:
+		}
+		return setter(ctx, s)
+	})
 
-	return t, nil
+	return &Transcoder{
+		sm:     sm,
+		getter: getter,
+		setter: setter,
+	}, nil
 }
 
 // -----------------------------------------------------------------------------
@@ -87,7 +84,7 @@ func NewTranscoder(ctx context.Context,
 // TODO(cmc)
 //
 // get retrieves the ProtobufSchema associated with the specified identifier,
-// plus all of its direct & indirect dependencies.
+// plus all of its direct & indirect dependencies flattened in a map.
 //
 // The retrieval process is done in two steps:
 // - First, the root schema, as identified by `uid`, is fetched from the local
@@ -108,19 +105,15 @@ func (t *Transcoder) get(
 	schemas := map[string]*ProtobufSchema{}
 
 	// get root schema
-	if s, ok := t.schemas[uid]; ok { // try the local cache first..
+	if s := t.sm.GetByUID(uid); s != nil { // try the local cache first..
 		schemas[uid] = s
 	} else { // ..then fallback on user-defined getter
-		b, err := t.getter(ctx, uid)
+		ps, err := t.getter(ctx, uid)
 		if err != nil {
+			// TODO(cmc): real error
 			return nil, errors.Wrapf(err, "`%s`: schema not found", uid)
 		}
-		var root ProtobufSchema
-		if err := proto.Unmarshal(b, &root); err != nil {
-			return nil, errors.Wrapf(err, "`%s`: invalid schema", uid)
-		}
-		schemas[uid] = &root
-		t.schemas[uid] = &root // upsert local cache just in case
+		t.sm.Add(map[string]*ProtobufSchema{uid: ps}) // upsert local-cache
 	}
 
 	// get dependencies
@@ -129,9 +122,8 @@ func (t *Transcoder) get(
 	// try the local cache first..
 	psNotFound := make(map[string]struct{}, len(deps))
 	for depUID := range deps {
-		if s, ok := t.schemas[depUID]; ok {
+		if s := t.sm.GetByUID(depUID); s != nil {
 			schemas[depUID] = s
-			continue
 		}
 		psNotFound[depUID] = struct{}{}
 	}
@@ -142,20 +134,16 @@ func (t *Transcoder) get(
 	// ..then fallback on user-defined getter
 	var err error
 	for depUID := range psNotFound {
-		var b []byte
-		b, err = t.getter(ctx, depUID)
+		var ps *ProtobufSchema
+		ps, err = t.getter(ctx, depUID)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		delete(psNotFound, depUID) // it's been found!
-		var ps ProtobufSchema
-		if err := proto.Unmarshal(b, &ps); err != nil {
-			return nil, errors.Wrapf(err, "`%s`: invalid schema (dependency)", depUID)
-		}
-		schemas[depUID] = &ps
-		t.schemas[depUID] = &ps // upsert local cache just in case
+		delete(psNotFound, depUID)                    // it's been found!
+		t.sm.Add(map[string]*ProtobufSchema{uid: ps}) // upsert local-cache
 	}
 	if len(psNotFound) > 0 {
+		// TODO(cmc): real error
 		err := errors.Errorf("one or more dependencies couldn't be found")
 		for depUID := range psNotFound {
 			err = errors.Wrapf(err, "`%s`: dependency not found", depUID)
@@ -164,64 +152,6 @@ func (t *Transcoder) get(
 	}
 
 	return schemas, nil
-}
-
-// TODO(cmc)
-//
-// set synchronously adds the specified ProtobufSchemas to the local local
-// cache; then pushes them to the underlying tuyau client's pipe.
-// Whether this push is synchronous or not depends on the implementation
-// of the tuyau.Client used.
-//
-// Put doesn't care about pre-existing keys: if a schema with the same key
-// already exist, it will be overwritten; both in the local cache as well in the
-// TuyauDB store.
-func (t *Transcoder) set(
-	ctx context.Context, pss ...*ProtobufSchema,
-) error {
-	// serialization + local cache & reverse-mapping
-	var b []byte
-	var err error
-	for _, ps := range pss {
-		select {
-		case <-ctx.Done():
-			return errors.WithStack(ctx.Err())
-		default:
-		}
-		b, err = proto.Marshal(ps)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		uid := ps.GetUID()
-		t.schemas[uid] = ps
-		t.revmap[ps.GetFQName()] = append(t.revmap[ps.GetFQName()], uid)
-		if err := t.setter(ctx, uid, b); err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
-}
-
-// -----------------------------------------------------------------------------
-
-// FQNameToUID returns the UID associated with the given fully-qualified name.
-//
-// It is possible that multiple versions of a schema identified by a FQ name
-// are currently available in the local cache; in which case all of the
-// associated UIDs will be returned to the caller, *in random order*.
-//
-// The reverse-mapping is pre-computed; don't hesitate to call this method, it'll
-// be real fast.
-//
-// It returns nil if `fqName` doesn't match any schema in the bank.
-func (t *Transcoder) FQNameToUID(fqName string) []string { return t.revmap[fqName] }
-
-// TODO(cmc)
-func (t *Transcoder) UIDToFQName(uid string) string {
-	if s, ok := t.schemas[uid]; ok {
-		return s.GetFQName()
-	}
-	return ""
 }
 
 // -----------------------------------------------------------------------------
@@ -315,8 +245,6 @@ func (t *Transcoder) Decode(payload []byte) (*reflect.Value, error) {
 
 	return &obj, nil
 }
-
-// -----------------------------------------------------------------------------
 
 // TODO(cmc): doc & test
 func (t *Transcoder) DecodeAs(payload []byte, dst proto.Message) error {
