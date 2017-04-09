@@ -31,16 +31,24 @@ import (
 
 // TODO(cmc)
 func CreateStructType(
-	schemaUID string,
-	// map[schemaUID]ProtobufSchema
-	schemas map[string]*protein.ProtobufSchema,
+	schemaUID string, sm *protein.SchemaMap,
 ) (reflect.Type, error) {
-
-	pss, ok := schemas[schemaUID]
-	if !ok {
+	ps := sm.GetByUID(schemaUID)
+	if ps == nil {
 		err := errors.Wrapf(ErrSchemaNotFound, "`%s`: schema not found", schemaUID)
-		return reflect.Type{}, err
+		return reflect.TypeOf(nil), err
 	}
+	deps := ps.GetDeps()
+	pss := make(map[string]*protein.ProtobufSchema, len(deps))
+	for depUID := range deps {
+		if dep := sm.GetByUID(depUID); dep == nil {
+			err := errors.Wrapf(ErrSchemaNotFound, "`%s`: dep not found", depUID)
+			return reflect.TypeOf(nil), err
+		} else {
+			pss[depUID] = dep
+		}
+	}
+	pss[schemaUID] = ps
 	// map[FQName]schemaUID
 	pssRevMap := make(map[string]string, len(pss))
 	for uid, ps := range pss {
@@ -58,7 +66,7 @@ func CreateStructType(
 	}
 
 	if err := buildCustomTypes(
-		pss[schemaUID], pss, pssRevMap,
+		ps, pss, pssRevMap,
 		structFields, structTypes, mapEntryTags,
 	); err != nil {
 		return nil, errors.WithStack(err)

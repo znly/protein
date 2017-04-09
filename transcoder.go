@@ -65,13 +65,13 @@ func NewTranscoder(ctx context.Context,
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	sm.ForEach(func(s *ProtobufSchema) error {
+	sm.ForEach(func(ps *ProtobufSchema) error {
 		select {
 		case <-ctx.Done():
 			return errors.WithStack(ctx.Err())
 		default:
 		}
-		return setter(ctx, s)
+		return setter(ctx, ps)
 	})
 
 	return &Transcoder{
@@ -107,8 +107,8 @@ func (t *Transcoder) get(
 	schemas := map[string]*ProtobufSchema{}
 
 	// get root schema
-	if s := t.sm.GetByUID(uid); s != nil { // try the local cache first..
-		schemas[uid] = s
+	if ps := t.sm.GetByUID(uid); ps != nil { // try the local cache first..
+		schemas[uid] = ps
 	} else { // ..then fallback on user-defined getter
 		ps, err := t.getter(ctx, uid)
 		if err != nil {
@@ -124,8 +124,8 @@ func (t *Transcoder) get(
 	// try the local cache first..
 	psNotFound := make(map[string]struct{}, len(deps))
 	for depUID := range deps {
-		if s := t.sm.GetByUID(depUID); s != nil {
-			schemas[depUID] = s
+		if ps := t.sm.GetByUID(depUID); ps != nil {
+			schemas[depUID] = ps
 		}
 		psNotFound[depUID] = struct{}{}
 	}

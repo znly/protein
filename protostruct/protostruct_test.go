@@ -15,19 +15,12 @@
 package protostruct
 
 import (
-	"context"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/znly/protein/bank"
-	"github.com/znly/protein/protoscan"
-	tuyaudb "github.com/znly/tuyauDB"
-	tuyaudb_kv "github.com/znly/tuyauDB/kv"
-	tuyaudb_pipe "github.com/znly/tuyauDB/pipe"
-	tuyaudb_service "github.com/znly/tuyauDB/service"
 
+	"github.com/znly/protein"
 	"github.com/znly/protein/protobuf/test"
 )
 
@@ -35,50 +28,9 @@ import (
 
 func TestProtostruct_CreateStructType(t *testing.T) {
 	// fetched locally instanciated schemas
-	schemas, err := protoscan.ScanSchemas()
+	sm, err := protein.ScanSchemas()
 	assert.Nil(t, err)
-	assert.NotEmpty(t, schemas)
-
-	// build the underlying TuyauDB components: Client{Pipe, KV, CAS}
-	bufSize := uint(len(schemas) + 1) // cannot block that way
-	cs, err := tuyaudb.NewClient(
-		tuyaudb_pipe.NewRAMConstructor(bufSize),
-		tuyaudb_kv.NewRAMConstructor(),
-		nil,
-	)
-	assert.Nil(t, err)
-	assert.NotNil(t, cs)
-
-	// build a simple TuyauDB Service to sync-up the underlying Pipe & KV
-	// components (i.e. what's pushed into the pipe should en up in the kv
-	// store)
-	ctx, canceller := context.WithCancel(context.Background())
-	s, err := tuyaudb_service.New(cs, 10, false)
-	assert.Nil(t, err)
-	assert.NotNil(t, s)
-	go s.Run(ctx, 10)
-
-	// build the actual Bank that integrates with the TuyauDB Client
-	ty := bank.NewTuyau(cs)
-	go func() {
-		for _, ps := range schemas {
-			assert.Nil(t, ty.Put(context.Background(), ps)) // feed it all the local schemas
-		}
-		time.Sleep(time.Millisecond * 20)
-		canceller() // we're done
-	}()
-
-	<-ctx.Done()
-	// At this point, all the locally-instanciated protobuf schemas should
-	// have been Put() into the Bank, which Push()ed them all to its underlying
-	// Tuyau Client and, hence, into the RAM-based Tuyau Pipe.
-	//
-	// Since a Simple Tuyau Service had been running all along, making sure the
-	// underlying RAM-based Tuyau KV store was kept in synchronization with
-	// the RAM-based Pipe, our Bank should now be able to retrieve any schema
-	// directly from its underlying KV store.
-
-	// ------- ^^^^^ TODO(cmc): need helpers for all this boilerplate.
+	assert.NotEmpty(t, sm)
 
 	expectedType := reflect.TypeOf(test.TestSchemaXXX{})
 	assert.True(t, expectedType.Kind() == reflect.Struct)
@@ -89,15 +41,15 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	}
 	assert.NotEmpty(t, expectedFields)
 
-	uids := ty.FQNameToUID(".test.TestSchemaXXX")
-	assert.NotEmpty(t, uids)
-	actualType, err := CreateStructType(ty, uids[0])
+	uid := sm.GetByFQName(".test.TestSchemaXXX").UID
+	assert.NotEmpty(t, uid)
+	actualType, err := CreateStructType(uid, sm)
 	assert.Nil(t, err)
 	assert.NotNil(t, actualType)
-	assert.True(t, (*actualType).Kind() == reflect.Struct)
-	actualFields := make(map[string]reflect.StructField, (*actualType).NumField())
-	for i := 0; i < (*actualType).NumField(); i++ {
-		f := (*actualType).Field(i)
+	assert.True(t, actualType.Kind() == reflect.Struct)
+	actualFields := make(map[string]reflect.StructField, actualType.NumField())
+	for i := 0; i < actualType.NumField(); i++ {
+		f := actualType.Field(i)
 		actualFields[f.Name] = f
 	}
 	assert.NotEmpty(t, actualFields)
