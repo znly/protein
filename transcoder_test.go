@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/znly/protein/protobuf/test"
 )
@@ -96,6 +97,39 @@ func TestTranscoder_Encode(t *testing.T) {
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
-func TestTranscoder_Decode(t *testing.T)   {}
-func TestTranscoder_DecodeAs(t *testing.T) {}
+var _transcoderTestSchemaXXX = &test.TestSchemaXXX{
+	SchemaUID: "uuid-A",
+	FQNames:   []string{"fqname-A", "fqname-B"},
+	Deps: map[string]*test.TestSchemaXXX_NestedEntry{
+		"dep-A": {Key: "dep-A-A", Value: "dep-A-A"},
+		"dep-B": {Key: "dep-A-B", Value: "dep-A-B"},
+	},
+	Ids: map[int32]string{
+		1: "id-A",
+		2: "id-B",
+	},
+	Ts: types.Timestamp{
+		Seconds: 42,
+		Nanos:   43,
+	},
+	Ots: &test.OtherTestSchemaXXX{
+		Ts: &types.Timestamp{
+			Seconds: 942,
+			Nanos:   943,
+		},
+	},
+	Nss: []test.TestSchemaXXX_NestedEntry{
+		{Key: "nss-key-A", Value: "nss-value-A"},
+		{Key: "nss-key-B", Value: "nss-value-B"},
+	},
+}
+
+func TestTranscoder_DecodeAs(t *testing.T) {
+	payload, err := trc.Encode(_transcoderTestSchemaXXX)
+	assert.Nil(t, err)
+	assert.NotNil(t, payload)
+
+	var ts test.TestSchemaXXX
+	assert.Nil(t, trc.DecodeAs(payload, &ts))
+	assert.Equal(t, _transcoderTestSchemaXXX, ts)
+}

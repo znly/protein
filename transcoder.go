@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"unsafe"
 
-	proto_gogo "github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	proto_vanilla "github.com/golang/protobuf/proto"
 
 	"github.com/pkg/errors"
@@ -173,9 +173,9 @@ func (t *Transcoder) get(
 // When this happens, the first UID from the returned list will be used (and
 // since this list is randomly-ordered, effectively a random UID will be used).
 // this won't do remote calls
-func (t *Transcoder) Encode(msg proto_gogo.Message, fqName ...string) ([]byte, error) {
+func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error) {
 	// marshal the actual protobuf message
-	payload, err := proto_gogo.Marshal(msg)
+	payload, err := proto.Marshal(msg)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -185,7 +185,7 @@ func (t *Transcoder) Encode(msg proto_gogo.Message, fqName ...string) ([]byte, e
 	if len(fqName) > 0 {
 		fqn = fqName[0]
 	} else if fqn = proto_vanilla.MessageName(msg); len(fqn) > 0 {
-	} else if fqn = proto_gogo.MessageName(msg); len(fqn) > 0 {
+	} else if fqn = proto.MessageName(msg); len(fqn) > 0 {
 	} else {
 		// TODO(cmc): real error
 		return nil, errors.Errorf("cannot encode, unknown protobuf schema")
@@ -203,7 +203,7 @@ func (t *Transcoder) Encode(msg proto_gogo.Message, fqName ...string) ([]byte, e
 		Payload: payload,
 	}
 	// marshal the ProtobufPayload
-	return proto_gogo.Marshal(pp)
+	return proto.Marshal(pp)
 }
 
 // -----------------------------------------------------------------------------
@@ -212,10 +212,10 @@ func (t *Transcoder) Encode(msg proto_gogo.Message, fqName ...string) ([]byte, e
 // directive instructs the compiler to declare a local symbol as an alias
 // for an external one, even if it's private.
 // This allows us to bind to the private `unmarshalType` method of the
-// `proto_gogo.Buffer` class, which does the actual work of computing the
+// `proto.Buffer` class, which does the actual work of computing the
 // necessary struct tags for a given protobuf field.
 //
-// `unmarshalType` is actually a method of the `proto_gogo.Buffer` class, hence the
+// `unmarshalType` is actually a method of the `proto.Buffer` class, hence the
 // `b` given as first parameter will be used as "this".
 //
 // Due to the way Go mangles symbol names when using vendoring, the go:linkname
@@ -227,7 +227,7 @@ func (t *Transcoder) Encode(msg proto_gogo.Message, fqName ...string) ([]byte, e
 // Decode decodes the `payload` into a dynamically-defined structure type.
 func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	var pp ProtobufPayload
-	if err := proto_gogo.Unmarshal(payload, &pp); err != nil {
+	if err := proto.Unmarshal(payload, &pp); err != nil {
 		return reflect.ValueOf(nil), errors.WithStack(err)
 	}
 	structType, err := CreateStructType(pp.GetUID(), t.sm)
@@ -235,6 +235,7 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 		return reflect.ValueOf(nil), errors.WithStack(err)
 	}
 	if structType.Kind() != reflect.Struct {
+		// TODO(cmc): real error
 		return reflect.ValueOf(nil), errors.Errorf("`%s`: not a struct type", structType)
 	}
 
@@ -242,12 +243,12 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	// returned `reflect.Value`'s underlying type is a pointer to struct
 	obj := reflect.New(structType)
 
-	b := proto_gogo.NewBuffer(pp.GetPayload())
+	b := proto.NewBuffer(pp.GetPayload())
 	unmarshalType(b,
 		// the structure definition, computed at runtime
 		structType,
 		// the protobuf properties of the struct, computed via its struct tags
-		proto_gogo.GetProperties(structType),
+		proto.GetProperties(structType),
 		// is_group, deprecated
 		false,
 		// the address we want to deserialize to
@@ -258,10 +259,10 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 }
 
 // TODO(cmc): doc & test
-func (t *Transcoder) DecodeAs(payload []byte, dst proto_gogo.Message) error {
+func (t *Transcoder) DecodeAs(payload []byte, dst proto.Message) error {
 	var ps ProtobufPayload
-	if err := proto_gogo.Unmarshal(payload, &ps); err != nil {
+	if err := proto.Unmarshal(payload, &ps); err != nil {
 		return errors.WithStack(err)
 	}
-	return proto_gogo.Unmarshal(ps.Payload, dst)
+	return proto.Unmarshal(ps.Payload, dst)
 }
