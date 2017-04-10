@@ -100,7 +100,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	assert.Equal(t, expectedField.Name, actualField.Name)
 	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
 	assert.Equal(t, expectedField.Tag, actualField.Tag)
-	assert.Equal(t, expectedField.Type, actualField.Type)
+	assertFieldTypes(t, expectedField.Type, actualField.Type)
 
 	// Attributes:
 	//   - name: "fq_name"
@@ -114,7 +114,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	assert.Equal(t, expectedField.Name, actualField.Name)
 	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
 	assert.Equal(t, expectedField.Tag, actualField.Tag)
-	assert.Equal(t, expectedField.Type, actualField.Type)
+	assertFieldTypes(t, expectedField.Type, actualField.Type)
 
 	// Attributes:
 	//   - name: "deps"
@@ -128,7 +128,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	assert.Equal(t, expectedField.Name, actualField.Name)
 	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
 	assert.Equal(t, expectedField.Tag, actualField.Tag)
-	// assert.Equal(t, expectedField.Type, actualField.Type) TODO
+	assertFieldTypes(t, expectedField.Type, actualField.Type)
 
 	// Attributes:
 	//   - name: "ids"
@@ -142,7 +142,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	assert.Equal(t, "IDs", actualField.Name)
 	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
 	assert.Equal(t, expectedField.Tag, actualField.Tag)
-	assert.Equal(t, expectedField.Type, actualField.Type)
+	assertFieldTypes(t, expectedField.Type, actualField.Type)
 
 	// Attributes:
 	//   - name: "ts"
@@ -156,7 +156,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	assert.Equal(t, "TS", actualField.Name)
 	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
 	assert.Equal(t, expectedField.Tag, actualField.Tag)
-	// assert.Equal(t, expectedField.Type, actualField.Type) TODO
+	assertFieldTypes(t, expectedField.Type, actualField.Type)
 
 	// Attributes:
 	//   - name: "ots"
@@ -170,7 +170,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	assert.Equal(t, expectedField.Name, actualField.Name)
 	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
 	assert.Equal(t, expectedField.Tag, actualField.Tag)
-	// assert.Equal(t, expectedField.Type, actualField.Type) TODO
+	assertFieldTypes(t, expectedField.Type, actualField.Type)
 
 	// Attributes:
 	//   - name: "nss"
@@ -184,5 +184,18 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	assert.Equal(t, expectedField.Name, actualField.Name)
 	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
 	assert.Equal(t, expectedField.Tag, actualField.Tag)
-	// assert.Equal(t, expectedField.Type, actualField.Type) TODO
+	assertFieldTypes(t, expectedField.Type, actualField.Type)
+}
+
+func assertFieldTypes(t *testing.T, expected, actual reflect.Type) {
+	switch expected.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Array:
+		assertFieldTypes(t, expected.Elem(), actual.Elem())
+	case reflect.Struct:
+		for i := 0; i < expected.NumField(); i++ {
+			assertFieldTypes(t, expected.Field(i).Type, actual.Field(i).Type)
+		}
+	default:
+		assert.Equal(t, expected, actual)
+	}
 }

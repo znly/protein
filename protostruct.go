@@ -157,10 +157,24 @@ func buildCustomTypes(
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		if fType.Kind() == reflect.Map {
+		if fType.Kind() == reflect.Map { // maps are special creatures
 			fTag = fieldTagEntries(fTag, mapEntryTags[pssRevMap[f.GetTypeName()]])
-		} else if gogoproto.IsNullable(f) {
-			fType = reflect.PtrTo(fType)
+		} else {
+			switch f.GetLabel() {
+			case descriptor.FieldDescriptorProto_LABEL_OPTIONAL:
+				if gogoproto.IsNullable(f) {
+					fType = reflect.PtrTo(fType)
+				}
+			case descriptor.FieldDescriptorProto_LABEL_REQUIRED:
+				// do nothing
+			case descriptor.FieldDescriptorProto_LABEL_REPEATED:
+				fType = reflect.SliceOf(fType)
+			default:
+				err = errors.Wrapf(
+					ErrFieldLabelNotSupported,
+					"`%s`: field label not supported", f.GetLabel(),
+				)
+			}
 		}
 
 		fields = append(fields, reflect.StructField{
@@ -257,9 +271,9 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 
 	switch f.GetLabel() {
 	case descriptor.FieldDescriptorProto_LABEL_OPTIONAL:
-		// do nothing?
+		// do nothing
 	case descriptor.FieldDescriptorProto_LABEL_REQUIRED:
-		// do nothing?
+		// do nothing
 	case descriptor.FieldDescriptorProto_LABEL_REPEATED:
 		t = reflect.SliceOf(t)
 	default:
