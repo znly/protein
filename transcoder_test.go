@@ -18,6 +18,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -131,5 +132,38 @@ func TestTranscoder_DecodeAs(t *testing.T) {
 
 	var ts test.TestSchemaXXX
 	assert.Nil(t, trc.DecodeAs(payload, &ts))
-	assert.Equal(t, _transcoderTestSchemaXXX, ts)
+	assert.Equal(t, _transcoderTestSchemaXXX, &ts)
+}
+
+func TestTranscoder_Decode(t *testing.T) {
+	payload, err := trc.Encode(_transcoderTestSchemaXXX)
+	assert.Nil(t, err)
+	assert.NotNil(t, payload)
+
+	v, err := trc.Decode(payload)
+	assert.Nil(t, err)
+	assertFieldValues(t, reflect.ValueOf(_transcoderTestSchemaXXX), v)
+}
+
+func assertFieldValues(t *testing.T, expected, actual reflect.Value) {
+	switch expected.Kind() {
+	case reflect.Ptr:
+		assertFieldValues(t, expected.Elem(), actual.Elem())
+	case reflect.Map:
+		for _, ek := range expected.MapKeys() {
+			assertFieldValues(t, expected.MapIndex(ek), actual.MapIndex(ek))
+		}
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < expected.Len(); i++ {
+			assertFieldValues(t, expected.Index(i), actual.Index(i))
+		}
+	case reflect.Struct:
+		for i := 0; i < expected.NumField(); i++ {
+			assertFieldValues(t, expected.Field(i), actual.Field(i))
+		}
+	default:
+		assert.True(t,
+			reflect.DeepEqual(expected.Interface(), actual.Interface()),
+		)
+	}
 }
