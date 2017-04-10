@@ -230,9 +230,7 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	if err := proto_gogo.Unmarshal(payload, &pp); err != nil {
 		return reflect.ValueOf(nil), errors.WithStack(err)
 	}
-	var structType reflect.Type
-	var err error
-	//structType, err := protostruct.CreateStructType(t.b, pp.GetUID())
+	structType, err := CreateStructType(pp.GetUID(), t.sm)
 	if err != nil {
 		return reflect.ValueOf(nil), errors.WithStack(err)
 	}

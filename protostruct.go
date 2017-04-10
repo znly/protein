@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package protostruct
+package protein
 
 import (
 	"fmt"
@@ -24,22 +24,23 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
-	"github.com/znly/protein"
 )
 
 // -----------------------------------------------------------------------------
 
 // TODO(cmc)
-func CreateStructType(
-	schemaUID string, sm *protein.SchemaMap,
-) (reflect.Type, error) {
+//
+// Package protostruct provides a straigtforward API to generate
+// structure type definitions at runtime based on a set of
+// protobuf descriptors.
+func CreateStructType(schemaUID string, sm *SchemaMap) (reflect.Type, error) {
 	ps := sm.GetByUID(schemaUID)
 	if ps == nil {
 		err := errors.Wrapf(ErrSchemaNotFound, "`%s`: schema not found", schemaUID)
 		return reflect.TypeOf(nil), err
 	}
 	deps := ps.GetDeps()
-	pss := make(map[string]*protein.ProtobufSchema, len(deps))
+	pss := make(map[string]*ProtobufSchema, len(deps))
 	for depUID := range deps {
 		if dep := sm.GetByUID(depUID); dep == nil {
 			err := errors.Wrapf(ErrSchemaNotFound, "`%s`: dep not found", depUID)
@@ -77,11 +78,11 @@ func CreateStructType(
 
 // TODO(cmc)
 func buildScalarTypes(
-	pss map[string]*protein.ProtobufSchema,
+	pss map[string]*ProtobufSchema,
 	structFields map[string][]reflect.StructField,
 ) error {
 	for uid, ps := range pss {
-		msg, ok := ps.GetDescr().(*protein.ProtobufSchema_Message)
+		msg, ok := ps.GetDescr().(*ProtobufSchema_Message)
 		if !ok {
 			continue
 		}
@@ -121,8 +122,8 @@ func buildScalarTypes(
 
 // TODO(cmc)
 func buildCustomTypes(
-	ps *protein.ProtobufSchema,
-	pss map[string]*protein.ProtobufSchema,
+	ps *ProtobufSchema,
+	pss map[string]*ProtobufSchema,
 	pssRevMap map[string]string,
 	structFields map[string][]reflect.StructField,
 	structTypes map[string]reflect.Type,
@@ -136,7 +137,7 @@ func buildCustomTypes(
 			return errors.WithStack(err)
 		}
 	}
-	msg, ok := ps.GetDescr().(*protein.ProtobufSchema_Message)
+	msg, ok := ps.GetDescr().(*ProtobufSchema_Message)
 	if !ok {
 		return nil
 	}

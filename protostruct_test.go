@@ -12,23 +12,55 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package protostruct
+package protein
 
 import (
+	"fmt"
+	"go/format"
+	"log"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/teh-cmc/gools/tagcleaner"
 
-	"github.com/znly/protein"
 	"github.com/znly/protein/protobuf/test"
 )
 
 // -----------------------------------------------------------------------------
 
+// TODO(cmc)
+func ExampleCreateStructType() {
+	sm, err := ScanSchemas()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	structType, err := CreateStructType(
+		sm.GetByFQName(".test.TestSchemaXXX").UID, sm,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// remove struct-tags to ease reading
+	structType = tagcleaner.Clean(structType)
+
+	// pretty-print the resulting struct-type
+	b, err := format.Source(
+		[]byte(fmt.Sprintf("type TestSchemaXXX %s", structType)),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(b))
+}
+
+// -----------------------------------------------------------------------------
+
 func TestProtostruct_CreateStructType(t *testing.T) {
 	// fetched locally instanciated schemas
-	sm, err := protein.ScanSchemas()
+	sm, err := ScanSchemas()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, sm)
 
