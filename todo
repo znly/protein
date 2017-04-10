@@ -7,11 +7,13 @@ protostruct
 --
 
 v1
-    runtime decoding
-    doc & comments
-    benchmarks encoding/decoding vs. vanilla
-    customizable hasher
     structtypes caching
-    race tests
     remove protobuf-generated doc noise
+    logrus -> zap
+    typed errors everywhere
     store protobufschemas within protobufpayloads
+    customizable hasher
+    race tests
+    benchmarks encoding/decoding vs. vanilla
+    doc & comments
+    gogo.stdtypes support

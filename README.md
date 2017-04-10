@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="resources/pics/protein.png" alt="Protein"/>
+</p>
+
 # Protein
 
 Open-source release of _ZProto_.
