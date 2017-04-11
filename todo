@@ -7,9 +7,6 @@ protostruct
 --
 
 v1
-    structtypes caching
-    runtime decoding of enums
-    runtime decoding of oneofs
     remove protobuf-generated doc noise
     logrus -> zap
     typed errors everywhere
@@ -18,5 +15,7 @@ v1
     race tests
     benchmarks encoding/decoding vs. vanilla
     doc & comments
+    runtime decoding of enums
+    runtime decoding of oneofs
     expose metrics (follow rocksDB model?)
     gogo.stdtypes support

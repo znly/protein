@@ -40,6 +40,8 @@ type Transcoder struct {
 	// TODO(cmc)
 	getter func(ctx context.Context, uid string) (*ProtobufSchema, error)
 	setter func(ctx context.Context, ps *ProtobufSchema) error
+
+	typeCache map[string]reflect.Type
 }
 
 // TODO(cmc)
@@ -78,9 +80,10 @@ func NewTranscoder(ctx context.Context,
 	})
 
 	return &Transcoder{
-		sm:     sm,
-		getter: getter,
-		setter: setter,
+		sm:        sm,
+		getter:    getter,
+		setter:    setter,
+		typeCache: map[string]reflect.Type{},
 	}, nil
 }
 
@@ -172,7 +175,7 @@ func (t *Transcoder) get(
 // of the associated message are currently availaible in the bank.
 // When this happens, the first UID from the returned list will be used (and
 // since this list is randomly-ordered, effectively a random UID will be used).
-// this won't do remote calls
+// ---> this won't do remote calls
 func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error) {
 	// marshal the actual protobuf message
 	payload, err := proto.Marshal(msg)
@@ -230,13 +233,24 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	if err := proto.Unmarshal(payload, &pp); err != nil {
 		return reflect.ValueOf(nil), errors.WithStack(err)
 	}
-	structType, err := CreateStructType(pp.GetUID(), t.sm)
-	if err != nil {
-		return reflect.ValueOf(nil), errors.WithStack(err)
-	}
-	if structType.Kind() != reflect.Struct {
-		// TODO(cmc): real error
-		return reflect.ValueOf(nil), errors.Errorf("`%s`: not a struct type", structType)
+
+	// fetch structure-type from cache, or create it if it doesn't exist
+	var structType reflect.Type
+	var ok bool
+	uid := pp.GetUID()
+	if structType, ok = t.typeCache[uid]; !ok {
+		st, err := CreateStructType(uid, t.sm)
+		if err != nil {
+			return reflect.ValueOf(nil), errors.WithStack(err)
+		}
+		if st.Kind() != reflect.Struct {
+			// TODO(cmc): real error
+			return reflect.ValueOf(nil), errors.Errorf(
+				"`%s`: not a struct type", structType,
+			)
+		}
+		structType = st
+		t.typeCache[uid] = st // upsert type-cache
 	}
 
 	// allocate a new structure using the given type definition, the
