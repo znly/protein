@@ -2,17 +2,6 @@
 // source: protobuf_payload.proto
 // DO NOT EDIT!
 
-/*
-Package protein is a generated protocol buffer package.
-
-It is generated from these files:
-	protobuf_payload.proto
-	protobuf_schema.proto
-
-It has these top-level messages:
-	ProtobufPayload
-	ProtobufSchema
-*/
 package protein
 
 import proto "github.com/gogo/protobuf/proto"

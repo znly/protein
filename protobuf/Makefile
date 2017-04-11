@@ -10,7 +10,10 @@ SCHEMAS_TEST=             \
 	${PATH_PROTOS}/test_schema.proto     \
 	${PATH_PROTOS}/test_schema_xxx.proto
 
-all: protobuf protobuf-test
+all: protobuf protobuf-test rmcomments
+
+rmcomments:
+	@./rmcomments.sh $(shell find ${PATH_SCHEMAS} ${PATH_SCHEMAS_TEST} -name "*.pb.go")
 
 protobuf-clean:
 	rm -f ${PATH_SCHEMAS}/*.pb.go

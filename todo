@@ -1,13 +1,4 @@
-global
-    vendoring at root folder mess?!
-
-protostruct
-    cover all edge cases
-
---
-
 v1
-    remove protobuf-generated doc noise
     logrus -> zap
     typed errors everywhere
     store protobufschemas within protobufpayloads
