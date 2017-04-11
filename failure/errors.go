@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package protein
+package failure
 
 // -----------------------------------------------------------------------------
 
@@ -20,13 +20,19 @@ type Error int
 
 const (
 	/* Common */
-	ErrUnknown        Error = iota // unknown error
-	ErrSchemaNotFound Error = iota // schema's UID not found
+	ErrUnknown            Error = iota // unknown error
+	ErrSchemaNotFound     Error = iota // schema's UID not found
+	ErrDependencyNotFound Error = iota // dependency's UID not found
 
 	/* Protostruct */
 	ErrSchemaNotMessageType   Error = iota // schema is not of messsage type
 	ErrFieldTypeNotSupported  Error = iota // field type not supported
 	ErrFieldLabelNotSupported Error = iota // field label not supported
+
+	/* Protoscan */
+	ErrFDAlreadyInstanciated Error = iota // file-descriptor instanciated multiple times
+	ErrFDUnknownType         Error = iota // file-descriptor is of unknown type
+	ErrFDMissingDependency   Error = iota // file-descriptor depends on missing schemas
 )
 
 func (e Error) Error() string {
@@ -35,17 +41,27 @@ func (e Error) Error() string {
 	case ErrUnknown:
 		return "error: unknown"
 	case ErrSchemaNotFound:
-		return "error: no such schema UID"
+		return "error: schema not found"
+	case ErrDependencyNotFound:
+		return "error: dependency not found"
 
 	/* Protostruct */
 	case ErrSchemaNotMessageType:
-		return "error: schema is not of message type"
+		return "error [protostruct]: schema is not of message type"
 	case ErrFieldTypeNotSupported:
-		return "error: this field type is not supported"
+		return "error [protostruct]: this field type is not supported"
 	case ErrFieldLabelNotSupported:
-		return "error: this kind of field label is not supported"
+		return "error [protostruct]: this kind of field label is not supported"
+
+	/* Protoscan */
+	case ErrFDAlreadyInstanciated:
+		return "error [protoscan]: file-descriptor is instanciated multiple times"
+	case ErrFDUnknownType:
+		return "error [protoscan]: file-descriptor is of unknown type"
+	case ErrFDMissingDependency:
+		return "error [protoscan]: file-descriptor depends on missing protobuf schemas"
 
 	default:
-		return "error: wat"
+		return "error: undefined"
 	}
 }

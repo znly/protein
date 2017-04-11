@@ -1,10 +1,9 @@
 v1
-    typed errors everywhere
     store protobufschemas within protobufpayloads
     customizable hasher
     race tests
     benchmarks encoding/decoding vs. vanilla
-    doc & comments
+    doc & comments (needs a note about errors)
     runtime decoding of enums
     runtime decoding of oneofs
     expose metrics (follow rocksDB model?)

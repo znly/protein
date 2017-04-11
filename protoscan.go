@@ -22,6 +22,7 @@ import (
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/pkg/errors"
+	"github.com/znly/protein/failure"
 	"github.com/znly/protein/protoscan"
 )
 
@@ -151,8 +152,9 @@ func ScanSchemas(failOnDuplicate ...bool) (*SchemaMap, error) {
 			//   are going to take a turn for the worst pretty soon; hence you're
 			//   better off crashing right now
 			if _, ok := fdps[file]; ok && fod {
-				// TODO(cmc): real error
-				return nil, errors.Errorf("`%s` is instanciated multiple times", file)
+				return nil, errors.Wrapf(failure.ErrFDAlreadyInstanciated,
+					"`%s` is instanciated multiple times", file,
+				)
 			}
 			fdp, err := protoscan.UnzipAndUnmarshal(descr)
 			if err != nil {
@@ -181,12 +183,16 @@ func ScanSchemas(failOnDuplicate ...bool) (*SchemaMap, error) {
 		case *descriptor.EnumDescriptorProto:
 			ps.Descr = &ProtobufSchema_Enum{Enum: descr}
 		default:
-			return nil, errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
+			return nil, errors.Wrapf(failure.ErrFDUnknownType,
+				"`%v`: unknown type", reflect.TypeOf(descr),
+			)
 		}
 		for _, depUID := range dt.DependencyUIDs() {
 			dep, ok := dtsByUID[depUID]
 			if !ok {
-				return nil, errors.Errorf("missing dependency")
+				return nil, errors.Wrapf(failure.ErrDependencyNotFound,
+					"`%s`: no dependency with this UID", depUID,
+				)
 			}
 			ps.Deps[depUID] = dep.FQName()
 		}

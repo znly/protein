@@ -16,12 +16,12 @@ package protein
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"unsafe"
 
 	"github.com/gogo/protobuf/proto"
 	proto_vanilla "github.com/golang/protobuf/proto"
+	"github.com/znly/protein/failure"
 
 	"github.com/pkg/errors"
 )
@@ -47,8 +47,9 @@ type Transcoder struct {
 // TODO(cmc)
 var (
 	TranscoderGetterNoOp = func(ctx context.Context, uid string) (*ProtobufSchema, error) {
-		// TODO(cmc): real error
-		return nil, errors.New(fmt.Sprintf("`%s`: schema not found", uid))
+		return nil, errors.Wrapf(failure.ErrSchemaNotFound,
+			"`%s`: no schema with this UID", uid,
+		)
 	}
 	TranscoderSetterNoOp = func(context.Context, *ProtobufSchema) error {
 		return nil
@@ -62,7 +63,6 @@ func NewTranscoder(ctx context.Context,
 	setter func(ctx context.Context, ps *ProtobufSchema) error,
 ) (*Transcoder, error) {
 	if setter == nil || getter == nil {
-		// TODO(cmc): real error
 		return nil, errors.New("getter and/or setter cannot be nil")
 	}
 
@@ -118,7 +118,6 @@ func (t *Transcoder) get(
 	} else { // ..then fallback on user-defined getter
 		ps, err := t.getter(ctx, uid)
 		if err != nil {
-			// TODO(cmc): real error
 			return nil, errors.Wrapf(err, "`%s`: schema not found", uid)
 		}
 		t.sm.Add(map[string]*ProtobufSchema{uid: ps}) // upsert local-cache
@@ -152,7 +151,6 @@ func (t *Transcoder) get(
 		t.sm.Add(map[string]*ProtobufSchema{uid: ps}) // upsert local-cache
 	}
 	if len(psNotFound) > 0 {
-		// TODO(cmc): real error
 		err := errors.Errorf("one or more dependencies couldn't be found")
 		for depUID := range psNotFound {
 			err = errors.Wrapf(err, "`%s`: dependency not found", depUID)
@@ -190,14 +188,12 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 	} else if fqn = proto_vanilla.MessageName(msg); len(fqn) > 0 {
 	} else if fqn = proto.MessageName(msg); len(fqn) > 0 {
 	} else {
-		// TODO(cmc): real error
 		return nil, errors.Errorf("cannot encode, unknown protobuf schema")
 	}
 
 	// find the first UID associated with the fully-qualified name of `msg`
 	ps := t.sm.GetByFQName("." + fqn)
 	if ps == nil {
-		// TODO(cmc): real error
 		return nil, errors.Errorf("`%s`: FQ-name not found", fqn)
 	}
 	// wrap the marshaled payload within a ProtobufPayload message
@@ -244,7 +240,6 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 			return reflect.ValueOf(nil), errors.WithStack(err)
 		}
 		if st.Kind() != reflect.Struct {
-			// TODO(cmc): real error
 			return reflect.ValueOf(nil), errors.Errorf(
 				"`%s`: not a struct type", structType,
 			)

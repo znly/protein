@@ -24,6 +24,7 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
+	"github.com/znly/protein/failure"
 )
 
 // -----------------------------------------------------------------------------
@@ -36,15 +37,17 @@ import (
 func CreateStructType(schemaUID string, sm *SchemaMap) (reflect.Type, error) {
 	ps := sm.GetByUID(schemaUID)
 	if ps == nil {
-		err := errors.Wrapf(ErrSchemaNotFound, "`%s`: schema not found", schemaUID)
-		return reflect.TypeOf(nil), err
+		return reflect.TypeOf(nil), errors.Wrapf(failure.ErrSchemaNotFound,
+			"`%s`: no schema with this UID", schemaUID,
+		)
 	}
 	deps := ps.GetDeps()
 	pss := make(map[string]*ProtobufSchema, len(deps))
 	for depUID := range deps {
 		if dep := sm.GetByUID(depUID); dep == nil {
-			err := errors.Wrapf(ErrSchemaNotFound, "`%s`: dep not found", depUID)
-			return reflect.TypeOf(nil), err
+			return reflect.TypeOf(nil), errors.Wrapf(failure.ErrDependencyNotFound,
+				"`%s`: no dependency with this UID", depUID,
+			)
 		} else {
 			pss[depUID] = dep
 		}
@@ -170,8 +173,7 @@ func buildCustomTypes(
 			case descriptor.FieldDescriptorProto_LABEL_REPEATED:
 				fType = reflect.SliceOf(fType)
 			default:
-				err = errors.Wrapf(
-					ErrFieldLabelNotSupported,
+				err = errors.Wrapf(failure.ErrFieldLabelNotSupported,
 					"`%s`: field label not supported", f.GetLabel(),
 				)
 			}
@@ -243,20 +245,17 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		t = reflect.TypeOf(string(""))
 	case descriptor.FieldDescriptorProto_TYPE_GROUP:
-		err = errors.Wrapf(
-			ErrFieldTypeNotSupported,
+		err = errors.Wrapf(failure.ErrFieldTypeNotSupported,
 			"`%s`: field type not supported", f.GetType(),
 		)
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		err = errors.Wrapf(
-			ErrFieldTypeNotSupported,
+		err = errors.Wrapf(failure.ErrFieldTypeNotSupported,
 			"`%s`: field type not supported", f.GetType(),
 		)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		t = reflect.TypeOf([]byte{})
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
-		err = errors.Wrapf(
-			ErrFieldTypeNotSupported,
+		err = errors.Wrapf(failure.ErrFieldTypeNotSupported,
 			"`%s`: field type not supported", f.GetType(),
 		)
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
@@ -277,8 +276,7 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 	case descriptor.FieldDescriptorProto_LABEL_REPEATED:
 		t = reflect.SliceOf(t)
 	default:
-		err = errors.Wrapf(
-			ErrFieldLabelNotSupported,
+		err = errors.Wrapf(failure.ErrFieldLabelNotSupported,
 			"`%s`: field label not supported", f.GetLabel(),
 		)
 	}
@@ -346,8 +344,7 @@ func fieldTag(
 	case descriptor.FieldDescriptorProto_TYPE_SINT64:
 		wt = "zigzag64"
 	default:
-		return "", errors.Wrapf(
-			ErrFieldTypeNotSupported,
+		return "", errors.Wrapf(failure.ErrFieldTypeNotSupported,
 			"`%s`: field type not supported", f.GetType(),
 		)
 	}

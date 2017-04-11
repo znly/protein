@@ -21,6 +21,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/pkg/errors"
+	"github.com/znly/protein/failure"
 )
 
 // -----------------------------------------------------------------------------
@@ -225,12 +226,13 @@ func (dt *DescriptorTree) computeDependencyLinks(
 	switch descr := dt.descr.(type) {
 	case *descriptor.DescriptorProto:
 		for _, f := range descr.GetField() {
-			// `typeName` is non-empty only if it references a Message or
-			// Enum type
+			// `typeName` is non-empty only if it references a Message or Enum type
 			if typeName := f.GetTypeName(); len(typeName) > 0 {
 				dep, ok := dtsByName[typeName]
 				if !ok {
-					return errors.Errorf("`%s`: no such type", typeName)
+					return errors.Wrapf(failure.ErrDependencyNotFound,
+						"`%s`: no dependency with this name", typeName,
+					)
 				}
 				if _, ok := alreadyMet[dep]; ok {
 					continue
@@ -242,7 +244,9 @@ func (dt *DescriptorTree) computeDependencyLinks(
 	case *descriptor.EnumDescriptorProto:
 		// nothing to do
 	default:
-		return errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
+		return errors.Wrapf(failure.ErrFDUnknownType,
+			"`%v`: unknown type", reflect.TypeOf(descr),
+		)
 	}
 	return nil
 }
@@ -366,7 +370,9 @@ func checkDescriptorType(descr proto.Message) error {
 	case *descriptor.DescriptorProto:
 	case *descriptor.EnumDescriptorProto:
 	default:
-		return errors.Errorf("`%v`: illegal type", reflect.TypeOf(descr))
+		return errors.Wrapf(failure.ErrFDUnknownType,
+			"`%v`: unknown type", reflect.TypeOf(descr),
+		)
 	}
 	return nil
 }
