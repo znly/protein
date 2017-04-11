@@ -1,4 +1,4 @@
-package protoscan
+package protein
 
 import "go.uber.org/zap"
 

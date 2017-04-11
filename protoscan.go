@@ -20,7 +20,6 @@ import (
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/pkg/errors"
-	"github.com/prometheus/common/log"
 	"github.com/znly/protein/protoscan"
 )
 
@@ -155,7 +154,7 @@ func ScanSchemas(failOnDuplicate ...bool) (*SchemaMap, error) {
 			}
 			fdp, err := protoscan.UnzipAndUnmarshal(descr)
 			if err != nil {
-				log.Error(err)
+				log.Error(err.Error())
 				continue
 			}
 			fdps[file] = fdp

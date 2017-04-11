@@ -17,7 +17,6 @@ package protein
 import (
 	"fmt"
 	"go/format"
-	"log"
 	"reflect"
 	"testing"
 
@@ -33,14 +32,14 @@ import (
 func ExampleCreateStructType() {
 	sm, err := ScanSchemas()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
 
 	structType, err := CreateStructType(
 		sm.GetByFQName(".test.TestSchemaXXX").UID, sm,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
 
 	// remove struct-tags to ease reading
@@ -51,7 +50,7 @@ func ExampleCreateStructType() {
 		[]byte(fmt.Sprintf("type TestSchemaXXX %s", structType)),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
 	fmt.Println(string(b))
 }

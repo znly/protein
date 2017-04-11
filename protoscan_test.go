@@ -16,7 +16,6 @@ package protein
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +28,7 @@ import (
 func ExampleScanSchemas() {
 	sm, err := ScanSchemas()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
 
 	sm.ForEach(func(ps *ProtobufSchema) error {

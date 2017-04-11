@@ -16,7 +16,6 @@ package protein
 
 import (
 	"context"
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -39,7 +38,7 @@ func TestMain(m *testing.M) {
 		TranscoderGetterNoOp, TranscoderSetterNoOp,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
 
 	os.Exit(m.Run())

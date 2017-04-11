@@ -15,9 +15,12 @@
 package protoscan
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"unsafe"
+
+	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 	"github.com/znly/protein/internal/objfile"
@@ -79,7 +82,10 @@ func BindProtofileSymbols() (map[string]*map[string][]byte, error) {
 	for _, s := range syms {
 		if strings.HasSuffix(s.Name, "/proto.protoFiles") {
 			p := (*map[string][]byte)(unsafe.Pointer(uintptr(s.Addr)))
-			log.Infof("found symbol `%s` @ %p", s.Name, p)
+			log.Info("symbol found", zap.String("name", s.Name),
+				zap.String("addr", fmt.Sprintf("%x", s.Addr)),
+			)
+			//log.Infof("found symbol `%s` @ %p", s.Name, p)
 			protoFilesBindings[s.Name] = p
 		}
 	}
