@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +40,7 @@ func TestMain(m *testing.M) {
 		TranscoderGetterNoOp, TranscoderSetterNoOp,
 	)
 	if err != nil {
-		log.Fatal(err.Error())
+		zap.L().Fatal(err.Error())
 	}
 
 	os.Exit(m.Run())

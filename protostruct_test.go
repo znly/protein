@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/teh-cmc/gools/tagcleaner"
 
@@ -32,14 +34,14 @@ import (
 func ExampleCreateStructType() {
 	sm, err := ScanSchemas()
 	if err != nil {
-		log.Fatal(err.Error())
+		zap.L().Fatal(err.Error())
 	}
 
 	structType, err := CreateStructType(
 		sm.GetByFQName(".test.TestSchemaXXX").UID, sm,
 	)
 	if err != nil {
-		log.Fatal(err.Error())
+		zap.L().Fatal(err.Error())
 	}
 
 	// remove struct-tags to ease reading
@@ -50,7 +52,7 @@ func ExampleCreateStructType() {
 		[]byte(fmt.Sprintf("type TestSchemaXXX %s", structType)),
 	)
 	if err != nil {
-		log.Fatal(err.Error())
+		zap.L().Fatal(err.Error())
 	}
 	fmt.Println(string(b))
 }

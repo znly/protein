@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/znly/protein/protoscan"
 )
@@ -28,7 +30,7 @@ import (
 func ExampleScanSchemas() {
 	sm, err := ScanSchemas()
 	if err != nil {
-		log.Fatal(err.Error())
+		zap.L().Fatal(err.Error())
 	}
 
 	sm.ForEach(func(ps *ProtobufSchema) error {

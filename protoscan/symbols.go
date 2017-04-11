@@ -82,7 +82,7 @@ func BindProtofileSymbols() (map[string]*map[string][]byte, error) {
 	for _, s := range syms {
 		if strings.HasSuffix(s.Name, "/proto.protoFiles") {
 			p := (*map[string][]byte)(unsafe.Pointer(uintptr(s.Addr)))
-			log.Info("symbol found", zap.String("name", s.Name),
+			zap.L().Info("symbol found", zap.String("name", s.Name),
 				zap.String("addr", fmt.Sprintf("%x", s.Addr)),
 			)
 			//log.Infof("found symbol `%s` @ %p", s.Name, p)
