@@ -21,9 +21,50 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	proto_vanilla "github.com/golang/protobuf/proto"
-	"github.com/znly/protein/failure"
 
 	"github.com/pkg/errors"
+)
+
+// -----------------------------------------------------------------------------
+
+// TODO(cmc): document all of this
+
+type TranscoderGetter func(ctx context.Context, uid string) ([]byte, error)
+type TranscoderSetter func(ctx context.Context, payload []byte) error
+type TranscoderSerializer func(ps *ProtobufSchema) ([]byte, error)
+type TranscoderDeserializer func(payload []byte, ps *ProtobufSchema) error
+
+// -----------------------------------------------------------------------------
+
+// TODO(cmc): document all of this
+
+type TranscoderOpt func(trc *Transcoder) *Transcoder
+
+var (
+	TranscoderOptGetter = func(getter TranscoderGetter) TranscoderOpt {
+		return func(trc *Transcoder) *Transcoder {
+			trc.getter = getter
+			return trc
+		}
+	}
+	TranscoderOptSetter = func(setter TranscoderSetter) TranscoderOpt {
+		return func(trc *Transcoder) *Transcoder {
+			trc.setter = setter
+			return trc
+		}
+	}
+	TranscoderOptSerializer = func(serializer TranscoderSerializer) TranscoderOpt {
+		return func(trc *Transcoder) *Transcoder {
+			trc.serializer = serializer
+			return trc
+		}
+	}
+	TranscoderOptDeserializer = func(deserializer TranscoderDeserializer) TranscoderOpt {
+		return func(trc *Transcoder) *Transcoder {
+			trc.deserializer = deserializer
+			return trc
+		}
+	}
 )
 
 // -----------------------------------------------------------------------------
@@ -33,58 +74,50 @@ import (
 // Transcoder implements a Wirer that integrates with a Bank in order to augment
 // the protobuf payloads that it encodes with additional versioning metadata.
 //
-// These metadata are then used by the internal decoder of the versioned Wirer
+// These metadata are then used by the internal deserializer of the versioned Wirer
 // to determinate how to decode an incoming payload on the wire.
 type Transcoder struct {
 	sm *SchemaMap
-	// TODO(cmc)
-	getter func(ctx context.Context, uid string) (*ProtobufSchema, error)
-	setter func(ctx context.Context, ps *ProtobufSchema) error
+
+	getter       TranscoderGetter
+	setter       TranscoderSetter
+	serializer   TranscoderSerializer
+	deserializer TranscoderDeserializer
 
 	typeCache map[string]reflect.Type
 }
 
 // TODO(cmc)
-var (
-	TranscoderGetterNoOp = func(ctx context.Context, uid string) (*ProtobufSchema, error) {
-		return nil, errors.Wrapf(failure.ErrSchemaNotFound,
-			"`%s`: no schema with this UID", uid,
-		)
-	}
-	TranscoderSetterNoOp = func(context.Context, *ProtobufSchema) error {
-		return nil
-	}
-	// TODO(cmc): add helpers
-)
-
-// TODO(cmc)
-func NewTranscoder(ctx context.Context,
-	getter func(ctx context.Context, uid string) (*ProtobufSchema, error),
-	setter func(ctx context.Context, ps *ProtobufSchema) error,
+func NewTranscoder(
+	ctx context.Context, opts ...TranscoderOpt,
 ) (*Transcoder, error) {
-	if setter == nil || getter == nil {
-		return nil, errors.New("getter and/or setter cannot be nil")
+	t := &Transcoder{}
+	for _, opt := range opts {
+		t = opt(t)
 	}
 
 	sm, err := ScanSchemas()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	sm.ForEach(func(ps *ProtobufSchema) error {
+	if err := sm.ForEach(func(ps *ProtobufSchema) error {
 		select {
 		case <-ctx.Done():
 			return errors.WithStack(ctx.Err())
 		default:
 		}
-		return setter(ctx, ps)
-	})
+		b, err := t.serializer(ps)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		return t.setter(ctx, b)
+	}); err != nil {
+		return nil, errors.WithStack(err)
+	}
 
-	return &Transcoder{
-		sm:        sm,
-		getter:    getter,
-		setter:    setter,
-		typeCache: map[string]reflect.Type{},
-	}, nil
+	t.sm = sm
+	t.typeCache = map[string]reflect.Type{}
+	return t, nil
 }
 
 // -----------------------------------------------------------------------------
@@ -108,23 +141,27 @@ func NewTranscoder(ctx context.Context,
 //   A "schemas not found" error is returned if one or more dependencies couldn't
 //   be found.
 func (t *Transcoder) get(
-	ctx context.Context, uid string,
+	ctx context.Context, schemaUID string,
 ) (map[string]*ProtobufSchema, error) {
 	schemas := map[string]*ProtobufSchema{}
 
 	// get root schema
-	if ps := t.sm.GetByUID(uid); ps != nil { // try the local cache first..
-		schemas[uid] = ps
+	if ps := t.sm.GetByUID(schemaUID); ps != nil { // try the local cache first..
+		schemas[schemaUID] = ps
 	} else { // ..then fallback on user-defined getter
-		ps, err := t.getter(ctx, uid)
+		b, err := t.getter(ctx, schemaUID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "`%s`: schema not found", uid)
+			return nil, errors.Wrapf(err, "`%s`: schema not found", schemaUID)
 		}
-		t.sm.Add(map[string]*ProtobufSchema{uid: ps}) // upsert local-cache
+		var ps ProtobufSchema
+		if err := t.deserializer(b, &ps); err != nil {
+			return nil, errors.WithStack(err)
+		}
+		t.sm.Add(map[string]*ProtobufSchema{schemaUID: &ps}) // upsert local-cache
 	}
 
 	// get dependencies
-	deps := schemas[uid].GetDeps()
+	deps := schemas[schemaUID].GetDeps()
 
 	// try the local cache first..
 	psNotFound := make(map[string]struct{}, len(deps))
@@ -140,15 +177,19 @@ func (t *Transcoder) get(
 	}
 
 	// ..then fallback on user-defined getter
+	var b []byte
 	var err error
 	for depUID := range psNotFound {
-		var ps *ProtobufSchema
-		ps, err = t.getter(ctx, depUID)
+		b, err = t.getter(ctx, depUID)
 		if err != nil {
+			return nil, errors.Wrapf(err, "`%s`: schema not found", depUID)
+		}
+		var ps ProtobufSchema
+		if err := t.deserializer(b, &ps); err != nil {
 			return nil, errors.WithStack(err)
 		}
-		delete(psNotFound, depUID)                    // it's been found!
-		t.sm.Add(map[string]*ProtobufSchema{uid: ps}) // upsert local-cache
+		delete(psNotFound, depUID)                           // it's been found!
+		t.sm.Add(map[string]*ProtobufSchema{schemaUID: &ps}) // upsert local-cache
 	}
 	if len(psNotFound) > 0 {
 		err := errors.Errorf("one or more dependencies couldn't be found")
