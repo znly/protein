@@ -21,6 +21,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	proto_vanilla "github.com/golang/protobuf/proto"
+	"github.com/znly/protein/failure"
 
 	"github.com/pkg/errors"
 )
@@ -92,14 +93,39 @@ func NewTranscoder(
 	ctx context.Context, opts ...TranscoderOpt,
 ) (*Transcoder, error) {
 	t := &Transcoder{}
-	for _, opt := range opts {
-		t = opt(t)
-	}
 
 	sm, err := ScanSchemas()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	t.sm = sm
+	t.typeCache = map[string]reflect.Type{}
+
+	opts = append([]TranscoderOpt{
+		/* default getter: always returns ErrSchemaNotFound */
+		TranscoderOptGetter(func(
+			ctx context.Context, schemaUID string,
+		) ([]byte, error) {
+			/* err not found */
+			return nil, errors.Wrapf(failure.ErrSchemaNotFound,
+				"`%s`: no schema with this UID", schemaUID,
+			)
+		}),
+		/* default setter: no-op */
+		TranscoderOptSetter(func(context.Context, []byte) error { return nil }),
+		/* default serializer: wraps the ProtobufSchema within a ProtobufPayload */
+		TranscoderOptSerializer(func(ps *ProtobufSchema) ([]byte, error) {
+			return t.Encode(ps)
+		}),
+		/* default deserializer: unwraps a ProtobufPayload */
+		TranscoderOptDeserializer(func(payload []byte, ps *ProtobufSchema) error {
+			return t.DecodeAs(payload, ps)
+		}),
+	}, opts...)
+	for _, opt := range opts {
+		t = opt(t)
+	}
+
 	if err := sm.ForEach(func(ps *ProtobufSchema) error {
 		select {
 		case <-ctx.Done():
@@ -115,8 +141,6 @@ func NewTranscoder(
 		return nil, errors.WithStack(err)
 	}
 
-	t.sm = sm
-	t.typeCache = map[string]reflect.Type{}
 	return t, nil
 }
 

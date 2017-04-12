@@ -36,9 +36,7 @@ var trc *Transcoder
 
 func TestMain(m *testing.M) {
 	var err error
-	trc, err = NewTranscoder(context.Background(),
-		TranscoderGetterNoOp, TranscoderSetterNoOp,
-	)
+	trc, err = NewTranscoder(context.Background())
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
