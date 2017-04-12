@@ -31,7 +31,7 @@ import (
 // representation of this data as a result.
 //
 // This Hasher, provided by the end-user, will be used to version every schema
-// and associated dependencies found by the Protoscan package.
+// and associated dependencies found by the `protoscan` package.
 //
 // This package provides some basic, ready-to-use hashers: MD5, SHA1, SHA256,
 // SHA512.
