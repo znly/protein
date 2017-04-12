@@ -27,10 +27,17 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
+// Hasher takes a pre-sorted slice of byte-slices as input and outputs a hashed
+// representation of this data as a result.
+//
+// This Hasher, provided by the end-user, will be used to version every schema
+// and associated dependencies found by the Protoscan package.
+//
+// This package provides some basic, ready-to-use hashers: MD5, SHA1, SHA256,
+// SHA512.
 type Hasher func(bss ByteSSlice) ([]byte, error)
 
-// MD5 implements a Hasher based the MD5 hashing algorithm.
+// MD5 implements a Hasher using the MD5 hashing algorithm.
 func MD5(bss ByteSSlice) ([]byte, error) {
 	h := md5.New()
 	var err error
@@ -43,7 +50,7 @@ func MD5(bss ByteSSlice) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-// SHA1 implements a Hasher based the SHA1 hashing algorithm.
+// SHA1 implements a Hasher using the SHA1 hashing algorithm.
 func SHA1(bss ByteSSlice) ([]byte, error) {
 	h := sha1.New()
 	var err error
@@ -56,7 +63,7 @@ func SHA1(bss ByteSSlice) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-// SHA256 implements a Hasher based the SHA256 hashing algorithm.
+// SHA256 implements a Hasher using the SHA256 hashing algorithm.
 func SHA256(bss ByteSSlice) ([]byte, error) {
 	h := sha256.New()
 	var err error
@@ -69,7 +76,7 @@ func SHA256(bss ByteSSlice) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-// SHA512 implements a Hasher based the SHA512 hashing algorithm.
+// SHA512 implements a Hasher using the SHA512 hashing algorithm.
 func SHA512(bss ByteSSlice) ([]byte, error) {
 	h := sha512.New()
 	var err error
@@ -84,10 +91,9 @@ func SHA512(bss ByteSSlice) ([]byte, error) {
 
 // -----------------------------------------------------------------------------
 
-// ByteSSlice is a sortable slice of slice of bytes.
+// ByteSSlice is a sortable slice of byte-slices.
 //
-// It is mostly used for computing recursive hashes in DescriptorTree's
-// implementation.
+// It is used to compute the schema hashes in DescriptorTree's implementation.
 type ByteSSlice [][]byte
 
 func (bss ByteSSlice) Len() int      { return len(bss) }

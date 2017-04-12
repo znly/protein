@@ -7,3 +7,15 @@
 Open-source release of _ZProto_.
 
 Do not commit anything Zenly-specific in this repository.
+
+## Internals overview
+
+## Error handling
+
+## Logging
+
+## Monitoring
+
+## Contributing
+
+## License
