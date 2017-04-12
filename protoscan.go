@@ -101,6 +101,8 @@ func (sm *SchemaMap) GetByFQName(fqName string) *ProtobufSchema {
 
 // -----------------------------------------------------------------------------
 
+// TODO(cmc): document hash stuff
+//
 // ScanSchemas retrieves every protobuf schema instanciated by any of the
 // currently loaded protobuf libraries (e.g. golang/protobuf, gogo/protobuf...),
 // computes the dependency graphs that link them, then finally returns a map of
@@ -122,7 +124,9 @@ func (sm *SchemaMap) GetByFQName(fqName string) *ProtobufSchema {
 //
 // Have a look at the `protoscan` sub-package for more information about how all
 // of this works; the code is heavily documented.
-func ScanSchemas(failOnDuplicate ...bool) (*SchemaMap, error) {
+func ScanSchemas(
+	hasher protoscan.Hasher, hashPrefix string, failOnDuplicate ...bool,
+) (*SchemaMap, error) {
 	fod := true
 	if len(failOnDuplicate) > 0 {
 		fod = failOnDuplicate[0]
@@ -165,7 +169,7 @@ func ScanSchemas(failOnDuplicate ...bool) (*SchemaMap, error) {
 		}
 	}
 
-	dtsByUID, err := protoscan.NewDescriptorTrees(fdps)
+	dtsByUID, err := protoscan.NewDescriptorTrees(hasher, hashPrefix, fdps)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

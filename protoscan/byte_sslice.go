@@ -16,11 +16,71 @@ package protoscan
 
 import (
 	"bytes"
+	"crypto/md5"
+	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha512"
 	"sort"
 
 	"github.com/pkg/errors"
 )
+
+// -----------------------------------------------------------------------------
+
+// TODO(cmc)
+type Hasher func(bss ByteSSlice) ([]byte, error)
+
+// MD5 implements a Hasher based the MD5 hashing algorithm.
+func MD5(bss ByteSSlice) ([]byte, error) {
+	h := md5.New()
+	var err error
+	for _, bs := range bss {
+		_, err = h.Write(bs)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+	return h.Sum(nil), nil
+}
+
+// SHA1 implements a Hasher based the SHA1 hashing algorithm.
+func SHA1(bss ByteSSlice) ([]byte, error) {
+	h := sha1.New()
+	var err error
+	for _, bs := range bss {
+		_, err = h.Write(bs)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+	return h.Sum(nil), nil
+}
+
+// SHA256 implements a Hasher based the SHA256 hashing algorithm.
+func SHA256(bss ByteSSlice) ([]byte, error) {
+	h := sha256.New()
+	var err error
+	for _, bs := range bss {
+		_, err = h.Write(bs)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+	return h.Sum(nil), nil
+}
+
+// SHA512 implements a Hasher based the SHA512 hashing algorithm.
+func SHA512(bss ByteSSlice) ([]byte, error) {
+	h := sha512.New()
+	var err error
+	for _, bs := range bss {
+		_, err = h.Write(bs)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+	return h.Sum(nil), nil
+}
 
 // -----------------------------------------------------------------------------
 
@@ -36,21 +96,3 @@ func (bss ByteSSlice) Less(i, j int) bool {
 	return bytes.Compare(bss[i], bss[j]) < 0
 }
 func (bss ByteSSlice) Sort() { sort.Sort(bss) }
-
-// Hash implements the hashing logic behind every hash value generated inside
-// the protoscan package.
-//
-// It first sorts `bss`, then computes the SHA-1 hash of the result of appending
-// every entry in the sorted slice.
-func (bss ByteSSlice) Hash() ([]byte, error) {
-	bss.Sort()
-	h := sha256.New()
-	var err error
-	for _, bs := range bss {
-		_, err = h.Write(bs)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-	return h.Sum(nil), nil
-}

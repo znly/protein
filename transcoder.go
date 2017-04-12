@@ -22,6 +22,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	proto_vanilla "github.com/golang/protobuf/proto"
 	"github.com/znly/protein/failure"
+	"github.com/znly/protein/protoscan"
 
 	"github.com/pkg/errors"
 )
@@ -89,12 +90,12 @@ type Transcoder struct {
 }
 
 // TODO(cmc)
-func NewTranscoder(
-	ctx context.Context, opts ...TranscoderOpt,
+func NewTranscoder(ctx context.Context,
+	hasher protoscan.Hasher, hashPrefix string, opts ...TranscoderOpt,
 ) (*Transcoder, error) {
 	t := &Transcoder{}
 
-	sm, err := ScanSchemas()
+	sm, err := ScanSchemas(hasher, hashPrefix)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

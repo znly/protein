@@ -26,6 +26,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/znly/protein/protobuf/test"
+	"github.com/znly/protein/protoscan"
 )
 
 // -----------------------------------------------------------------------------
@@ -36,7 +37,7 @@ var trc *Transcoder
 
 func TestMain(m *testing.M) {
 	var err error
-	trc, err = NewTranscoder(context.Background())
+	trc, err = NewTranscoder(context.Background(), protoscan.SHA256, "PROT-")
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}

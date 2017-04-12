@@ -26,13 +26,14 @@ import (
 	"github.com/teh-cmc/gools/tagcleaner"
 
 	"github.com/znly/protein/protobuf/test"
+	"github.com/znly/protein/protoscan"
 )
 
 // -----------------------------------------------------------------------------
 
 // TODO(cmc)
 func ExampleCreateStructType() {
-	sm, err := ScanSchemas()
+	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
@@ -61,7 +62,7 @@ func ExampleCreateStructType() {
 
 func TestProtostruct_CreateStructType(t *testing.T) {
 	// fetched locally instanciated schemas
-	sm, err := ScanSchemas()
+	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
 	assert.Nil(t, err)
 	assert.NotEmpty(t, sm)
 

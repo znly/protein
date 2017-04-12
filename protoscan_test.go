@@ -28,7 +28,7 @@ import (
 
 // TODO(cmc)
 func ExampleScanSchemas() {
-	sm, err := ScanSchemas()
+	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
@@ -45,7 +45,7 @@ func ExampleScanSchemas() {
 // -----------------------------------------------------------------------------
 
 func TestProtoscan_ScanSchemas(t *testing.T) {
-	sm, err := ScanSchemas()
+	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
 	assert.Nil(t, err)
 
 	// should at least find the `.protoscan.TestSchema` and its nested

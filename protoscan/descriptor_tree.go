@@ -34,21 +34,21 @@ type descriptorNode struct {
 	// (e.g. .google.protobuf.Timestamp).
 	fqName string
 
-	// hashSingle is the the hash (as implemented in byte_sslice.go) of
-	// `this.descr`.
-	// hashSingle = SHA1(d.descr)
+	// hashSingle is the hash of `this.descr`.
+	// hashSingle = HASHER(d.descr)
 	//
 	// It is used to uniquely and deterministically identify a Message or Enum
 	// type that has been instanciated by a protobuf library.
 	//
-	// hashSingle is necessary for the internal DescriptorTree machinery to work,
-	// but it is never exposed to the end-user of the protoscan package.
+	// hashSingle is a necessary intermediate step for the internal
+	// DescriptorTree machinery to work, but it is never exposed to the end-user
+	// of the protoscan package.
 	hashSingle []byte
-	// hashRecursive is the the hash (as implemented in byte_sslice.go) of
-	// `this.descr` + the hashes of every type it depends on (recursively).
+	// hashRecursive is the the hash `this.descr` + the hashes of every type it
+	// depends on (recursively).
 	// Note that, to ensure determinism, the list of hashes used to compute
-	// the final `hashRecursive` value is alphabetically-sorted first.
-	// hashRecursive = SHA1(SORT(d.hashSingle, d.AllDependencyHashes))
+	// the final `hashRecursive` value is lexicographically-sorted first.
+	// hashRecursive = HASHER(SORT(d.hashSingle, d.AllDependencyHashes))
 	//
 	// It is the unique, deterministic and versioned identifier for a Message or
 	// Enum type.
@@ -65,6 +65,8 @@ func (dn *descriptorNode) Descr() proto.Message { return dn.descr }
 type DescriptorTree struct {
 	*descriptorNode
 	deps []*DescriptorTree
+	// TODO(cmc)
+	hashPrefix string
 }
 
 // FQName returns the fully-qualified name of the underlying descriptor `descr`
@@ -73,7 +75,6 @@ func (dt *DescriptorTree) FQName() string { return dt.fqName }
 
 // UID returns a unique, deterministic, versioned identifier for this particular
 // DescriptorTree.
-// Protoscan identifers are always prefixed with "PROT-".
 //
 // This identifier is computed from `dt`'s protobuf schema as well as its
 // dependencies' schemas.
@@ -83,7 +84,7 @@ func (dt *DescriptorTree) FQName() string { return dt.fqName }
 // The returned string is the hexadecimal representation of `dt`'s internal
 // recursive hash.
 func (dt *DescriptorTree) UID() string {
-	return "PROT-" + hex.EncodeToString(dt.hashRecursive)
+	return dt.hashPrefix + hex.EncodeToString(dt.hashRecursive)
 }
 
 // DependencyUIDs recursively walks through the dependencies of `dt` and
@@ -117,21 +118,23 @@ func (dt *DescriptorTree) DependencyUIDs() []string {
 // -----------------------------------------------------------------------------
 
 // NewDescriptorTrees builds all the dependency trees it can compute from the
-// given file descriptors; then returns the resulting DescriptorTrees as map
-// arranged by their UID.
-//
-// Note that Protoscan UIDs are always prefixed with "PROT-".
+// given file descriptors; then returns the resulting DescriptorTrees as a map
+// arranged by their UID (computed using the specified `hasher` function).
 func NewDescriptorTrees(
+	hasher Hasher, hashPrefix string,
 	fdps map[string]*descriptor.FileDescriptorProto,
 ) (map[string]*DescriptorTree, error) {
 	// all of the Message/Enum/Nested types currently instanciated,
 	// arranged by their fully-qualified names
-	dtsByName, err := collectDescriptorTypes(fdps)
+	dtsByName, err := collectDescriptorTypes(hasher, fdps)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	for _, dt := range dtsByName {
+		dt.hashPrefix = hashPrefix
+	}
 
-	// Computes the immediated dependencies of every available DescriptorTree.
+	// Computes the immediate dependencies of every available DescriptorTree.
 	//
 	// Note that we need all the dependency trees of all DescriptorTrees
 	// to be already computed before we can compute the definitive recursive
@@ -144,7 +147,7 @@ func NewDescriptorTrees(
 
 	// computes the recursive hash value for each available DescriptorTree
 	for _, dt := range dtsByName {
-		if err := dt.computeRecursiveHash(); err != nil {
+		if err := dt.computeRecursiveHash(hasher); err != nil {
 			return nil, errors.WithStack(err)
 		}
 	}
@@ -168,7 +171,7 @@ func NewDescriptorTrees(
 // At this stage, dependencies have not been calculated yet, hence the
 // `deps` list of the DescriptorTree is nil.
 func newDescriptorTree(
-	fqName string, descr proto.Message,
+	hasher Hasher, fqName string, descr proto.Message,
 ) (*DescriptorTree, error) {
 	if err := checkDescriptorType(descr); err != nil {
 		return nil, errors.WithStack(err)
@@ -187,7 +190,9 @@ func newDescriptorTree(
 	// E.g., in the protein package, both `.protoscan.ProtobufSchema.DepsEntry`
 	// and `.protoscan.TestSchema.DepsEntry` have the same binary encoding, but
 	// different names.
-	hashSingle, err := ByteSSlice{[]byte(fqName), descrBytes}.Hash()
+	bss := ByteSSlice{[]byte(fqName), descrBytes}
+	bss.Sort() // always sort first for determinism
+	hashSingle, err := hasher(bss)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -256,7 +261,7 @@ func (dt *DescriptorTree) computeDependencyLinks(
 //
 // NOTE: `computeDependencyLinks()` must have been called first for every
 // available DescriptorTree.
-func (dt *DescriptorTree) computeRecursiveHash() error {
+func (dt *DescriptorTree) computeRecursiveHash(hasher Hasher) error {
 	// used to avoid non-linear dependencies
 	alreadyMet := make(map[*DescriptorTree]struct{}, len(dt.deps))
 	var recurseChildren func(dts []*DescriptorTree) (ByteSSlice, error)
@@ -286,8 +291,9 @@ func (dt *DescriptorTree) computeRecursiveHash() error {
 	// Otherwise, any DescriptorTree with the exact same set of dependencies
 	// would end up with the same recursive hash, thus overwriting each other.
 	singleHashes = append(singleHashes, dt.hashSingle)
+	singleHashes.Sort() // always sort first for determinism
 
-	hashRecursive, err := singleHashes.Hash()
+	hashRecursive, err := hasher(singleHashes)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -309,7 +315,7 @@ func (dt *DescriptorTree) computeRecursiveHash() error {
 // This map is a necessary intermediate representation for computing the final
 // dependency trees.
 func collectDescriptorTypes(
-	fdps map[string]*descriptor.FileDescriptorProto,
+	hasher Hasher, fdps map[string]*descriptor.FileDescriptorProto,
 ) (map[string]*DescriptorTree, error) {
 	// Pre-allocating len(fdps)*5, assuming an average of 5 Message/Enum
 	// types per file.
@@ -323,13 +329,13 @@ func collectDescriptorTypes(
 	var recurseMessages func(mt *descriptor.DescriptorProto, parent string) error
 	recurseMessages = func(mt *descriptor.DescriptorProto, parent string) error {
 		parent += ("." + mt.GetName())
-		dt, err := newDescriptorTree(parent, mt)
+		dt, err := newDescriptorTree(hasher, parent, mt)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 		dtsByName[dt.fqName] = dt
 		for _, et := range mt.GetEnumType() {
-			dt, err := newDescriptorTree(parent+"."+et.GetName(), et)
+			dt, err := newDescriptorTree(hasher, parent+"."+et.GetName(), et)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -347,7 +353,7 @@ func collectDescriptorTypes(
 	for _, fdp := range fdps {
 		parent := "." + fdp.GetPackage()
 		for _, et := range fdp.GetEnumType() {
-			dt, err := newDescriptorTree(parent+"."+et.GetName(), et)
+			dt, err := newDescriptorTree(hasher, parent+"."+et.GetName(), et)
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}

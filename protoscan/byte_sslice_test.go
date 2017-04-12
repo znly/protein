@@ -36,7 +36,7 @@ func TestProtoscan_ByteSSlice_Hash(t *testing.T) {
 	assert.Equal(t, butEverybodyCallsMe, bss[2])
 
 	expectedH := "f27edac4d321e0b20a955c3b2d1d77cb6331eab6954e02cb5621c37a9775869f"
-	h, err := bss.Hash()
+	h, err := SHA256(bss)
 	assert.Nil(t, err)
 	assert.NotNil(t, h)
 	assert.Equal(t, expectedH, hex.EncodeToString(h))
