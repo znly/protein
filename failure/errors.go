@@ -14,8 +14,14 @@
 
 package failure
 
+import "github.com/pkg/errors"
+
 // -----------------------------------------------------------------------------
 
+// Error is an error returned either by `protein` or any of its sub-packages.
+//
+// Use `IsProteinError(err)` to know whether or not an error originates from
+// this package.
 type Error int
 
 const (
@@ -30,10 +36,13 @@ const (
 	ErrFieldLabelNotSupported Error = iota // field label not supported
 
 	/* Protoscan */
-	ErrFDAlreadyInstanciated Error = iota // file-descriptor instanciated multiple times
-	ErrFDUnknownType         Error = iota // file-descriptor is of unknown type
-	ErrFDMissingDependency   Error = iota // file-descriptor depends on missing schemas
+	ErrFDAlreadyInstanciated Error = iota // proto-file-descriptor instanciated multiple times
+	ErrFDUnknownType         Error = iota // proto-file-descriptor is of unknown type
+	ErrFDMissingDependency   Error = iota // proto-file-descriptor depends on missing schemas
 )
+
+// IsProteinError returns true if `err` originates from this package.
+func IsProteinError(err error) bool { _, ok := errors.Cause(err).(Error); return ok }
 
 func (e Error) Error() string {
 	switch e {
@@ -55,11 +64,11 @@ func (e Error) Error() string {
 
 	/* Protoscan */
 	case ErrFDAlreadyInstanciated:
-		return "error [protoscan]: file-descriptor is instanciated multiple times"
+		return "error [protoscan]: this protobuf file-descriptor is instanciated multiple times"
 	case ErrFDUnknownType:
-		return "error [protoscan]: file-descriptor is of unknown type"
+		return "error [protoscan]: this protobuf file-descriptor is of unknown type"
 	case ErrFDMissingDependency:
-		return "error [protoscan]: file-descriptor depends on missing protobuf schemas"
+		return "error [protoscan]: this protobuf file-descriptor depends on missing protobuf schemas"
 
 	default:
 		return "error: undefined"

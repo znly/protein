@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package protein!
-// TODO(cmc): transpose readme here
-package protein
+// Package failure lists all the possible errors that can be returned either by
+// `protein` or any of its sub-packages.
+//
+// Protein uses the `github.com/pkg/errors` package to handle error propagation
+// throughout the call stack; please take a look at the related documentation
+// for more information on how to properly handle these errors.
+package failure
