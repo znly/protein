@@ -170,7 +170,7 @@ func NewTranscoder(ctx context.Context,
 //   round-trips.
 //   A "schemas not found" error is returned if one or more dependencies couldn't
 //   be found.
-func (t *Transcoder) get(
+func (t *Transcoder) update(
 	ctx context.Context, schemaUID string,
 ) (map[string]*ProtobufSchema, error) {
 	schemas := map[string]*ProtobufSchema{}
@@ -187,6 +187,7 @@ func (t *Transcoder) get(
 		if err := t.deserializer(b, &ps); err != nil {
 			return nil, errors.WithStack(err)
 		}
+		schemas[schemaUID] = &ps
 		t.sm.Add(map[string]*ProtobufSchema{schemaUID: &ps}) // upsert local-cache
 	}
 
@@ -198,6 +199,7 @@ func (t *Transcoder) get(
 	for depUID := range deps {
 		if ps := t.sm.GetByUID(depUID); ps != nil {
 			schemas[depUID] = ps
+			t.sm.Add(map[string]*ProtobufSchema{depUID: ps}) // upsert local-cache
 		} else {
 			psNotFound[depUID] = struct{}{}
 		}
@@ -218,8 +220,9 @@ func (t *Transcoder) get(
 		if err := t.deserializer(b, &ps); err != nil {
 			return nil, errors.WithStack(err)
 		}
-		delete(psNotFound, depUID)                           // it's been found!
-		t.sm.Add(map[string]*ProtobufSchema{schemaUID: &ps}) // upsert local-cache
+		delete(psNotFound, depUID) // it's been found!
+		schemas[depUID] = &ps
+		t.sm.Add(map[string]*ProtobufSchema{depUID: &ps}) // upsert local-cache
 	}
 	if len(psNotFound) > 0 {
 		err := errors.Errorf("one or more dependencies couldn't be found")
@@ -296,6 +299,8 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 //go:generate linkname-gen -symbol "github.com/gogo/protobuf/proto.(*Buffer).unmarshalType" -def "func unmarshalType(*proto.Buffer, reflect.Type, *proto.StructProperties, bool, unsafe.Pointer) error"
 
 // Decode decodes the `payload` into a dynamically-defined structure type.
+//
+// TODO(cmc): explain the update call & add context parameter
 func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	var pp ProtobufPayload
 	if err := proto.Unmarshal(payload, &pp); err != nil {
@@ -310,6 +315,9 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	structType, ok = t.typeCache[schemaUID]
 	t.typeCacheLock.RUnlock()
 	if !ok {
+		if _, err := t.update(context.Background(), schemaUID); err != nil {
+			return reflect.ValueOf(nil), errors.WithStack(err)
+		}
 		st, err := CreateStructType(schemaUID, t.sm)
 		if err != nil {
 			return reflect.ValueOf(nil), errors.WithStack(err)
