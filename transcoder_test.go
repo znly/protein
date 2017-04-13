@@ -31,7 +31,32 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc): add benchmarks
+var _transcoderTestSchemaXXX = &test.TestSchemaXXX{
+	SchemaUID: "uuid-A",
+	FQNames:   []string{"fqname-A", "fqname-B"},
+	Deps: map[string]*test.TestSchemaXXX_NestedEntry{
+		"dep-A": {Key: "dep-A-A", Value: "dep-A-A"},
+		"dep-B": {Key: "dep-A-B", Value: "dep-A-B"},
+	},
+	Ids: map[int32]string{
+		1: "id-A",
+		2: "id-B",
+	},
+	Ts: types.Timestamp{
+		Seconds: 42,
+		Nanos:   43,
+	},
+	Ots: &test.OtherTestSchemaXXX{
+		Ts: &types.Timestamp{
+			Seconds: 942,
+			Nanos:   943,
+		},
+	},
+	Nss: []test.TestSchemaXXX_NestedEntry{
+		{Key: "nss-key-A", Value: "nss-value-A"},
+		{Key: "nss-key-B", Value: "nss-value-B"},
+	},
+}
 
 var trc *Transcoder
 
@@ -51,6 +76,7 @@ func TestMain(m *testing.M) {
 func TestTranscoder_localCache(t *testing.T) {
 	var expectedUID string
 	var revUID string
+
 	// `.test.TestSchema` should be in there
 	expectedUID = "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"
 	revUID = trc.sm.GetByFQName(".test.TestSchema").UID
@@ -96,34 +122,48 @@ func TestTranscoder_Encode(t *testing.T) {
 	assert.Equal(t, tsExpected, &ts)
 }
 
-// -----------------------------------------------------------------------------
-
-var _transcoderTestSchemaXXX = &test.TestSchemaXXX{
-	SchemaUID: "uuid-A",
-	FQNames:   []string{"fqname-A", "fqname-B"},
-	Deps: map[string]*test.TestSchemaXXX_NestedEntry{
-		"dep-A": {Key: "dep-A-A", Value: "dep-A-A"},
-		"dep-B": {Key: "dep-A-B", Value: "dep-A-B"},
-	},
-	Ids: map[int32]string{
-		1: "id-A",
-		2: "id-B",
-	},
-	Ts: types.Timestamp{
-		Seconds: 42,
-		Nanos:   43,
-	},
-	Ots: &test.OtherTestSchemaXXX{
-		Ts: &types.Timestamp{
-			Seconds: 942,
-			Nanos:   943,
-		},
-	},
-	Nss: []test.TestSchemaXXX_NestedEntry{
-		{Key: "nss-key-A", Value: "nss-value-A"},
-		{Key: "nss-key-B", Value: "nss-value-B"},
-	},
+func BenchmarkTranscoder_Encode(b *testing.B) {
+	b.Run("gogo/protobuf", func(b *testing.B) {
+		b.SetParallelism(3)
+		b.RunParallel(func(pb *testing.PB) {
+			var payload []byte
+			var err error
+			for pb.Next() {
+				payload, err = proto.Marshal(_transcoderTestSchemaXXX)
+				assert.Nil(b, err)
+				assert.NotNil(b, payload)
+			}
+		})
+	})
+	b.Run("znly/protein/implicit-fqname", func(b *testing.B) {
+		b.SetParallelism(3)
+		b.RunParallel(func(pb *testing.PB) {
+			var payload []byte
+			var err error
+			for pb.Next() {
+				payload, err = trc.Encode(_transcoderTestSchemaXXX)
+				assert.Nil(b, err)
+				assert.NotNil(b, payload)
+			}
+		})
+	})
+	b.Run("znly/protein/explicit-fqname", func(b *testing.B) {
+		b.SetParallelism(3)
+		b.RunParallel(func(pb *testing.PB) {
+			var payload []byte
+			var err error
+			for pb.Next() {
+				payload, err = trc.Encode(
+					_transcoderTestSchemaXXX, "test.TestSchemaXXX",
+				)
+				assert.Nil(b, err)
+				assert.NotNil(b, payload)
+			}
+		})
+	})
 }
+
+// -----------------------------------------------------------------------------
 
 func TestTranscoder_DecodeAs(t *testing.T) {
 	payload, err := trc.Encode(_transcoderTestSchemaXXX)

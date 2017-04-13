@@ -256,9 +256,10 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 	} else {
 		return nil, errors.Errorf("cannot encode, unknown protobuf schema")
 	}
+	fqn = "." + fqn
 
 	// find the first UID associated with the fully-qualified name of `msg`
-	ps := t.sm.GetByFQName("." + fqn)
+	ps := t.sm.GetByFQName(fqn)
 	if ps == nil {
 		return nil, errors.Errorf("`%s`: FQ-name not found", fqn)
 	}
