@@ -20,6 +20,8 @@ import "go.uber.org/zap"
 
 // init sets the global logger in dev mode before running tests.
 func init() {
+	return // DISABLED!
+
 	l, err := zap.NewDevelopment()
 	if err != nil {
 		zap.L().Fatal(err.Error())
