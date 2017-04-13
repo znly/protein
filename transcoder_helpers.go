@@ -17,6 +17,9 @@ package protein
 import (
 	"context"
 
+	"go.uber.org/zap"
+
+	"github.com/garyburd/redigo/redis"
 	"github.com/pkg/errors"
 	"github.com/rainycape/memcache"
 	"github.com/znly/protein/failure"
@@ -31,7 +34,7 @@ import (
 
 /* Memcached */
 
-// CreateTranscoderGetterMemcached returns a TranscoderGetter suitable for
+// CreateTranscoderGetterMemcached returns a `TranscoderGetter` suitable for
 // querying a binary blob from a memcached-compatible store.
 //
 // The specified context will be ignored.
@@ -48,7 +51,7 @@ func CreateTranscoderGetterMemcached(c *memcache.Client) TranscoderGetter {
 	}
 }
 
-// CreateTranscoderSetterMemcached returns a TranscoderSetter suitable for
+// CreateTranscoderSetterMemcached returns a `TranscoderSetter` suitable for
 // setting a binary blob into a memcached-compatible store.
 //
 // The specified context will be ignored.
@@ -64,6 +67,42 @@ func CreateTranscoderSetterMemcached(c *memcache.Client) TranscoderSetter {
 // -----------------------------------------------------------------------------
 
 /* Redis */
+
+// CreateTranscoderGetterRedis returns a `TranscoderGetter` suitable for
+// querying a binary blob from a redis-compatible store.
+//
+// The specified context will be ignored.
+func CreateTranscoderGetterRedis(p *redis.Pool) TranscoderGetter {
+	return func(ctx context.Context, schemaUID string) ([]byte, error) {
+		c := p.Get() // avoid defer()
+		b, err := redis.Bytes(c.Do("GET", schemaUID))
+		if err := c.Close(); err != nil {
+			zap.L().Error(err.Error())
+		}
+		if err != nil {
+			if err == redis.ErrNil {
+				return nil, errors.WithStack(failure.ErrSchemaNotFound)
+			}
+			return nil, errors.WithStack(err)
+		}
+		return b, nil
+	}
+}
+
+// CreateTranscoderSetterRedis returns a `TranscoderSetter` suitable for
+// setting a binary blob into a redis-compatible store.
+//
+// The specified context will be ignored.
+func CreateTranscoderSetterRedis(p *redis.Pool) TranscoderSetter {
+	return func(ctx context.Context, schemaUID string, payload []byte) error {
+		c := p.Get() // avoid defer()
+		_, err := c.Do("SET", schemaUID, payload)
+		if err := c.Close(); err != nil {
+			zap.L().Error(err.Error())
+		}
+		return errors.WithStack(err)
+	}
+}
 
 // -----------------------------------------------------------------------------
 
