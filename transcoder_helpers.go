@@ -16,19 +16,16 @@ package protein
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/gocql/gocql"
 	"github.com/pkg/errors"
 	"github.com/rainycape/memcache"
 	"github.com/znly/protein/failure"
 )
-
-// -----------------------------------------------------------------------------
-
-//type TranscoderGetter func(ctx context.Context, schemaUID string) ([]byte, error)
-//type TranscoderSetter func(ctx context.Context, schemaUID string, payload []byte) error
 
 // -----------------------------------------------------------------------------
 
@@ -73,7 +70,7 @@ func CreateTranscoderSetterMemcached(c *memcache.Client) TranscoderSetter {
 //
 // The specified context will be ignored.
 func CreateTranscoderGetterRedis(p *redis.Pool) TranscoderGetter {
-	return func(ctx context.Context, schemaUID string) ([]byte, error) {
+	return func(_ context.Context, schemaUID string) ([]byte, error) {
 		c := p.Get() // avoid defer()
 		b, err := redis.Bytes(c.Do("GET", schemaUID))
 		if err := c.Close(); err != nil {
@@ -94,7 +91,7 @@ func CreateTranscoderGetterRedis(p *redis.Pool) TranscoderGetter {
 //
 // The specified context will be ignored.
 func CreateTranscoderSetterRedis(p *redis.Pool) TranscoderSetter {
-	return func(ctx context.Context, schemaUID string, payload []byte) error {
+	return func(_ context.Context, schemaUID string, payload []byte) error {
 		c := p.Get() // avoid defer()
 		_, err := c.Do("SET", schemaUID, payload)
 		if err := c.Close(); err != nil {
@@ -107,3 +104,56 @@ func CreateTranscoderSetterRedis(p *redis.Pool) TranscoderSetter {
 // -----------------------------------------------------------------------------
 
 /* Cassandra */
+
+// CreateTranscoderGetterCassandra returns a `TranscoderGetter` suitable for
+// querying a binary blob from a cassandra-compatible store.
+//
+// The <table> column-family is expected to have (at least) the following
+// columns:
+//   TABLE (
+//   	<keyCol> ascii,
+//   	<dataCol> blob,
+//   PRIMARY KEY (<keyCol>))
+//
+// The given context is forwarded to `gocql`.
+func CreateTranscoderGetterCassandra(s *gocql.Session,
+	table, keyCol, dataCol string,
+) TranscoderGetter {
+	queryGet := fmt.Sprintf(
+		`SELECT %s FROM %s WHERE %s = ?;`, dataCol, table, keyCol,
+	)
+	return func(ctx context.Context, schemaUID string) ([]byte, error) {
+		var payload []byte
+		if err := s.Query(queryGet, schemaUID).
+			WithContext(ctx).
+			Scan(&payload); err != nil {
+			if err == gocql.ErrNotFound {
+				return nil, errors.WithStack(failure.ErrSchemaNotFound)
+			}
+			return nil, errors.WithStack(err)
+		}
+		return payload, nil
+	}
+}
+
+// CreateTranscoderSetterCassandra returns a `TranscoderSetter` suitable for
+// setting a binary blob into a redis-compatible store.
+//
+// The <table> column-family is expected to have (at least) the following
+// columns:
+//   TABLE (
+//   	<keyCol> ascii,
+//   	<dataCol> blob,
+//   PRIMARY KEY (<keyCol>))
+//
+// The given context is forwarded to `gocql`.
+func CreateTranscoderSetterCassandra(s *gocql.Session,
+	table, keyCol, dataCol string,
+) TranscoderSetter {
+	querySet := fmt.Sprintf(
+		`INSERT INTO %s (%s, %s) VALUES (?, ?);`, table, keyCol, dataCol,
+	)
+	return func(ctx context.Context, schemaUID string, payload []byte) error {
+		return errors.WithStack(s.Query(querySet, schemaUID, payload).Exec())
+	}
+}
