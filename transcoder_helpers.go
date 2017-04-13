@@ -31,11 +31,11 @@ import (
 
 /* Memcached */
 
-// CreateTranscoderGetterMemcached returns a `TranscoderGetter` suitable for
+// NewTranscoderGetterMemcached returns a `TranscoderGetter` suitable for
 // querying a binary blob from a memcached-compatible store.
 //
 // The specified context will be ignored.
-func CreateTranscoderGetterMemcached(c *memcache.Client) TranscoderGetter {
+func NewTranscoderGetterMemcached(c *memcache.Client) TranscoderGetter {
 	return func(ctx context.Context, schemaUID string) ([]byte, error) {
 		item, err := c.Get(schemaUID)
 		if err != nil {
@@ -48,11 +48,11 @@ func CreateTranscoderGetterMemcached(c *memcache.Client) TranscoderGetter {
 	}
 }
 
-// CreateTranscoderSetterMemcached returns a `TranscoderSetter` suitable for
+// NewTranscoderSetterMemcached returns a `TranscoderSetter` suitable for
 // setting a binary blob into a memcached-compatible store.
 //
 // The specified context will be ignored.
-func CreateTranscoderSetterMemcached(c *memcache.Client) TranscoderSetter {
+func NewTranscoderSetterMemcached(c *memcache.Client) TranscoderSetter {
 	return func(ctx context.Context, schemaUID string, payload []byte) error {
 		return c.Set(&memcache.Item{
 			Key:   schemaUID,
@@ -65,11 +65,11 @@ func CreateTranscoderSetterMemcached(c *memcache.Client) TranscoderSetter {
 
 /* Redis */
 
-// CreateTranscoderGetterRedis returns a `TranscoderGetter` suitable for
+// NewTranscoderGetterRedis returns a `TranscoderGetter` suitable for
 // querying a binary blob from a redis-compatible store.
 //
 // The specified context will be ignored.
-func CreateTranscoderGetterRedis(p *redis.Pool) TranscoderGetter {
+func NewTranscoderGetterRedis(p *redis.Pool) TranscoderGetter {
 	return func(_ context.Context, schemaUID string) ([]byte, error) {
 		c := p.Get() // avoid defer()
 		b, err := redis.Bytes(c.Do("GET", schemaUID))
@@ -86,11 +86,11 @@ func CreateTranscoderGetterRedis(p *redis.Pool) TranscoderGetter {
 	}
 }
 
-// CreateTranscoderSetterRedis returns a `TranscoderSetter` suitable for
+// NewTranscoderSetterRedis returns a `TranscoderSetter` suitable for
 // setting a binary blob into a redis-compatible store.
 //
 // The specified context will be ignored.
-func CreateTranscoderSetterRedis(p *redis.Pool) TranscoderSetter {
+func NewTranscoderSetterRedis(p *redis.Pool) TranscoderSetter {
 	return func(_ context.Context, schemaUID string, payload []byte) error {
 		c := p.Get() // avoid defer()
 		_, err := c.Do("SET", schemaUID, payload)
@@ -105,7 +105,7 @@ func CreateTranscoderSetterRedis(p *redis.Pool) TranscoderSetter {
 
 /* Cassandra */
 
-// CreateTranscoderGetterCassandra returns a `TranscoderGetter` suitable for
+// NewTranscoderGetterCassandra returns a `TranscoderGetter` suitable for
 // querying a binary blob from a cassandra-compatible store.
 //
 // The <table> column-family is expected to have (at least) the following
@@ -116,7 +116,7 @@ func CreateTranscoderSetterRedis(p *redis.Pool) TranscoderSetter {
 //   PRIMARY KEY (<keyCol>))
 //
 // The given context is forwarded to `gocql`.
-func CreateTranscoderGetterCassandra(s *gocql.Session,
+func NewTranscoderGetterCassandra(s *gocql.Session,
 	table, keyCol, dataCol string,
 ) TranscoderGetter {
 	queryGet := fmt.Sprintf(
@@ -136,7 +136,7 @@ func CreateTranscoderGetterCassandra(s *gocql.Session,
 	}
 }
 
-// CreateTranscoderSetterCassandra returns a `TranscoderSetter` suitable for
+// NewTranscoderSetterCassandra returns a `TranscoderSetter` suitable for
 // setting a binary blob into a redis-compatible store.
 //
 // The <table> column-family is expected to have (at least) the following
@@ -147,7 +147,7 @@ func CreateTranscoderGetterCassandra(s *gocql.Session,
 //   PRIMARY KEY (<keyCol>))
 //
 // The given context is forwarded to `gocql`.
-func CreateTranscoderSetterCassandra(s *gocql.Session,
+func NewTranscoderSetterCassandra(s *gocql.Session,
 	table, keyCol, dataCol string,
 ) TranscoderSetter {
 	querySet := fmt.Sprintf(

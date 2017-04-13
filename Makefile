@@ -1,3 +1,5 @@
+.PHONY: toc test bench test-bench
+
 toc:
 	docker run --rm -it -v ${PWD}:/usr/src jorgeandrada/doctoc --github
 
