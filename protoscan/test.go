@@ -17,13 +17,12 @@ package protoscan
 // -----------------------------------------------------------------------------
 
 // `TestSchema` and `DepsEntry` are both immutable, for-testing-purposes
-// only schemas and, as such, both their respective single & recursive
-// hashes can be known in advance and shouldn't ever change unless the
-// `ByteSSlice.Hash` method is ever modified.
+// schemas and, as such, both their respective single & recursive hashes can be
+// known in advance and shouldn't ever change.
 //
-// If such a modification of `ByteSSlice.Hash`'s behavior were to happen,
-// you'd have to modify the following expected values in order to fix the
-// tests.. That is, if you're sure about what you're doing.
+// If any modification to either of these schemas were to happen, you'd have to
+// modify the following expected values in order to fix the tests.. That is, if
+// you're sure about what you're doing.
 const (
 	TEST_TSKnownName = ".test.TestSchema"
 	TEST_DEKnownName = ".test.TestSchema.DepsEntry"

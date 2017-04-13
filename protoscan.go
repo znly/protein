@@ -28,7 +28,14 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
+// SchemaMap is a thread-safe mapping & reverse-mapping of `ProtobufSchema`s.
+//
+// It atomically maintains two data-structures in parallel:
+// - a map of schemaUIDs to `ProtobufSchema`s
+// - a map of fully-qualified schema names to schemaUIDs
+//
+// The `SchemaMap` is the main data-structure behind a `Transcoder`, used to
+// store and retrieve every `ProtobufSchema`s that have been cached locally.
 type SchemaMap struct {
 	lock *sync.RWMutex
 	// map[schemaUID]ProtobufSchema
@@ -38,7 +45,7 @@ type SchemaMap struct {
 	revmap map[string][]string
 }
 
-// TODO(cmc)
+// NewSchemaMap returns a new SchemaMap with its maps & locks pre-allocated.
 func NewSchemaMap() *SchemaMap {
 	return &SchemaMap{
 		lock:      &sync.RWMutex{},
@@ -47,7 +54,8 @@ func NewSchemaMap() *SchemaMap {
 	}
 }
 
-// TODO(cmc)
+// Add walks over the given map of `schemas` and add them to the `SchemaMap`
+// while making sure to atomically maintain both the internal map and reverse-map.
 func (sm *SchemaMap) Add(schemas map[string]*ProtobufSchema) *SchemaMap {
 	sm.lock.Lock()
 	for _, s := range schemas {
@@ -58,7 +66,7 @@ func (sm *SchemaMap) Add(schemas map[string]*ProtobufSchema) *SchemaMap {
 	return sm
 }
 
-// TODO(cmc)
+// Size returns the number of schemas stored in the `SchemaMap`.
 func (sm *SchemaMap) Size() int {
 	sm.lock.RLock()
 	sz := len(sm.schemaMap)
@@ -66,7 +74,9 @@ func (sm *SchemaMap) Size() int {
 	return sz
 }
 
-// TODO(cmc)
+// ForEach applies the specified function `f` to every entry in the `SchemaMap`.
+//
+// ForEach is guaranteed to see a consistent view of the internal mapping.
 func (sm *SchemaMap) ForEach(f func(s *ProtobufSchema) error) error {
 	sm.lock.RLock()
 	for _, s := range sm.schemaMap {
@@ -79,15 +89,25 @@ func (sm *SchemaMap) ForEach(f func(s *ProtobufSchema) error) error {
 	return nil
 }
 
-// TODO(cmc)
-func (sm *SchemaMap) GetByUID(uid string) *ProtobufSchema {
+// GetByUID returns the `ProtobufSchema` associated with the specified `schemaUID`.
+//
+// This is thread-safe.
+func (sm *SchemaMap) GetByUID(schemaUID string) *ProtobufSchema {
 	sm.lock.RLock()
-	s := sm.schemaMap[uid]
+	s := sm.schemaMap[schemaUID]
 	sm.lock.RUnlock() // avoid defer()
 	return s
 }
 
-// TODO(cmc)
+// GetByFQName returns the first `ProtobufSchema`s that matches the specified
+// fully-qualified name (e.g. `.google.protobuf.timestamp`).
+//
+// If more than one version of the same schema are stored in the `SchemaMap`,
+// a fully-qualified name will naturally point to several distinct schemaUIDs.
+// When this happens, `GetByFQName` will always return the first one to had
+// been inserted in the map.
+//
+// This is thread-safe.
 func (sm *SchemaMap) GetByFQName(fqName string) *ProtobufSchema {
 	sm.lock.RLock()
 	uids := sm.revmap[fqName]
@@ -101,29 +121,38 @@ func (sm *SchemaMap) GetByFQName(fqName string) *ProtobufSchema {
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc): document hash stuff
-//
 // ScanSchemas retrieves every protobuf schema instanciated by any of the
-// currently loaded protobuf libraries (e.g. golang/protobuf, gogo/protobuf...),
-// computes the dependency graphs that link them, then finally returns a map of
-// ProtobufSchema objects (which are protobuf objects themselves) using each
-// schema's unique, deterministic & versioned identifier as key.
+// currently loaded protobuf libraries (e.g. `golang/protobuf`,
+// `gogo/protobuf`...), computes the dependency graphs that link them, builds
+// the `ProtobufSchema` objects then returns a new `SchemaMap` filled with all
+// those schemas.
 //
-// Note that ProtobufSchemas' UIDs are always prefixed with "PROT-".
+// A `ProtobufSchema` is a data-structure that holds a protobuf descriptor as
+// well as a map of all its dependencies' schemaUIDs.
+// A schemaUID uniquely & deterministically identifies a protobuf schema based
+// on its descriptor and all of its dependencies' descriptors.
+// It essentially is the versioned identifier of a schema.
+// For more information, see `ProtobufSchema`'s documentation as well as the
+// `protoscan` implementation, especially `descriptor_tree.go`.
 //
-// This unique key is generated based on the binary representation of the
-// schema and of its dependency graph: this implies that the key will change if
-// any of the schema's dependency is modified in any way.
-// In the end, this means that, as the schema and/or its dependencies follow
-// their natural evolution, each and every historic version of it will have
-// been stored with their own unique identifier.
+// The specified `hasher` is the actual function used to compute these
+// schemaUIDs, see the `protoscan.Hasher` documentation for more information.
+// The `hashPrefix` string will be preprended to the resulting hash that was
+// computed via the `hasher` function.
+// E.g. by passing `protoscan.MD5` as a `Hasher` and `PROT-` as a `hashPrefix`,
+// the resulting schmaUIDs will be of the form 'PROT-<MD5hex>'.
+//
+// As a schema and/or its dependencies follow their natural evolution, each
+// and every historic version of them will thus have been stored with their
+// own unique identifiers.
 //
 // `failOnDuplicate` is an optional parameter that defaults to true; have a
-// look at ScanSchemas' implementation to understand what it does and when (if
+// look at `ScanSchemas` implementation to understand what it does and when (if
 // ever) would you need to set it to false instead.
 //
-// Have a look at the `protoscan` sub-package for more information about how all
-// of this works; the code is heavily documented.
+// Finally, have a look at the `protoscan` sub-packages as a whole for more
+// information about how all of this machinery works; the code is heavily
+// documented.
 func ScanSchemas(
 	hasher protoscan.Hasher, hashPrefix string, failOnDuplicate ...bool,
 ) (*SchemaMap, error) {
@@ -132,26 +161,26 @@ func ScanSchemas(
 		fod = failOnDuplicate[0]
 	}
 
-	// get local pointers to proto.protoFiles instances
+	// get local pointers to `proto.protoFiles` instances
 	protoFiles, err := protoscan.BindProtofileSymbols()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	// unzip everything into a map of FileDescriptorProtos using the path of
+	// unzip everything into a map of `FileDescriptorProto`s using the path of
 	// the original .proto as key
 	fdps := map[string]*descriptor.FileDescriptorProto{}
 	for _, maps := range protoFiles {
 		for file, descr := range *maps {
-			// If a FileDescriptorProto already exists for this .proto
-			// (i.e. another protobuf package has already instanciated a type of
-			//  the same name) and `failOnDuplicate` is true (which is what it
-			// defaults to), then we immediately stop everything and return
-			// an error.
+			// If a `FileDescriptorProto` already exists for this .proto
+			// (i.e. another protobuf package has already instanciated a type with
+			//  the exact same fully-qualified name) and `failOnDuplicate` is
+			// true (which is what it defaults to), then we immediately stop
+			// everything and return an error.
 			//
 			// You can disable this check by setting `failOnDuplicate` to false,
 			// but be aware that if this condition ever returns true, either:
 			// - you know exactly what you're doing and that is what you expected
-			//   to happen (i.e. some FDPs will be overwritten)
+			//   to happen (i.e. some `FileDescriptorProto`s will be overwritten)
 			// - there is something seriously wrong with your setup and things
 			//   are going to take a turn for the worst pretty soon; hence you're
 			//   better off crashing right now
