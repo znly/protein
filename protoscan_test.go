@@ -26,13 +26,17 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
+// This example demonstrates how to use Protein's `ScanSchemas` function in
+// order to sniff all the locally instanciated schemas into a `SchemaMap`,
+// then walk over this map to print each schema and its list of dependencies.
 func ExampleScanSchemas() {
+	// sniff protobuf schemas into a `SchemaMap`
 	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
 
+	// walk over the map to display schemas and their dependencies
 	sm.ForEach(func(ps *ProtobufSchema) error {
 		fmt.Printf("[%s] %s\n", ps.GetUID(), ps.GetFQName())
 		for uid, name := range ps.GetDeps() {

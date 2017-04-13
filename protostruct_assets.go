@@ -18,6 +18,8 @@ package protein
 
 // From https://github.com/golang/lint/blob/master/lint.go (BSD License).
 // Copyright (c) 2013 The Go Authors. All rights reserved.
+//
+// These are used to avoid camel-casing common acronyms.
 var _commonAcronyms = map[string]bool{
 	"API":   true,
 	"ASCII": true,
