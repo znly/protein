@@ -270,7 +270,6 @@ func TestTranscoder_Parallelism(t *testing.T) {
 
 	t.Run("Encode", func(t *testing.T) {
 		t.Parallel()
-
 		wg := &sync.WaitGroup{}
 		wg.Add(nbRoutines)
 		for p := 0; p < nbRoutines; p++ {

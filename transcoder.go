@@ -32,8 +32,8 @@ import (
 
 // TODO(cmc): document all of this
 
-type TranscoderGetter func(ctx context.Context, uid string) ([]byte, error)
-type TranscoderSetter func(ctx context.Context, payload []byte) error
+type TranscoderGetter func(ctx context.Context, schemaUID string) ([]byte, error)
+type TranscoderSetter func(ctx context.Context, schemaUID string, payload []byte) error
 type TranscoderSerializer func(ps *ProtobufSchema) ([]byte, error)
 type TranscoderDeserializer func(payload []byte, ps *ProtobufSchema) error
 
@@ -116,7 +116,9 @@ func NewTranscoder(ctx context.Context,
 			)
 		}),
 		/* default setter: no-op */
-		TranscoderOptSetter(func(context.Context, []byte) error { return nil }),
+		TranscoderOptSetter(func(context.Context, string, []byte) error {
+			return nil
+		}),
 		/* default serializer: wraps the ProtobufSchema within a ProtobufPayload */
 		TranscoderOptSerializer(func(ps *ProtobufSchema) ([]byte, error) {
 			return t.Encode(ps)
@@ -140,7 +142,7 @@ func NewTranscoder(ctx context.Context,
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		return t.setter(ctx, b)
+		return t.setter(ctx, ps.GetUID(), b)
 	}); err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -156,7 +158,7 @@ func NewTranscoder(ctx context.Context,
 // plus all of its direct & indirect dependencies flattened in a map.
 //
 // The retrieval process is done in two steps:
-// - First, the root schema, as identified by `uid`, is fetched from the local
+// - First, the root schema, as identified by `schemaUID`, is fetched from the local
 //   local cache; if it cannot be found in there, it'll be retrieved from
 //   the backing TuyauDB store.
 //   If it cannot be found in the TuyauDB store, then a "schema not found"
@@ -303,12 +305,12 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	// fetch structure-type from cache, or create it if it doesn't exist
 	var structType reflect.Type
 	var ok bool
-	uid := pp.GetUID()
+	schemaUID := pp.GetUID()
 	t.typeCacheLock.RLock()
-	structType, ok = t.typeCache[uid]
+	structType, ok = t.typeCache[schemaUID]
 	t.typeCacheLock.RUnlock()
 	if !ok {
-		st, err := CreateStructType(uid, t.sm)
+		st, err := CreateStructType(schemaUID, t.sm)
 		if err != nil {
 			return reflect.ValueOf(nil), errors.WithStack(err)
 		}
@@ -319,7 +321,7 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 		}
 		structType = st
 		t.typeCacheLock.Lock()
-		t.typeCache[uid] = st // upsert type-cache
+		t.typeCache[schemaUID] = st // upsert type-cache
 		t.typeCacheLock.Unlock()
 	}
 
