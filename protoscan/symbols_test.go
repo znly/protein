@@ -25,7 +25,7 @@ import (
 // -----------------------------------------------------------------------------
 
 func TestProtoscan_BindProtofileSymbols(t *testing.T) {
-	// protein/protoscan only imports a non-vendored gogo/protobuf package,
+	// `protein/protoscan` only imports a non-vendored `gogo/protobuf` package,
 	// so the only symbol found should be the following one:
 	symbol := "github.com/gogo/protobuf/proto.protoFiles"
 	protoFilesBindings, err := BindProtofileSymbols()
@@ -35,7 +35,7 @@ func TestProtoscan_BindProtofileSymbols(t *testing.T) {
 	assert.NotEmpty(t, protoFilesBindings[symbol])
 
 	// at least `descriptor.proto`, `gogo.proto` & `test_schema.proto` are
-	// expected to have been registered for the gogo/protobuf symbol
+	// expected to have been registered for the `gogo/protobuf` symbol
 	registered := []string{
 		"descriptor.proto",
 		"gogo.proto",
@@ -49,8 +49,8 @@ func TestProtoscan_BindProtofileSymbols(t *testing.T) {
 	}
 
 	// `test_schema.proto`'s file descriptor should at least contain
-	// the TestSchema message type, as well as the nested
-	// TestSchema.DepsEntry type
+	// the `TestSchema` message type, as well as the nested
+	// `TestSchema.DepsEntry` type
 	descr, err := UnzipAndUnmarshal(protoFiles["test_schema.proto"])
 	assert.Nil(t, err)
 	assert.NotNil(t, descr)

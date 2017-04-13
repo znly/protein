@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package protoscan provides a straigtforward API to retrieve every
-// protobuf schema instanciated by any of the currently loaded protobuf
-// libraries (e.g. golang/protobuf, gogo/protobuf...).
+// Package protoscan provides the necessary tools & APIs to find, extract,
+// version and build the dependency trees of all the protobuf schemas that
+// have been instanciated by one or more protobuf library (golang/protobuf,
+// gogo/protobuf...).
+//
+// This is a fairly low-level package, used to power the deeper innards of
+// `protein`; as such, it should very rarely be of use to the end-user.
 package protoscan

@@ -16,36 +16,39 @@ package protoscan
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"unsafe"
 
 	"go.uber.org/zap"
 
+	"github.com/kardianos/osext"
 	"github.com/pkg/errors"
 	"github.com/znly/protein/internal/objfile"
 )
 
 // -----------------------------------------------------------------------------
 
-// BindProtofileSymbols loads the currently running executable in memory
-// using Go's private objfile API and then loops over its symbols in order
-// to find `protoFiles` variables.
-// NOTE: since its an internal API, the objfile package and its dependencies
-//       had to be fully copied into this project, see protoscan/internal/.
+// BindProtofileSymbols finds the currently running executable then uses Go's
+// private `objfile` API to loop over its symbols in order to find every
+// instanciated `proto.protoFiles` global variables.
+// NOTE: As it is an internal API, the `objfile` package and its dependencies
+//       have to be fully copied into this project, see `protoscan/internal/`.
+//       If anyone has a nicer solution (so anything else, really), pleae
+//       file an issue.
 //
-// These `protoFiles` variables are maintained by the various protobuf
+// These `proto.protoFiles` variables are maintained by the various protobuf
 // libraries out there (i.e. golang/protobuf, gogo/protobuf & other
-// implementations) in order to keep track of the FileDescriptorProtos
-// that have been loaded at boot-time (see proto.RegisterFile).
+// implementations) in order to keep track of the `FileDescriptorProto`s
+// that have been loaded at boot-time (see `proto.RegisterFile`).
 // This essentially means that each and every protobuf schema known
-// by the currently running program is stored into these maps.
+// to the currently running program is stored into one of these maps.
 //
 //
-// There are two main issues that need to be worked around though:
+// There are two main issues that need to be worked around for this little
+// trick to work though:
 //
 // A. `proto.protoFiles` is a package-level private variable and, as such,
-//    cannot be (AFAIK) accessed by any means except by forking the original
+//    cannot (AFAIK) be accessed by any means except by forking the original
 //    package, which is not a viable option here.
 //
 // B. Because of how vendoring works, there can actually be an infinite amount
@@ -64,7 +67,7 @@ import (
 func BindProtofileSymbols() (map[string]*map[string][]byte, error) {
 	var protoFilesBindings map[string]*map[string][]byte
 
-	binPath, err := os.Executable()
+	binPath, err := osext.Executable() // will use `os.Executable` if available (Go 1.8)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
