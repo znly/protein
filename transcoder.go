@@ -17,6 +17,7 @@ package protein
 import (
 	"context"
 	"reflect"
+	"sync"
 	"unsafe"
 
 	"github.com/gogo/protobuf/proto"
@@ -86,7 +87,8 @@ type Transcoder struct {
 	serializer   TranscoderSerializer
 	deserializer TranscoderDeserializer
 
-	typeCache map[string]reflect.Type
+	typeCacheLock *sync.RWMutex
+	typeCache     map[string]reflect.Type
 }
 
 // TODO(cmc)
@@ -100,6 +102,7 @@ func NewTranscoder(ctx context.Context,
 		return nil, errors.WithStack(err)
 	}
 	t.sm = sm
+	t.typeCacheLock = &sync.RWMutex{}
 	t.typeCache = map[string]reflect.Type{}
 
 	opts = append([]TranscoderOpt{
@@ -301,7 +304,10 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	var structType reflect.Type
 	var ok bool
 	uid := pp.GetUID()
-	if structType, ok = t.typeCache[uid]; !ok {
+	t.typeCacheLock.RLock()
+	structType, ok = t.typeCache[uid]
+	t.typeCacheLock.RUnlock()
+	if !ok {
 		st, err := CreateStructType(uid, t.sm)
 		if err != nil {
 			return reflect.ValueOf(nil), errors.WithStack(err)
@@ -312,7 +318,9 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 			)
 		}
 		structType = st
+		t.typeCacheLock.Lock()
 		t.typeCache[uid] = st // upsert type-cache
+		t.typeCacheLock.Unlock()
 	}
 
 	// allocate a new structure using the given type definition, the
