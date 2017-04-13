@@ -59,6 +59,9 @@ func NewSchemaMap() *SchemaMap {
 func (sm *SchemaMap) Add(schemas map[string]*ProtobufSchema) *SchemaMap {
 	sm.lock.Lock()
 	for _, s := range schemas {
+		zap.L().Debug("schema found",
+			zap.String("uid", s.UID), zap.String("fq-name", s.FQName),
+		)
 		sm.schemaMap[s.UID] = s
 		sm.revmap[s.FQName] = append(sm.revmap[s.FQName], s.UID)
 	}

@@ -18,7 +18,10 @@ github.com/pkg/errors
 
 ## Logging
 
-github.com/uber-go/zap
+*Protein* rarely logs, but when it does, it uses the global logger from Uber's [*Zap*](https://github.com/uber-go/zap) package.  
+You can thus control the behavior of *Protein*'s logger however you like by calling [`zap.ReplaceGlobals`](https://godoc.org/go.uber.org/zap#ReplaceGlobals) at your convenience.
+
+For more information, see *Zap*'s [documentation](https://godoc.org/go.uber.org/zap).
 
 ## Monitoring
 
