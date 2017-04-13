@@ -1,0 +1,20 @@
+version: '2'
+services:
+
+    redis:
+        image: redis:3.2
+        ports:
+            - "6379:6379"
+        restart: on-failure
+
+    memcached:
+        image: memcached:1.4
+        ports:
+            - "11211:11211"
+        restart: on-failure
+
+    scylla:
+        image: scylladb/scylla:1.6.0
+        ports:
+            - "9042:9042"
+        restart: on-failure
