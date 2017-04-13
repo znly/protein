@@ -192,6 +192,7 @@ func BenchmarkTranscoder_DecodeAs(b *testing.B) {
 		})
 	})
 	b.Run("znly/protein", func(b *testing.B) {
+		b.SetParallelism(3)
 		b.RunParallel(func(pb *testing.PB) {
 			var ts test.TestSchemaXXX
 			var err error
@@ -235,4 +236,22 @@ func assertFieldValues(t *testing.T, expected, actual reflect.Value) {
 			reflect.DeepEqual(expected.Interface(), actual.Interface()),
 		)
 	}
+}
+
+func BenchmarkTranscoder_Decode(b *testing.B) {
+	payload, err := trc.Encode(_transcoderTestSchemaXXX)
+	assert.Nil(b, err)
+	assert.NotNil(b, payload)
+	b.Run("znly/protein", func(b *testing.B) {
+		b.SetParallelism(3)
+		b.RunParallel(func(pb *testing.PB) {
+			var ts reflect.Value
+			var err error
+			for pb.Next() {
+				ts, err = trc.Decode(payload)
+				assert.Nil(b, err)
+				assert.NotEqual(b, reflect.ValueOf(nil), ts)
+			}
+		})
+	})
 }

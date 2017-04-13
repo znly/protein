@@ -8,9 +8,25 @@ Open-source release of _ZProto_.
 
 Do not commit anything Zenly-specific in this repository.
 
-## Internals overview
+## Performance
 
-layers of hashing
+```
+BenchmarkTranscoder_DecodeAs/gogo/protobuf            	  200000	      6629 ns/op
+BenchmarkTranscoder_DecodeAs/gogo/protobuf-2          	  500000	      3515 ns/op
+BenchmarkTranscoder_DecodeAs/gogo/protobuf-4          	 1000000	      2292 ns/op
+BenchmarkTranscoder_DecodeAs/gogo/protobuf-8          	 1000000	      2334 ns/op
+BenchmarkTranscoder_DecodeAs/gogo/protobuf-24         	 1000000	      2527 ns/op
+BenchmarkTranscoder_DecodeAs/znly/protein             	  200000	      6335 ns/op
+BenchmarkTranscoder_DecodeAs/znly/protein-2           	  500000	      3391 ns/op
+BenchmarkTranscoder_DecodeAs/znly/protein-4           	  500000	      2123 ns/op
+BenchmarkTranscoder_DecodeAs/znly/protein-8           	 1000000	      2428 ns/op
+BenchmarkTranscoder_DecodeAs/znly/protein-24          	  500000	      2760 ns/op
+BenchmarkTranscoder_Decode/znly/protein               	  200000	      6355 ns/op
+BenchmarkTranscoder_Decode/znly/protein-2             	  500000	      3658 ns/op
+BenchmarkTranscoder_Decode/znly/protein-4             	 1000000	      2607 ns/op
+BenchmarkTranscoder_Decode/znly/protein-8             	  500000	      2608 ns/op
+BenchmarkTranscoder_Decode/znly/protein-24            	  500000	      3316 ns/op
+```
 
 ## Error handling
 
@@ -24,6 +40,10 @@ You can thus control the behavior of *Protein*'s logger however you like by call
 For more information, see *Zap*'s [documentation](https://godoc.org/go.uber.org/zap).
 
 ## Monitoring
+
+## Internals overview
+
+layers of hashing
 
 ## Contributing
 
