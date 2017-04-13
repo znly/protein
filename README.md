@@ -50,6 +50,14 @@ layers of hashing
 
 ## Contributing
 
+### Running tests
+
+```sh
+$ docker-compose -f test/docker-compose.yml up
+$ ## wait for datastores to be up & running
+$ make test-bench
+```
+
 ## Authors
 
 See AUTHORS for the list of contributors.

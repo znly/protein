@@ -1,3 +1,5 @@
+// +build ignore
+
 // Copyright © 2016 Zenly <hello@zen.ly>.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +22,6 @@ import "go.uber.org/zap"
 
 // init sets the global logger in dev mode before running tests.
 func init() {
-	return // DISABLED!
-
 	l, err := zap.NewDevelopment()
 	if err != nil {
 		zap.L().Fatal(err.Error())
