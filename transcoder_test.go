@@ -18,6 +18,8 @@ import (
 	"context"
 	"os"
 	"reflect"
+	"runtime"
+	"sync"
 	"testing"
 
 	"go.uber.org/zap"
@@ -253,5 +255,72 @@ func BenchmarkTranscoder_Decode(b *testing.B) {
 				assert.NotEqual(b, reflect.ValueOf(nil), ts)
 			}
 		})
+	})
+}
+
+// -----------------------------------------------------------------------------
+
+func TestTranscoder_Parallelism(t *testing.T) {
+	payload, err := trc.Encode(_transcoderTestSchemaXXX)
+	assert.Nil(t, err)
+	assert.NotNil(t, payload)
+
+	nbRoutines := runtime.GOMAXPROCS(0) * 10
+	nbOps := 1000
+
+	t.Run("Encode", func(t *testing.T) {
+		t.Parallel()
+
+		wg := &sync.WaitGroup{}
+		wg.Add(nbRoutines)
+		for p := 0; p < nbRoutines; p++ {
+			go func() {
+				var payload []byte
+				var err error
+				for i := 0; i < nbOps; i++ {
+					payload, err = trc.Encode(_transcoderTestSchemaXXX)
+					assert.Nil(t, err)
+					assert.NotNil(t, payload)
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+	})
+	t.Run("Decode", func(t *testing.T) {
+		t.Parallel()
+		wg := &sync.WaitGroup{}
+		wg.Add(nbRoutines)
+		for p := 0; p < nbRoutines; p++ {
+			go func() {
+				var ts reflect.Value
+				var err error
+				for i := 0; i < nbOps; i++ {
+					ts, err = trc.Decode(payload)
+					assert.Nil(t, err)
+					assert.NotEqual(t, reflect.ValueOf(nil), ts)
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+	})
+	t.Run("DecodeAs", func(t *testing.T) {
+		t.Parallel()
+		wg := &sync.WaitGroup{}
+		wg.Add(nbRoutines)
+		for p := 0; p < nbRoutines; p++ {
+			go func() {
+				var ts test.TestSchemaXXX
+				var err error
+				for i := 0; i < nbOps; i++ {
+					err = trc.DecodeAs(payload, &ts)
+					assert.Nil(t, err)
+					assert.Equal(t, _transcoderTestSchemaXXX.FQNames, ts.FQNames)
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
 	})
 }

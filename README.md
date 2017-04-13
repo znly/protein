@@ -10,6 +10,9 @@ Do not commit anything Zenly-specific in this repository.
 
 ## Performance
 
+*Protein* has basically no performance overhead compared to standard protobuf.
+
+Intel(R) Core(TM) i7-4870HQ CPU @ 2.50GHz:  
 ```
 BenchmarkTranscoder_DecodeAs/gogo/protobuf            	  200000	      6629 ns/op
 BenchmarkTranscoder_DecodeAs/gogo/protobuf-2          	  500000	      3515 ns/op
