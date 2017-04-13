@@ -1,13 +1,12 @@
 v1
-    race tests
+    getter/setter helpers (memcache, redis, cassandra...)
     doc, comments, real world example (needs a note about errors)
         protostruct.go protostruct_test.go transcoder.go transcoder_test.go
-    getter/setter helpers (memcache, redis, cassandra...)
     runtime decoding of enums
     runtime decoding of oneofs
     expose metrics (follow rocksDB model?)
-    gogo.stdtypes support
     the zillion TODOs :(
+    gogo.stdtypes support
 
 later
     SchemaMap tests (races) & benchs
