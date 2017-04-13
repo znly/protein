@@ -27,4 +27,12 @@ For more information, see *Zap*'s [documentation](https://godoc.org/go.uber.org/
 
 ## Contributing
 
-## License
+## Authors
+
+See AUTHORS for the list of contributors.
+
+## License ![License](https://img.shields.io/badge/license-Apache2-blue.svg?style=plastic)
+
+The Apache License version 2.0 (Apache2) - see LICENSE for more details
+
+Copyright (c) 2017	Zenly	<hello@zen.ly> [@zenlyapp](https://twitter.com/zenlyapp)
