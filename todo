@@ -1,5 +1,4 @@
 v1
-    getter/setter helpers (memcache, redis, cassandra...)
     doc, comments, real world example (needs a note about errors)
         protostruct.go protostruct_test.go transcoder.go transcoder_test.go
     runtime decoding of enums
