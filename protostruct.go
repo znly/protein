@@ -298,10 +298,10 @@ func scalarType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) 
 // necessary struct tags for a given protobuf field.
 //
 // `goTag` is actually a method of the `generator.Generator` class, hence the
-// `g` given as first parameter will be used as "this".
+// `g` given as first parameter will be used as 'this'.
 //
-// Due to the way Go mangles symbol names when using vendoring, the go:linkname
-// clause is automatically generated via linkname-gen[1].
+// Due to the way Go mangles symbol names when using vendoring, the `go:linkname`
+// clause is automatically generated via *linkname-gen*[1].
 // [1] https://github.com/znly/linkname-gen.
 //
 //go:generate linkname-gen -symbol "github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag" -def "func goTag(*generator.Generator, *generator.Descriptor, *descriptor.FieldDescriptorProto, string) string"

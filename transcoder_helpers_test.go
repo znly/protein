@@ -38,7 +38,7 @@ func TestTranscoder_Helpers_Memcached(t *testing.T) {
 	// clear the store, just in case
 	assert.Nil(t, c.Flush(-1))
 
-	// create Transcoder and push all local schemas via user-defined setter
+	// create `Transcoder` and push all local schemas via user-defined setter
 	trc, err := NewTranscoder(context.Background(),
 		protoscan.SHA256, "PROT-",
 		TranscoderOptGetter(NewTranscoderGetterMemcached(c)),
@@ -67,7 +67,7 @@ func TestTranscoder_Helpers_Redis(t *testing.T) {
 	c.Close()
 	assert.Nil(t, err)
 
-	// create Transcoder and push all local schemas via user-defined setter
+	// create `Transcoder` and push all local schemas via user-defined setter
 	trc, err := NewTranscoder(context.Background(),
 		protoscan.SHA256, "PROT-",
 		TranscoderOptGetter(NewTranscoderGetterRedis(p)),
@@ -118,7 +118,7 @@ func TestTranscoder_Helpers_Cassandra(t *testing.T) {
 	CREATE TABLE IF NOT EXISTS blobs (key ascii, data blob, PRIMARY KEY (key));`
 	assert.Nil(t, s.Query(tableCreateQuery).Exec())
 
-	// create Transcoder and push all local schemas via user-defined setter
+	// create `Transcoder` and push all local schemas via user-defined setter
 	trc, err := NewTranscoder(context.Background(),
 		protoscan.SHA256, "PROT-",
 		TranscoderOptGetter(NewTranscoderGetterCassandra(s, "blobs", "key", "data")),
@@ -137,7 +137,7 @@ func testTranscoder_Helpers_common(t *testing.T, trc *Transcoder) {
 	assert.Nil(t, err)
 	assert.NotNil(t, payload)
 
-	// empty local SchemaMap struct-types cache
+	// empty local `SchemaMap` struct-types cache
 	trc.sm = NewSchemaMap()
 	trc.typeCache = map[string]reflect.Type{}
 

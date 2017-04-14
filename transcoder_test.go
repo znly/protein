@@ -74,7 +74,8 @@ func TestMain(m *testing.M) {
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc): complete this
+// NOTE: Simple cache coherence test, not really necessary anymore as the rest
+//       of the tests encompass this and much more but, well, it's free anyway.
 func TestTranscoder_localCache(t *testing.T) {
 	var expectedUID string
 	var revUID string
@@ -84,7 +85,7 @@ func TestTranscoder_localCache(t *testing.T) {
 	revUID = trc.sm.GetByFQName(".test.TestSchema").UID
 	assert.NotEmpty(t, revUID)
 	assert.Equal(t, expectedUID, revUID)
-	schemas, err := trc.update(context.Background(), revUID)
+	schemas, err := trc.getAndUpsert(context.Background(), revUID)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schemas)
 	assert.Equal(t, 2, len(schemas)) // `.test.TestSchema` + nested `DepsEntry`
@@ -94,7 +95,7 @@ func TestTranscoder_localCache(t *testing.T) {
 	revUID = trc.sm.GetByFQName(".test.TestSchema.DepsEntry").UID
 	assert.NotEmpty(t, revUID)
 	assert.Equal(t, expectedUID, revUID)
-	schemas, err = trc.update(context.Background(), revUID)
+	schemas, err = trc.getAndUpsert(context.Background(), revUID)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schemas)
 	assert.Equal(t, 1, len(schemas)) // `.test.TestSchema.DepsEntry` only

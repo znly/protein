@@ -111,8 +111,8 @@ func NewTranscoderSetterRedis(p *redis.Pool) TranscoderSetter {
 // The <table> column-family is expected to have (at least) the following
 // columns:
 //   TABLE (
-//   	<keyCol> ascii,
-//   	<dataCol> blob,
+//     <keyCol> ascii,
+//     <dataCol> blob,
 //   PRIMARY KEY (<keyCol>))
 //
 // The given context is forwarded to `gocql`.
@@ -142,8 +142,8 @@ func NewTranscoderGetterCassandra(s *gocql.Session,
 // The <table> column-family is expected to have (at least) the following
 // columns:
 //   TABLE (
-//   	<keyCol> ascii,
-//   	<dataCol> blob,
+//     <keyCol> ascii,
+//     <dataCol> blob,
 //   PRIMARY KEY (<keyCol>))
 //
 // The given context is forwarded to `gocql`.

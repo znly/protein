@@ -23,9 +23,15 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
-// ProtobufPayload is a versioned protobuf payload.
+// ProtobufPayload is a protobuf payload annotated with the unique versioning
+// identifier of its schema.
+//
+// This allows a `ProtobufPayload` to be decoded at runtime using Protein's
+// `Transcoder`.
+//
+// See `ScanSchemas`'s documentation for more information.
 type ProtobufPayload struct {
-	// UID is the unique, deterministic & versioned identifier for this schema.
+	// UID is the unique, deterministic, versioned schemaUID.
 	UID string `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
 	// Payload is the actual, marshaled protobuf payload.
 	Payload []byte `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`

@@ -34,9 +34,15 @@ option (gogoproto.onlyone_all) = false;
 
 // -----------------------------------------------------------------------------
 
-// ProtobufPayload is a versioned protobuf payload.
+// ProtobufPayload is a protobuf payload annotated with the unique versioning
+// identifier of its schema.
+//
+// This allows a `ProtobufPayload` to be decoded at runtime using Protein's
+// `Transcoder`.
+//
+// See `ScanSchemas`'s documentation for more information.
 message ProtobufPayload {
-	// UID is the unique, deterministic & versioned identifier for this schema.
+	// UID is the unique, deterministic, versioned schemaUID.
 	string uid = 1 [(gogoproto.customname) = "UID"];
 	// Payload is the actual, marshaled protobuf payload.
 	bytes payload = 2 [(gogoproto.customname) = "Payload"];

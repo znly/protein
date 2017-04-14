@@ -36,11 +36,13 @@ option (gogoproto.onlyone_all) = false;
 // -----------------------------------------------------------------------------
 
 // ProtobufSchema is a versioned protobuf Message or Enum descriptor that can
-// be used to decode protobuf payloads at runtime.
+// be used to decode `ProtobufPayload`s at runtime.
+//
+// See `ScanSchemas`'s documentation for more information.
 message ProtobufSchema {
-	// UID is the unique, deterministic & versioned identifier for this schema.
+	// UID is the unique, deterministic & versioned identifier of this schema.
 	string uid = 1 [(gogoproto.customname) = "UID"];
-	// FQName is the fully-qualified name for this schema,
+	// FQName is the fully-qualified name of this schema,
 	// e.g. `.google.protobuf.Timestamp`.
 	string fq_name = 2 [(gogoproto.customname) = "FQName"];
 	// Descriptor is either a Message or an Enum protobuf descriptor.
@@ -50,10 +52,10 @@ message ProtobufSchema {
 		// Enum is the protobuf descriptor of an Enum type.
 		google.protobuf.EnumDescriptorProto enm = 31 [(gogoproto.customname) = "Enum"];
 	}
-	// Deps contains every direct and indirect dependencies required by this
-	// schema.
+	// Deps contains every direct and indirect dependencies that this schema
+	// relies on.
 	//
-	// Key: the dependency's UID
+	// Key: the dependency's `schemaUID`
 	// Value: the dependency's fully-qualified name
 	map<string, string> deps = 4 [(gogoproto.nullable) = false];
 }

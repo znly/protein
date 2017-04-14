@@ -20,11 +20,13 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 // ProtobufSchema is a versioned protobuf Message or Enum descriptor that can
-// be used to decode protobuf payloads at runtime.
+// be used to decode `ProtobufPayload`s at runtime.
+//
+// See `ScanSchemas`'s documentation for more information.
 type ProtobufSchema struct {
-	// UID is the unique, deterministic & versioned identifier for this schema.
+	// UID is the unique, deterministic & versioned identifier of this schema.
 	UID string `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
-	// FQName is the fully-qualified name for this schema,
+	// FQName is the fully-qualified name of this schema,
 	// e.g. `.google.protobuf.Timestamp`.
 	FQName string `protobuf:"bytes,2,opt,name=fq_name,json=fqName,proto3" json:"fq_name,omitempty"`
 	// Descriptor is either a Message or an Enum protobuf descriptor.
@@ -33,10 +35,10 @@ type ProtobufSchema struct {
 	//	*ProtobufSchema_Message
 	//	*ProtobufSchema_Enum
 	Descr isProtobufSchema_Descr `protobuf_oneof:"descr"`
-	// Deps contains every direct and indirect dependencies required by this
-	// schema.
+	// Deps contains every direct and indirect dependencies that this schema
+	// relies on.
 	//
-	// Key: the dependency's UID
+	// Key: the dependency's `schemaUID`
 	// Value: the dependency's fully-qualified name
 	Deps map[string]string `protobuf:"bytes,4,rep,name=deps" json:"deps" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }

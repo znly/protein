@@ -30,58 +30,90 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc): document all of this
-
+// A TranscoderGetter is called by the `Transcoder` when it cannot find a
+// specific `schemaUID` in its local `SchemaMap`.
+//
+// The function returns a byte-slice that will be deserialized into a
+// `ProtobufSchema` by a `TranscoderDeserializer` (see below).
+//
+// A `TranscoderGetter` is typically used to fetch `ProtobufSchema`s from a
+// remote data-store.
+// To that end, several ready-to-use implementations are provided by this
+// package for different protocols: memcached, redis & CQL (i.e. cassandra).
+// See `transcoder_helpers.go` for more information.
+//
+// The default `TranscoderGetter` always returns a not-found error.
 type TranscoderGetter func(ctx context.Context, schemaUID string) ([]byte, error)
 
+// A TranscoderSetter is called by the `Transcoder` when it has finished
+// sniffing the currently instanciated protobuf schemas from memory
+//
+// The function receives a byte-slice that has been previously serialized by a
+// `TranscoderSerializer` (see below).
+//
+// A `TranscoderSetter` is typically used to push the local `ProtobufSchema`s
+// sniffed from memory into a remote data-store.
+// To that end, several ready-to-use implementations are provided by this
+// package for different protocols: memcached, redis & CQL (i.e. cassandra).
+// See `transcoder_helpers.go` for more information.
+//
+// The default `TranscoderSetter` is a no-op.
 type TranscoderSetter func(ctx context.Context, schemaUID string, payload []byte) error
 
+// A TranscoderSerializer is used to serialize `ProtobufSchema`s before passing
+// them to a `TranscoderSetter`.
+// See `TranscoderSetter` documentation for more information.
+//
+// The default `TranscoderSerializer` wraps the schema within a `ProtobufPayload`;
+// i.e. it uses Protein's encoding to encode the schema.
 type TranscoderSerializer func(ps *ProtobufSchema) ([]byte, error)
 
+// A TranscoderDeserializer is used to deserialize the payloads returned by
+// a `TranscoderGetter` into a `ProtobufSchema`.
+// See `TranscoderGetter` documentation for more information.
+//
+// The default `TranscoderDeserializer` unwraps the schema from its
+// `ProtobufPayload` wrapper; i.e. it uses Protein's decoding to decode the
+// schema.
 type TranscoderDeserializer func(payload []byte, ps *ProtobufSchema) error
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc): document all of this
-
-type TranscoderOpt func(trc *Transcoder) *Transcoder
+// A TranscoderOpt is passed to the `Transcoder` constructor to configure
+// various options.
+type TranscoderOpt func(trc *Transcoder)
 
 var (
+	// TranscoderOptGetter is used to configure the `TranscoderGetter` used by
+	// the `Transcoder`.
+	// See `TranscoderGetter` documentation for more information.
 	TranscoderOptGetter = func(getter TranscoderGetter) TranscoderOpt {
-		return func(trc *Transcoder) *Transcoder {
-			trc.getter = getter
-			return trc
-		}
+		return func(trc *Transcoder) { trc.getter = getter }
 	}
+	// TranscoderOptSetter is used to configure the `TranscoderSetter` used by
+	// the `Transcoder`.
+	// See `TranscoderSetter` documentation for more information.
 	TranscoderOptSetter = func(setter TranscoderSetter) TranscoderOpt {
-		return func(trc *Transcoder) *Transcoder {
-			trc.setter = setter
-			return trc
-		}
+		return func(trc *Transcoder) { trc.setter = setter }
 	}
+	// TranscoderOptSerializer is used to configure the `TranscoderSerializer`
+	// used by the `Transcoder`.
+	// See `TranscoderSerializer` documentation for more information.
 	TranscoderOptSerializer = func(serializer TranscoderSerializer) TranscoderOpt {
-		return func(trc *Transcoder) *Transcoder {
-			trc.serializer = serializer
-			return trc
-		}
+		return func(trc *Transcoder) { trc.serializer = serializer }
 	}
+	// TranscoderOptDeserializer is used to configure the `TranscoderDeserializer`
+	// used by the `Transcoder`.
+	// See `TranscoderDeserializer` documentation for more information.
 	TranscoderOptDeserializer = func(deserializer TranscoderDeserializer) TranscoderOpt {
-		return func(trc *Transcoder) *Transcoder {
-			trc.deserializer = deserializer
-			return trc
-		}
+		return func(trc *Transcoder) { trc.deserializer = deserializer }
 	}
 )
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
-//
-// Transcoder implements a Wirer that integrates with a Bank in order to augment
-// the protobuf payloads that it encodes with additional versioning metadata.
-//
-// These metadata are then used by the internal deserializer of the versioned Wirer
-// to determinate how to decode an incoming payload on the wire.
+// A Transcoder is a protobuf encoder/decoder with versioning and runtime-decoding
+// capabilities.
 type Transcoder struct {
 	sm *SchemaMap
 
@@ -94,7 +126,12 @@ type Transcoder struct {
 	typeCache     map[string]reflect.Type
 }
 
-// TODO(cmc)
+// NewTranscoder returns a new `Transcoder`.
+//
+// See `ScanSchemas`'s documentation for more information about `hasher` and
+// `hashPrefix`.
+//
+// See `TranscoderOpt`'s documentation for the list of available options.
 func NewTranscoder(ctx context.Context,
 	hasher protoscan.Hasher, hashPrefix string, opts ...TranscoderOpt,
 ) (*Transcoder, error) {
@@ -109,7 +146,7 @@ func NewTranscoder(ctx context.Context,
 	t.typeCache = map[string]reflect.Type{}
 
 	opts = append([]TranscoderOpt{
-		/* default getter: always returns ErrSchemaNotFound */
+		/* default getter: always returns `ErrSchemaNotFound` */
 		TranscoderOptGetter(func(
 			ctx context.Context, schemaUID string,
 		) ([]byte, error) {
@@ -122,17 +159,17 @@ func NewTranscoder(ctx context.Context,
 		TranscoderOptSetter(func(context.Context, string, []byte) error {
 			return nil
 		}),
-		/* default serializer: wraps the ProtobufSchema within a ProtobufPayload */
+		/* default serializer: wraps the `ProtobufSchema` within a `ProtobufPayload` */
 		TranscoderOptSerializer(func(ps *ProtobufSchema) ([]byte, error) {
 			return t.Encode(ps)
 		}),
-		/* default deserializer: unwraps a ProtobufPayload */
+		/* default deserializer: unwraps a `ProtobufPayload` */
 		TranscoderOptDeserializer(func(payload []byte, ps *ProtobufSchema) error {
 			return t.DecodeAs(payload, ps)
 		}),
 	}, opts...)
 	for _, opt := range opts {
-		t = opt(t)
+		opt(t)
 	}
 
 	if err := sm.ForEach(func(ps *ProtobufSchema) error {
@@ -155,31 +192,31 @@ func NewTranscoder(ctx context.Context,
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
-//
-// get retrieves the ProtobufSchema associated with the specified identifier,
-// plus all of its direct & indirect dependencies flattened in a map.
+// getAndUpsert retrieves the `ProtobufSchema` associated with the specified
+// `schemaUID`, plus all of its direct & indirect dependencies.
 //
 // The retrieval process is done in two steps:
-// - First, the root schema, as identified by `schemaUID`, is fetched from the local
-//   local cache; if it cannot be found in there, it'll be retrieved from
-//   the backing TuyauDB store.
-//   If it cannot be found in the TuyauDB store, then a "schema not found"
-//   error is returned.
-// - Second, the same process is applied for every direct & indirect dependency
-//   of the root schema.
-//   The only difference is that all the dependencies missing from the local
-//   cache will be bulk-fetched from the TuyauDB store to avoid unnecessary
-//   round-trips.
-//   A "schemas not found" error is returned if one or more dependencies couldn't
-//   be found.
-func (t *Transcoder) update(
+// - First, the root schema, as identified by `schemaUID`, is fetched from the
+//   local `SchemaMap`; if it cannot be found in there, it'll try to retrieve
+//   it via the user-defined `TranscoderGetter`, as passed to the constructor
+//   of the `Transcoder`.
+//   If it cannot be found in there either, then a schema-not-found error is
+//   returned.
+// - Second, this exact same process is applied for every direct & indirect
+//   dependency of the root schema.
+//   Once again, a schema-not-found error is returned if one or more dependency
+//   couldn't be found (the returned error does indicate which of them).
+//
+// The `ProtobufSchema`s found during this process are both added to the local
+// `SchemaMap` so that they don't need to ever be found again during the
+// lifetime of this `Transcoder`, and are returned to the caller as flattened map.
+func (t *Transcoder) getAndUpsert(
 	ctx context.Context, schemaUID string,
 ) (map[string]*ProtobufSchema, error) {
 	schemas := map[string]*ProtobufSchema{}
 
 	// get root schema
-	if ps := t.sm.GetByUID(schemaUID); ps != nil { // try the local cache first..
+	if ps := t.sm.GetByUID(schemaUID); ps != nil { // try the local `SchemaMap` first..
 		schemas[schemaUID] = ps
 	} else { // ..then fallback on user-defined getter
 		b, err := t.getter(ctx, schemaUID)
@@ -191,23 +228,23 @@ func (t *Transcoder) update(
 			return nil, errors.WithStack(err)
 		}
 		schemas[schemaUID] = &ps
-		t.sm.Add(map[string]*ProtobufSchema{schemaUID: &ps}) // upsert local-cache
+		t.sm.Add(map[string]*ProtobufSchema{schemaUID: &ps}) // upsert `SchemaMap`
 	}
 
 	// get dependencies
 	deps := schemas[schemaUID].GetDeps()
 
-	// try the local cache first..
+	// try the local `SchemaMap` first..
 	psNotFound := make(map[string]struct{}, len(deps))
 	for depUID := range deps {
 		if ps := t.sm.GetByUID(depUID); ps != nil {
 			schemas[depUID] = ps
-			t.sm.Add(map[string]*ProtobufSchema{depUID: ps}) // upsert local-cache
+			t.sm.Add(map[string]*ProtobufSchema{depUID: ps}) // upsert `SchemaMap`
 		} else {
 			psNotFound[depUID] = struct{}{}
 		}
 	}
-	if len(psNotFound) <= 0 { // found everything needed in local cache!
+	if len(psNotFound) <= 0 { // found everything needed in local `SchemaMap`!
 		return schemas, nil
 	}
 
@@ -225,7 +262,7 @@ func (t *Transcoder) update(
 		}
 		delete(psNotFound, depUID) // it's been found!
 		schemas[depUID] = &ps
-		t.sm.Add(map[string]*ProtobufSchema{depUID: &ps}) // upsert local-cache
+		t.sm.Add(map[string]*ProtobufSchema{depUID: &ps}) // upsert `SchemaMap`
 	}
 	if len(psNotFound) > 0 {
 		err := errors.Errorf("one or more dependencies couldn't be found")
@@ -240,25 +277,33 @@ func (t *Transcoder) update(
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
+// Encode bundles the given protobuf `Message` and its associated versioning
+// metadata within a `ProtobufPayload`, marshals it all together in a byte-slice
+// then returns the result.
 //
-// Encode marshals the given protobuf message then wraps it up into a
-// ProtobufPayload object that adds additional versioning metadata.
+// `Encode` needs the message's fully-qualified name in order to reverse-lookup
+// its schemaUID (i.e. its versioning hash).
 //
-// Encode uses the message's fully-qualified name to reverse-lookup its UID.
-// Note that a single FQ-name might point to multiple UIDs if multiple versions
-// of the associated message are currently availaible in the bank.
-// When this happens, the first UID from the returned list will be used (and
-// since this list is randomly-ordered, effectively a random UID will be used).
-// ---> this won't do remote calls
+// In order to find this name, it will look at different places until either one
+// of those does return a result or none of them does, in which case the
+// encoding will fail. In search order, those places are:
+// 1. first, the `fqName` parameter is checked; if it isn't set, then
+// 2. second, the `golang/protobuf` package is queried for the fqn; if it
+//    cannot find it then
+// 3. third, the `gogo/protobuf` package is used as a last resort.
+//
+// Note that a single fully-qualified name might point to multiple schemaUIDs
+// if multiple versions of the associated schema are available in the `SchemaMap`.
+// When this happens, the first schemaUID from the list will be used, which
+// corresponds to the first version of the schema to have ever been added to
+// the local `SchemaMap`.
 func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error) {
-	// marshal the actual protobuf message
 	payload, err := proto.Marshal(msg)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	// TODO(cmc): explain this mess
+	// find the fully-qualified name of `msg`'s schema
 	var fqn string
 	if len(fqName) > 0 {
 		fqn = fqName[0]
@@ -269,17 +314,15 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 	}
 	fqn = "." + fqn
 
-	// find the first UID associated with the fully-qualified name of `msg`
+	// fetch the first-registered schema associated with the FQN of `msg`
 	ps := t.sm.GetByFQName(fqn)
 	if ps == nil {
-		return nil, errors.Errorf("`%s`: FQ-name not found", fqn)
+		return nil, errors.Errorf("`%s`: fully-qualified name not found", fqn)
 	}
 	// wrap the marshaled payload within a ProtobufPayload message
-	pp := &ProtobufPayload{
-		UID:     ps.UID,
-		Payload: payload,
-	}
-	// marshal the ProtobufPayload
+	pp := &ProtobufPayload{UID: ps.UID, Payload: payload}
+
+	// marshal the `ProtobufPayload` and return the result
 	return proto.Marshal(pp)
 }
 
@@ -289,21 +332,39 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 // directive instructs the compiler to declare a local symbol as an alias
 // for an external one, even if it's private.
 // This allows us to bind to the private `unmarshalType` method of the
-// `proto.Buffer` class, which does the actual work of computing the
-// necessary struct tags for a given protobuf field.
+// `proto.Buffer` class, which does the actual work of decoding the payload
+// based of the structure-tags of the receiving object.
 //
 // `unmarshalType` is actually a method of the `proto.Buffer` class, hence the
-// `b` given as first parameter will be used as "this".
+// `b` given as first parameter will be used as 'this'.
 //
-// Due to the way Go mangles symbol names when using vendoring, the go:linkname
-// clause is automatically generated via linkname-gen[1].
+// Due to the way Go mangles symbol names when using vendoring, the `go:linkname`
+// clause is automatically generated via *linkname-gen*[1].
 // [1] https://github.com/znly/linkname-gen.
 //
 //go:generate linkname-gen -symbol "github.com/gogo/protobuf/proto.(*Buffer).unmarshalType" -def "func unmarshalType(*proto.Buffer, reflect.Type, *proto.StructProperties, bool, unsafe.Pointer) error"
 
-// Decode decodes the `payload` into a dynamically-defined structure type.
+// Decode decodes the given protein-encoded `payload` into a dynamically
+// generated structure-type.
 //
-// TODO(cmc): explain the update call & add context parameter
+// It is used when you need to work with protein-encoded data in a completely
+// agnostic way (e.g. when you merely know the respective names of the fields
+// you're interested in, such as a generic data-enricher for example).
+//
+// When decoding a specific version of a schema for the first-time in the
+// lifetime of a `Transcoder`, a structure-type must be created from the
+// dependency tree of this schema.
+// This is a costly operation that involves a lot of reflection, see
+// `CreateStructType` documentation for more information.
+// Fortunately, the resulting structure-type is cached so it can be freely
+// re-used by later calls to `Decode`; i.e. you pay the price only once.
+//
+// Also when trying to decode a specific schema for the first-time, `Decode`
+// might not have the dependency available in its local `SchemaMap`, in which
+// case it will call the user-defined `TranscoderGetter` in the hope that
+// it might return the missing dependencies.
+// This user-defined function may or may not do some kind of I/O.
+// Once again, this price is paid only once.
 func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	var pp ProtobufPayload
 	if err := proto.Unmarshal(payload, &pp); err != nil {
@@ -318,7 +379,7 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	structType, ok = t.typeCache[schemaUID]
 	t.typeCacheLock.RUnlock()
 	if !ok {
-		if _, err := t.update(context.Background(), schemaUID); err != nil {
+		if _, err := t.getAndUpsert(context.Background(), schemaUID); err != nil {
 			return reflect.ValueOf(nil), errors.WithStack(err)
 		}
 		st, err := CreateStructType(schemaUID, t.sm)
@@ -355,11 +416,22 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	return obj, nil
 }
 
-// TODO(cmc): doc & test
-func (t *Transcoder) DecodeAs(payload []byte, dst proto.Message) error {
+// DecodeAs decodes the given protein-encoded `payload` into the specified
+// protobuf `Message`, thus bypassing all of the runtime-decoding and schema
+// versioning machinery.
+//
+// It is very often used when you need to work with protein-encoded data in
+// a non-agnostic way (i.e. when you know beforehand how you want to decode
+// and interpret the data).
+//
+// `DecodeAs` basically adds zero overhead compared to a straightforward
+// `proto.Unmarshal` call.
+//
+// `DecodeAs` never does any kind of I/O.
+func (t *Transcoder) DecodeAs(payload []byte, msg proto.Message) error {
 	var ps ProtobufPayload
 	if err := proto.Unmarshal(payload, &ps); err != nil {
 		return errors.WithStack(err)
 	}
-	return proto.Unmarshal(ps.Payload, dst)
+	return proto.Unmarshal(ps.Payload, msg)
 }
