@@ -31,8 +31,8 @@ import (
 // SchemaMap is a thread-safe mapping & reverse-mapping of `ProtobufSchema`s.
 //
 // It atomically maintains two data-structures in parallel:
-// - a map of schemaUIDs to `ProtobufSchema`s
-// - a map of fully-qualified schema names to schemaUIDs
+// a map of schemaUIDs to `ProtobufSchema`s, and
+// a map of fully-qualified schema names to schemaUIDs.
 //
 // The `SchemaMap` is the main data-structure behind a `Transcoder`, used to
 // store and retrieve every `ProtobufSchema`s that have been cached locally.
@@ -143,7 +143,7 @@ func (sm *SchemaMap) GetByFQName(fqName string) *ProtobufSchema {
 // The `hashPrefix` string will be preprended to the resulting hash that was
 // computed via the `hasher` function.
 // E.g. by passing `protoscan.MD5` as a `Hasher` and `PROT-` as a `hashPrefix`,
-// the resulting schmaUIDs will be of the form 'PROT-<MD5hex>'.
+// the resulting schemaUIDs will be of the form 'PROT-<MD5hex>'.
 //
 // As a schema and/or its dependencies follow their natural evolution, each
 // and every historic version of them will thus have been stored with their

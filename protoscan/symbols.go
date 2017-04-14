@@ -32,9 +32,9 @@ import (
 // private `objfile` API to loop over its symbols in order to find every
 // instanciated `proto.protoFiles` global variables.
 // NOTE: As it is an internal API, the `objfile` package and its dependencies
-//       have to be fully copied into this project, see `protoscan/internal/`.
-//       If anyone has a nicer solution (so anything else, really), pleae
-//       file an issue.
+// have to be fully copied into this project, see `protoscan/internal/`.
+// If anyone has a nicer solution (so anything else, really), please file an
+// issue.
 //
 // These `proto.protoFiles` variables are maintained by the various protobuf
 // libraries out there (i.e. golang/protobuf, gogo/protobuf & other
@@ -47,13 +47,15 @@ import (
 // There are two main issues that need to be worked around for this little
 // trick to work though:
 //
-// A. `proto.protoFiles` is a package-level private variable and, as such,
-//    cannot (AFAIK) be accessed by any means except by forking the original
-//    package, which is not a viable option here.
+// A:
+//   `proto.protoFiles` is a package-level private variable and, as such,
+//   cannot (AFAIK) be accessed by any means except by forking the original
+//   package, which is not a viable option here.
 //
-// B. Because of how vendoring works, there can actually be an infinite amount
-//    of `proto.protoFiles` variables instanciated at runtime, and we must
-//    get ahold of each and every one of them.
+// B:
+//   Because of how vendoring works, there can actually be an infinite amount
+//   of `proto.protoFiles` variables instanciated at runtime, and we must
+//   get ahold of each and every one of them.
 //
 // Considering the above issues, doing some hacking with the symbols seem
 // to be the smart(er) way to go here.

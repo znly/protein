@@ -33,8 +33,8 @@ import (
 // This Hasher, provided by the end-user, will be used to version every schema
 // and associated dependencies found by the `protoscan` package.
 //
-// This package provides some basic, ready-to-use hashers: MD5, SHA1, SHA256,
-// SHA512.
+// This package provides some basic, ready-to-use hashers: `MD5`, `SHA1`,
+// `SHA256`, `SHA512`.
 type Hasher func(bss ByteSSlice) ([]byte, error)
 
 // MD5 implements a Hasher using the MD5 hashing algorithm.
@@ -93,7 +93,7 @@ func SHA512(bss ByteSSlice) ([]byte, error) {
 
 // ByteSSlice is a sortable slice of byte-slices.
 //
-// It is used to compute the schema hashes in DescriptorTree's implementation.
+// It is used to compute the schema hashes in `DescriptorTree`'s implementation.
 type ByteSSlice [][]byte
 
 func (bss ByteSSlice) Len() int      { return len(bss) }

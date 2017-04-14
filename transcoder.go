@@ -288,9 +288,9 @@ func (t *Transcoder) getAndUpsert(
 // of those does return a result or none of them does, in which case the
 // encoding will fail. In search order, those places are:
 // 1. first, the `fqName` parameter is checked; if it isn't set, then
-// 2. second, the `golang/protobuf` package is queried for the fqn; if it
-//    cannot find it then
-// 3. third, the `gogo/protobuf` package is used as a last resort.
+// 2. the `golang/protobuf` package is queried for the fqn; if it
+// cannot find it then
+// 3. finally, the `gogo/protobuf` package is used as a last resort.
 //
 // Note that a single fully-qualified name might point to multiple schemaUIDs
 // if multiple versions of the associated schema are available in the `SchemaMap`.

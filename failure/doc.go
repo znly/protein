@@ -16,6 +16,6 @@
 // `protein` or any of its sub-packages.
 //
 // Protein uses the `github.com/pkg/errors` package to handle error propagation
-// throughout the call stack; please take a look at the related documentation
-// for more information on how to properly handle these errors.
+// throughout the call stack; please take a look at its documentation for more
+// information about how to properly handle these errors.
 package failure

@@ -1,5 +1,6 @@
 v1
     doc, comments, real world example (needs a note about errors)
+    add transcoder example
     runtime decoding of enums
     runtime decoding of oneofs
     expose metrics (follow rocksDB model?)

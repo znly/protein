@@ -126,14 +126,14 @@ func (dt *DescriptorTree) DependencyUIDs() []string {
 // -----------------------------------------------------------------------------
 
 // NewDescriptorTrees builds all the dependency trees it can compute from the
-// specified protobuf file descriptors then returns the resulting `DescriptorTree`s
-// as a map arranged by their respective UIDs (computed using the user-specified
-// `hasher` function).
+// specified protobuf file descriptors then returns the resulting
+// `DescriptorTree`s as a map arranged by their respective schemaUIDs (computed
+// using the user-specified `hasher` function).
 func NewDescriptorTrees(
 	hasher Hasher, hashPrefix string,
 	fdps map[string]*descriptor.FileDescriptorProto,
 ) (map[string]*DescriptorTree, error) {
-	// this is all of the Message/Enum/Nested-types currently instanciated,
+	// this is all of the currently instanciated Message/Enum/Nested-types,
 	// arranged by their fully-qualified names
 	dtsByName, err := collectDescriptorTypes(hasher, fdps)
 	if err != nil {
