@@ -10,25 +10,47 @@ Do not commit anything Zenly-specific in this repository.
 
 ## Performance
 
-*Protein* has basically no performance overhead compared to standard protobuf.
-
+Configuration:  
+```
 Intel(R) Core(TM) i7-4870HQ CPU @ 2.50GHz:  
 ```
-BenchmarkTranscoder_DecodeAs/gogo/protobuf            	  200000	      6629 ns/op
-BenchmarkTranscoder_DecodeAs/gogo/protobuf-2          	  500000	      3515 ns/op
-BenchmarkTranscoder_DecodeAs/gogo/protobuf-4          	 1000000	      2292 ns/op
-BenchmarkTranscoder_DecodeAs/gogo/protobuf-8          	 1000000	      2334 ns/op
-BenchmarkTranscoder_DecodeAs/gogo/protobuf-24         	 1000000	      2527 ns/op
-BenchmarkTranscoder_DecodeAs/znly/protein             	  200000	      6335 ns/op
-BenchmarkTranscoder_DecodeAs/znly/protein-2           	  500000	      3391 ns/op
-BenchmarkTranscoder_DecodeAs/znly/protein-4           	  500000	      2123 ns/op
-BenchmarkTranscoder_DecodeAs/znly/protein-8           	 1000000	      2428 ns/op
-BenchmarkTranscoder_DecodeAs/znly/protein-24          	  500000	      2760 ns/op
-BenchmarkTranscoder_Decode/znly/protein               	  200000	      6355 ns/op
-BenchmarkTranscoder_Decode/znly/protein-2             	  500000	      3658 ns/op
-BenchmarkTranscoder_Decode/znly/protein-4             	 1000000	      2607 ns/op
-BenchmarkTranscoder_Decode/znly/protein-8             	  500000	      2608 ns/op
-BenchmarkTranscoder_Decode/znly/protein-24            	  500000	      3316 ns/op
+
+Encoding:  
+```
+## gogo/protobuf ##
+
+BenchmarkTranscoder_Encode/gogo/protobuf        300000    4287 ns/op
+BenchmarkTranscoder_Encode/gogo/protobuf-2     1000000    2195 ns/op
+BenchmarkTranscoder_Encode/gogo/protobuf-4     1000000    1268 ns/op
+BenchmarkTranscoder_Encode/gogo/protobuf-8     1000000    1258 ns/op
+BenchmarkTranscoder_Encode/gogo/protobuf-24    1000000    1536 ns/op
+
+## znly/protein ##
+
+BenchmarkTranscoder_Encode/znly/protein         300000    5556 ns/op
+BenchmarkTranscoder_Encode/znly/protein-2       500000    2680 ns/op
+BenchmarkTranscoder_Encode/znly/protein-4      1000000    1638 ns/op
+BenchmarkTranscoder_Encode/znly/protein-8      1000000    1798 ns/op
+BenchmarkTranscoder_Encode/znly/protein-24     1000000    2288 ns/op
+```
+
+Decoding:  
+```
+## gogo/protobuf ##
+
+BenchmarkTranscoder_Decode/gogo/protobuf        200000    6785 ns/op
+BenchmarkTranscoder_Decode/gogo/protobuf-2      500000    3661 ns/op
+BenchmarkTranscoder_Decode/gogo/protobuf-4     1000000    2521 ns/op
+BenchmarkTranscoder_Decode/gogo/protobuf-8     1000000    2667 ns/op
+BenchmarkTranscoder_Decode/gogo/protobuf-24     500000    3126 ns/op
+
+## znly/protein ##
+
+BenchmarkTranscoder_Decode/znly/protein        200000     6777 ns/op
+BenchmarkTranscoder_Decode/znly/protein-2      500000     3986 ns/op
+BenchmarkTranscoder_Decode/znly/protein-4      500000     2630 ns/op
+BenchmarkTranscoder_Decode/znly/protein-8      500000     2973 ns/op
+BenchmarkTranscoder_Decode/znly/protein-24     500000     3037 ns/op
 ```
 
 ## Error handling
@@ -55,7 +77,13 @@ layers of hashing
 ```sh
 $ docker-compose -f test/docker-compose.yml up
 $ ## wait for datastores to be up & running
-$ make test-bench
+$ make test
+```
+
+### Running benchmarks
+
+```sh
+$ make bench
 ```
 
 ## Authors

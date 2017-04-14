@@ -33,8 +33,11 @@ import (
 // TODO(cmc): document all of this
 
 type TranscoderGetter func(ctx context.Context, schemaUID string) ([]byte, error)
+
 type TranscoderSetter func(ctx context.Context, schemaUID string, payload []byte) error
+
 type TranscoderSerializer func(ps *ProtobufSchema) ([]byte, error)
+
 type TranscoderDeserializer func(payload []byte, ps *ProtobufSchema) error
 
 // -----------------------------------------------------------------------------
