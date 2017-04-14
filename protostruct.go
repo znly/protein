@@ -151,7 +151,7 @@ func buildCompoundTypes(
 		return nil
 	}
 
-	fields := structFields[ps.GetUID()]
+	fields := structFields[ps.GetSchemaUID()]
 	for _, f := range msg.Message.GetField() {
 		if len(f.GetTypeName()) <= 0 { // neither message nor enum
 			continue
@@ -193,14 +193,14 @@ func buildCompoundTypes(
 	}
 
 	if msg.Message.GetOptions().GetMapEntry() { // map type
-		structTypes[ps.GetUID()] = reflect.MapOf(
+		structTypes[ps.GetSchemaUID()] = reflect.MapOf(
 			reflect.Type(fields[0].Type), reflect.Type(fields[1].Type),
 		)
-		mapEntryTags[ps.GetUID()] = [2]reflect.StructTag{
+		mapEntryTags[ps.GetSchemaUID()] = [2]reflect.StructTag{
 			fields[0].Tag, fields[1].Tag,
 		}
 	} else { // everything else
-		structTypes[ps.GetUID()] = reflect.StructOf(fields)
+		structTypes[ps.GetSchemaUID()] = reflect.StructOf(fields)
 	}
 
 	return nil

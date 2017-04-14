@@ -40,8 +40,9 @@ option (gogoproto.onlyone_all) = false;
 //
 // See `ScanSchemas`'s documentation for more information.
 message ProtobufSchema {
-	// UID is the unique, deterministic & versioned identifier of this schema.
-	string uid = 1 [(gogoproto.customname) = "UID"];
+	// SchemaUID is the unique, deterministic & versioned identifier of this
+	// schema.
+	string schema_uid = 1 [(gogoproto.customname) = "SchemaUID"];
 	// FQName is the fully-qualified name of this schema,
 	// e.g. `.google.protobuf.Timestamp`.
 	string fq_name = 2 [(gogoproto.customname) = "FQName"];

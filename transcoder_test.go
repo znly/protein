@@ -82,7 +82,7 @@ func TestTranscoder_localCache(t *testing.T) {
 
 	// `.test.TestSchema` should be in there
 	expectedUID = "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"
-	revUID = trc.sm.GetByFQName(".test.TestSchema").UID
+	revUID = trc.sm.GetByFQName(".test.TestSchema").SchemaUID
 	assert.NotEmpty(t, revUID)
 	assert.Equal(t, expectedUID, revUID)
 	schemas, err := trc.getAndUpsert(context.Background(), revUID)
@@ -92,7 +92,7 @@ func TestTranscoder_localCache(t *testing.T) {
 
 	// `.test.TestSchema.DepsEntry` should be in there
 	expectedUID = "PROT-d278f5561f05e68f6e68fcbc6b801d29a69b4bf6044bf3e6242ea8fe388ebd6e"
-	revUID = trc.sm.GetByFQName(".test.TestSchema.DepsEntry").UID
+	revUID = trc.sm.GetByFQName(".test.TestSchema.DepsEntry").SchemaUID
 	assert.NotEmpty(t, revUID)
 	assert.Equal(t, expectedUID, revUID)
 	schemas, err = trc.getAndUpsert(context.Background(), revUID)
@@ -119,7 +119,7 @@ func TestTranscoder_Encode(t *testing.T) {
 	var ts test.TestSchema
 	assert.Nil(t, proto.Unmarshal(payload, &pp))
 	uidExpected := "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"
-	assert.Equal(t, uidExpected, pp.GetUID())
+	assert.Equal(t, uidExpected, pp.GetSchemaUID())
 	assert.NotEmpty(t, pp.GetPayload())
 	assert.Nil(t, proto.Unmarshal(pp.GetPayload(), &ts))
 	assert.Equal(t, tsExpected, &ts)

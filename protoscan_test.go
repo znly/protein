@@ -38,7 +38,7 @@ func ExampleScanSchemas() {
 
 	// walk over the map to display schemas and their dependencies
 	sm.ForEach(func(ps *ProtobufSchema) error {
-		fmt.Printf("[%s] %s\n", ps.GetUID(), ps.GetFQName())
+		fmt.Printf("[%s] %s\n", ps.GetSchemaUID(), ps.GetFQName())
 		for uid, name := range ps.GetDeps() {
 			fmt.Printf("\tdepends on: [%s] %s\n", uid, name)
 		}
@@ -58,7 +58,7 @@ func TestProtoscan_ScanSchemas(t *testing.T) {
 	ps := sm.GetByUID(protoscan.TEST_TSKnownHashRecurse)
 	assert.NotNil(t, ps)
 	assert.Equal(t, protoscan.TEST_TSKnownName, ps.GetFQName())
-	assert.Equal(t, protoscan.TEST_TSKnownHashRecurse, ps.GetUID())
+	assert.Equal(t, protoscan.TEST_TSKnownHashRecurse, ps.GetSchemaUID())
 	assert.NotNil(t, ps.GetDescr())
 	assert.NotEmpty(t, ps.GetDeps())
 	assert.NotNil(t, ps.GetDeps()[protoscan.TEST_DEKnownHashRecurse])
@@ -66,7 +66,7 @@ func TestProtoscan_ScanSchemas(t *testing.T) {
 	de := sm.GetByUID(protoscan.TEST_DEKnownHashRecurse)
 	assert.NotNil(t, de)
 	assert.Equal(t, protoscan.TEST_DEKnownName, de.GetFQName())
-	assert.Equal(t, protoscan.TEST_DEKnownHashRecurse, de.GetUID())
+	assert.Equal(t, protoscan.TEST_DEKnownHashRecurse, de.GetSchemaUID())
 	assert.NotNil(t, de.GetDescr())
 	assert.Empty(t, de.GetDeps())
 }

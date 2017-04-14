@@ -60,10 +60,10 @@ func (sm *SchemaMap) Add(schemas map[string]*ProtobufSchema) *SchemaMap {
 	sm.lock.Lock()
 	for _, s := range schemas {
 		zap.L().Debug("schema found",
-			zap.String("uid", s.UID), zap.String("fq-name", s.FQName),
+			zap.String("uid", s.SchemaUID), zap.String("fq-name", s.FQName),
 		)
-		sm.schemaMap[s.UID] = s
-		sm.revmap[s.FQName] = append(sm.revmap[s.FQName], s.UID)
+		sm.schemaMap[s.SchemaUID] = s
+		sm.revmap[s.FQName] = append(sm.revmap[s.FQName], s.SchemaUID)
 	}
 	sm.lock.Unlock() // avoid defer()
 	return sm
@@ -207,11 +207,11 @@ func ScanSchemas(
 	}
 
 	pss := make(map[string]*ProtobufSchema, len(dtsByUID))
-	for uid, dt := range dtsByUID {
+	for schemaUID, dt := range dtsByUID {
 		ps := &ProtobufSchema{
-			UID:    uid,
-			FQName: dt.FQName(),
-			Deps:   map[string]string{},
+			SchemaUID: schemaUID,
+			FQName:    dt.FQName(),
+			Deps:      map[string]string{},
 		}
 		switch descr := dt.Descr().(type) {
 		case *descriptor.DescriptorProto:
@@ -227,12 +227,12 @@ func ScanSchemas(
 			dep, ok := dtsByUID[depUID]
 			if !ok {
 				return nil, errors.Wrapf(failure.ErrDependencyNotFound,
-					"`%s`: no dependency with this UID", depUID,
+					"`%s`: no dependency with this schemaUID", depUID,
 				)
 			}
 			ps.Deps[depUID] = dep.FQName()
 		}
-		pss[uid] = ps
+		pss[schemaUID] = ps
 	}
 
 	return NewSchemaMap().Add(pss), nil

@@ -41,7 +41,7 @@ func ExampleCreateStructType() {
 	// creates a structure-type definition from the '.test.TestSchemaXXX'
 	// protobuf schema using Go's reflect APIs
 	structType, err := CreateStructType(
-		sm.GetByFQName(".test.TestSchemaXXX").UID, sm,
+		sm.GetByFQName(".test.TestSchemaXXX").SchemaUID, sm,
 	)
 	if err != nil {
 		zap.L().Fatal(err.Error())
@@ -75,7 +75,7 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	}
 	assert.NotEmpty(t, expectedFields)
 
-	uid := sm.GetByFQName(".test.TestSchemaXXX").UID
+	uid := sm.GetByFQName(".test.TestSchemaXXX").SchemaUID
 	assert.NotEmpty(t, uid)
 	actualType, err := CreateStructType(uid, sm)
 	assert.Nil(t, err)

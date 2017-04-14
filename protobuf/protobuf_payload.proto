@@ -42,8 +42,9 @@ option (gogoproto.onlyone_all) = false;
 //
 // See `ScanSchemas`'s documentation for more information.
 message ProtobufPayload {
-	// UID is the unique, deterministic, versioned schemaUID.
-	string uid = 1 [(gogoproto.customname) = "UID"];
+	// SchemaUID is the unique, deterministic & versioned identifier of the
+	// `payload`'s schema.
+	string schema_uid = 1 [(gogoproto.customname) = "SchemaUID"];
 	// Payload is the actual, marshaled protobuf payload.
 	bytes payload = 2 [(gogoproto.customname) = "Payload"];
 }

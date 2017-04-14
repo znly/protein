@@ -152,7 +152,7 @@ func NewTranscoder(ctx context.Context,
 		) ([]byte, error) {
 			/* err not found */
 			return nil, errors.Wrapf(failure.ErrSchemaNotFound,
-				"`%s`: no schema with this UID", schemaUID,
+				"`%s`: no schema with this schemaUID", schemaUID,
 			)
 		}),
 		/* default setter: no-op */
@@ -182,7 +182,7 @@ func NewTranscoder(ctx context.Context,
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		return t.setter(ctx, ps.GetUID(), b)
+		return t.setter(ctx, ps.GetSchemaUID(), b)
 	}); err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -320,7 +320,7 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 		return nil, errors.Errorf("`%s`: fully-qualified name not found", fqn)
 	}
 	// wrap the marshaled payload within a ProtobufPayload message
-	pp := &ProtobufPayload{UID: ps.UID, Payload: payload}
+	pp := &ProtobufPayload{SchemaUID: ps.SchemaUID, Payload: payload}
 
 	// marshal the `ProtobufPayload` and return the result
 	return proto.Marshal(pp)
@@ -374,7 +374,7 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	// fetch structure-type from cache, or create it if it doesn't exist
 	var structType reflect.Type
 	var ok bool
-	schemaUID := pp.GetUID()
+	schemaUID := pp.GetSchemaUID()
 	t.typeCacheLock.RLock()
 	structType, ok = t.typeCache[schemaUID]
 	t.typeCacheLock.RUnlock()
