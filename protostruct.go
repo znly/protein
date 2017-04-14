@@ -29,11 +29,17 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
+// CreateStructType constructs a new structure-type definition at runtime from
+// a `ProtobufSchema` tree.
 //
-// Package protostruct provides a straigtforward API to generate
-// structure type definitions at runtime based on a set of
-// protobuf descriptors.
+// This newly-created structure embeds all the necessary tags & hints for the
+// protobuf SDK to deserialize payloads into it.
+// I.e., it allows for runtime-decoding of protobuf payloads.
+//
+// This is a complex and costly operation, it is strongly recommended to cache
+// the result like the `Transcoder` does.
+//
+// It requires the new `reflect` APIs provided by Go 1.7+.
 func CreateStructType(schemaUID string, sm *SchemaMap) (reflect.Type, error) {
 	ps := sm.GetByUID(schemaUID)
 	if ps == nil {
@@ -69,7 +75,9 @@ func CreateStructType(schemaUID string, sm *SchemaMap) (reflect.Type, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	if err := buildCustomTypes(
+	// TODO(cmc)[3]: handle gogo's custom/std types
+
+	if err := buildCompoundTypes(
 		ps, pss, pssRevMap,
 		structFields, structTypes, mapEntryTags,
 	); err != nil {
@@ -79,7 +87,6 @@ func CreateStructType(schemaUID string, sm *SchemaMap) (reflect.Type, error) {
 	return structTypes[schemaUID], nil
 }
 
-// TODO(cmc)
 func buildScalarTypes(
 	pss map[string]*ProtobufSchema,
 	structFields map[string][]reflect.StructField,
@@ -100,7 +107,7 @@ func buildScalarTypes(
 			fName := fieldName(f)
 			// type
 			var fType reflect.Type
-			t, err := fieldType(f)
+			t, err := scalarType(f)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -123,8 +130,7 @@ func buildScalarTypes(
 	return nil
 }
 
-// TODO(cmc)
-func buildCustomTypes(
+func buildCompoundTypes(
 	ps *ProtobufSchema,
 	pss map[string]*ProtobufSchema,
 	pssRevMap map[string]string,
@@ -133,7 +139,7 @@ func buildCustomTypes(
 	mapEntryTags map[string][2]reflect.StructTag,
 ) error {
 	for uid := range ps.GetDeps() {
-		if err := buildCustomTypes(
+		if err := buildCompoundTypes(
 			pss[uid], pss, pssRevMap,
 			structFields, structTypes, mapEntryTags,
 		); err != nil {
@@ -202,7 +208,6 @@ func buildCustomTypes(
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
 func fieldName(f *descriptor.FieldDescriptorProto) string {
 	if gogoproto.IsCustomName(f) { // custom names bypass everything
 		return gogoproto.GetCustomName(f)
@@ -221,8 +226,7 @@ func fieldName(f *descriptor.FieldDescriptorProto) string {
 	return strings.Join(parts, "")
 }
 
-// TODO(cmc)
-func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
+func scalarType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 	switch f.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		t = reflect.TypeOf(float64(0))
@@ -246,17 +250,17 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 		t = reflect.TypeOf(string(""))
 	case descriptor.FieldDescriptorProto_TYPE_GROUP:
 		err = errors.Wrapf(failure.ErrFieldTypeNotSupported,
-			"`%s`: field type not supported", f.GetType(),
+			"`%s`: not a scalar type", f.GetType(),
 		)
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 		err = errors.Wrapf(failure.ErrFieldTypeNotSupported,
-			"`%s`: field type not supported", f.GetType(),
+			"`%s`: not a scalar type", f.GetType(),
 		)
 	case descriptor.FieldDescriptorProto_TYPE_BYTES:
 		t = reflect.TypeOf([]byte{})
 	case descriptor.FieldDescriptorProto_TYPE_ENUM:
 		err = errors.Wrapf(failure.ErrFieldTypeNotSupported,
-			"`%s`: field type not supported", f.GetType(),
+			"`%s`: not a scalar type", f.GetType(),
 		)
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
 		t = reflect.TypeOf(int32(0))
@@ -270,9 +274,9 @@ func fieldType(f *descriptor.FieldDescriptorProto) (t reflect.Type, err error) {
 
 	switch f.GetLabel() {
 	case descriptor.FieldDescriptorProto_LABEL_OPTIONAL:
-		// do nothing
+		// do nothing (deprecated in proto3)
 	case descriptor.FieldDescriptorProto_LABEL_REQUIRED:
-		// do nothing
+		// do nothing (deprecated in proto3)
 	case descriptor.FieldDescriptorProto_LABEL_REPEATED:
 		t = reflect.SliceOf(t)
 	default:
@@ -377,7 +381,7 @@ func fieldTag(
 	return reflect.StructTag(tags), nil
 }
 
-// TODO(cmc)
+// fieldTagEntries computes the special tags required by protobuf maps.
 func fieldTagEntries(
 	tag reflect.StructTag, entryTags [2]reflect.StructTag,
 ) reflect.StructTag {

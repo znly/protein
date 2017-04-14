@@ -31,13 +31,15 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// TODO(cmc)
 func ExampleCreateStructType() {
+	// sniff local protobuf schemas and store those in a `SchemaMap`
 	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
 
+	// creates a structure-type definition from the '.test.TestSchemaXXX'
+	// protobuf schema using Go's reflect APIs
 	structType, err := CreateStructType(
 		sm.GetByFQName(".test.TestSchemaXXX").UID, sm,
 	)
@@ -45,11 +47,9 @@ func ExampleCreateStructType() {
 		zap.L().Fatal(err.Error())
 	}
 
-	// remove struct-tags to ease reading
-	structType = tagcleaner.Clean(structType)
-
-	// pretty-print the resulting struct-type
-	b, err := format.Source(
+	// pretty-print the resulting structure-type
+	structType = tagcleaner.Clean(structType) // remove tags to ease reading
+	b, err := format.Source(                  // gofmt
 		[]byte(fmt.Sprintf("type TestSchemaXXX %s", structType)),
 	)
 	if err != nil {
