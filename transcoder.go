@@ -112,7 +112,7 @@ var (
 
 // -----------------------------------------------------------------------------
 
-// A Transcoder is a protobuf encoder/decoder with versioning as well as
+// A Transcoder is a protobuf encoder/decoder with schema-versioning as well as
 // runtime-decoding capabilities.
 type Transcoder struct {
 	sm *SchemaMap

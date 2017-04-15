@@ -189,13 +189,16 @@ func BenchmarkTranscoder_DecodeAs(b *testing.B) {
 	payload, err := trc.Encode(_transcoderTestSchemaXXX)
 	assert.Nil(b, err)
 	assert.NotNil(b, payload)
+	payloadRaw, err := proto.Marshal(_transcoderTestSchemaXXX)
+	assert.Nil(b, err)
+	assert.NotNil(b, payloadRaw)
 	b.Run("gogo/protobuf", func(b *testing.B) {
 		b.SetParallelism(3)
 		b.RunParallel(func(pb *testing.PB) {
 			var ts test.TestSchemaXXX
 			var err error
 			for pb.Next() {
-				err = trc.DecodeAs(payload, &ts)
+				err = proto.Unmarshal(payloadRaw, &ts)
 				assert.Nil(b, err)
 				assert.Equal(b, _transcoderTestSchemaXXX.FQNames, ts.FQNames)
 			}

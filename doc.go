@@ -12,6 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package protein!
-// TODO(cmc): transpose readme here
+// Package protein is an encoding/decoding library for Protobuf that comes with
+// schema-versioning and runtime-decoding capabilities.
+//
+// It has diverse use-cases, including but not limited to:
+//   - setting up schema registries
+//   - decoding Protobuf payloads without the need to know their schema at
+//     compile-time
+//   - identifying & preventing applicative bugs and data corruption issues
+//   - creating custom-made container formats for on-disk storage
+//   - ...and more!
 package protein
