@@ -74,8 +74,15 @@ func TestMain(m *testing.M) {
 
 // -----------------------------------------------------------------------------
 
+//func ExampleTranscoder(t *testing.T) {
+//trc, err := NewTranscoder()
+//trc.
+//}
+
+// -----------------------------------------------------------------------------
+
 // NOTE: Simple cache coherence test, not really necessary anymore as the rest
-//       of the tests encompass this and much more but, well, it's free anyway.
+// of the tests encompass this and much more but, well, it's free anyway.
 func TestTranscoder_localCache(t *testing.T) {
 	var expectedUID string
 	var revUID string
@@ -213,7 +220,7 @@ func TestTranscoder_Decode(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, payload)
 
-	v, err := trc.Decode(payload)
+	v, err := trc.Decode(context.Background(), payload)
 	assert.Nil(t, err)
 	assertFieldValues(t, reflect.ValueOf(_transcoderTestSchemaXXX), v)
 }
@@ -251,7 +258,7 @@ func BenchmarkTranscoder_Decode(b *testing.B) {
 			var ts reflect.Value
 			var err error
 			for pb.Next() {
-				ts, err = trc.Decode(payload)
+				ts, err = trc.Decode(context.Background(), payload)
 				assert.Nil(b, err)
 				assert.NotEqual(b, reflect.ValueOf(nil), ts)
 			}
@@ -296,7 +303,7 @@ func TestTranscoder_Parallelism(t *testing.T) {
 				var ts reflect.Value
 				var err error
 				for i := 0; i < nbOps; i++ {
-					ts, err = trc.Decode(payload)
+					ts, err = trc.Decode(context.Background(), payload)
 					assert.Nil(t, err)
 					assert.NotEqual(t, reflect.ValueOf(nil), ts)
 				}

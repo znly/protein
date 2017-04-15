@@ -55,7 +55,7 @@ BenchmarkTranscoder_Decode/znly/protein-24     500000     3037 ns/op
 
 ## Error handling
 
-*Protein* uses the [`pkg/errors`](https://github.com/pkg/errors) package to handle error propagation throughout the call stack; please take a look at its documentation for more information about how to properly handle these errors.
+*Protein* uses the [`pkg/errors`](https://github.com/pkg/errors) package to handle error propagation throughout the call stack; please take a look at the related documentation for more information on how to properly handle these errors.
 
 ## Logging
 

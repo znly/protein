@@ -142,7 +142,7 @@ func testTranscoder_Helpers_common(t *testing.T, trc *Transcoder) {
 	trc.typeCache = map[string]reflect.Type{}
 
 	// decoding will have to use the user-specified getter to find the schemas
-	v, err := trc.Decode(payload)
+	v, err := trc.Decode(context.Background(), payload)
 	assert.Nil(t, err)
 	assertFieldValues(t, reflect.ValueOf(_transcoderTestSchemaXXX), v)
 }

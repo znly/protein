@@ -1,11 +1,10 @@
 v1
-    doc, comments, real world example (needs a note about errors)
+    doc, real world example (needs a note about linkname)
     add transcoder example
     runtime decoding of enums
     runtime decoding of oneofs
     expose metrics (follow rocksDB model?)
     gogo.stdtypes support
-    transcoder's doc 2nd pass
 
 later
     SchemaMap tests (races) & benchs

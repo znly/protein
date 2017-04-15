@@ -45,11 +45,11 @@ import (
 // The default `TranscoderGetter` always returns a not-found error.
 type TranscoderGetter func(ctx context.Context, schemaUID string) ([]byte, error)
 
-// A TranscoderSetter is called by the `Transcoder` when it has finished
-// sniffing the currently instanciated protobuf schemas from memory
+// A TranscoderSetter is called by the `Transcoder` for every schema that it
+// can find in memory.
 //
-// The function receives a byte-slice that has been previously serialized by a
-// `TranscoderSerializer` (see below).
+// The function receives a byte-slice that corresponds to a `ProtobufSchema`
+// which has been previously serialized by a `TranscoderSerializer` (see below).
 //
 // A `TranscoderSetter` is typically used to push the local `ProtobufSchema`s
 // sniffed from memory into a remote data-store.
@@ -112,8 +112,8 @@ var (
 
 // -----------------------------------------------------------------------------
 
-// A Transcoder is a protobuf encoder/decoder with versioning and runtime-decoding
-// capabilities.
+// A Transcoder is a protobuf encoder/decoder with versioning as well as
+// runtime-decoding capabilities.
 type Transcoder struct {
 	sm *SchemaMap
 
@@ -128,10 +128,12 @@ type Transcoder struct {
 
 // NewTranscoder returns a new `Transcoder`.
 //
-// See `ScanSchemas`'s documentation for more information about `hasher` and
-// `hashPrefix`.
+// See `ScanSchemas`'s documentation for more information regarding the use
+// of `hasher` and `hashPrefix`.
 //
 // See `TranscoderOpt`'s documentation for the list of available options.
+//
+// The given context is passed to the user-specified `TranscoderSetter`, if any.
 func NewTranscoder(ctx context.Context,
 	hasher protoscan.Hasher, hashPrefix string, opts ...TranscoderOpt,
 ) (*Transcoder, error) {
@@ -207,9 +209,10 @@ func NewTranscoder(ctx context.Context,
 //   Once again, a schema-not-found error is returned if one or more dependency
 //   couldn't be found (the returned error does indicate which of them).
 //
-// The `ProtobufSchema`s found during this process are both added to the local
-// `SchemaMap` so that they don't need to ever be found again during the
-// lifetime of this `Transcoder`, and are returned to the caller as flattened map.
+// The `ProtobufSchema`s found during this process are both:
+// - added to the local `SchemaMap` so that they don't need to be searched for
+// ever again during the lifetime of this `Transcoder`, and
+// - returned to the caller as flattened map.
 func (t *Transcoder) getAndUpsert(
 	ctx context.Context, schemaUID string,
 ) (map[string]*ProtobufSchema, error) {
@@ -278,8 +281,8 @@ func (t *Transcoder) getAndUpsert(
 // -----------------------------------------------------------------------------
 
 // Encode bundles the given protobuf `Message` and its associated versioning
-// metadata within a `ProtobufPayload`, marshals it all together in a byte-slice
-// then returns the result.
+// metadata together within a `ProtobufPayload`, marshals it all together in a
+// byte-slice then returns the result.
 //
 // `Encode` needs the message's fully-qualified name in order to reverse-lookup
 // its schemaUID (i.e. its versioning hash).
@@ -288,15 +291,15 @@ func (t *Transcoder) getAndUpsert(
 // of those does return a result or none of them does, in which case the
 // encoding will fail. In search order, those places are:
 // 1. first, the `fqName` parameter is checked; if it isn't set, then
-// 2. the `golang/protobuf` package is queried for the fqn; if it
-// cannot find it then
-// 3. finally, the `gogo/protobuf` package is used as a last resort.
+// 2. the `golang/protobuf` package is queried for the FQN; if it isn't
+// available there then
+// 3. finally, the `gogo/protobuf` package is queried too, as a last resort.
 //
 // Note that a single fully-qualified name might point to multiple schemaUIDs
-// if multiple versions of the associated schema are available in the `SchemaMap`.
+// if multiple versions of that schema are currently available in the `SchemaMap`.
 // When this happens, the first schemaUID from the list will be used, which
 // corresponds to the first version of the schema to have ever been added to
-// the local `SchemaMap`.
+// the local `SchemaMap` (i.e. the oldest one).
 func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error) {
 	payload, err := proto.Marshal(msg)
 	if err != nil {
@@ -319,7 +322,7 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 	if ps == nil {
 		return nil, errors.Errorf("`%s`: fully-qualified name not found", fqn)
 	}
-	// wrap the marshaled payload within a ProtobufPayload message
+	// wrap the marshaled payload within a `ProtobufPayload` message
 	pp := &ProtobufPayload{SchemaUID: ps.SchemaUID, Payload: payload}
 
 	// marshal the `ProtobufPayload` and return the result
@@ -333,7 +336,7 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 // for an external one, even if it's private.
 // This allows us to bind to the private `unmarshalType` method of the
 // `proto.Buffer` class, which does the actual work of decoding the payload
-// based of the structure-tags of the receiving object.
+// based on the structure-tags of the receiving object.
 //
 // `unmarshalType` is actually a method of the `proto.Buffer` class, hence the
 // `b` given as first parameter will be used as 'this'.
@@ -356,16 +359,20 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 // dependency tree of this schema.
 // This is a costly operation that involves a lot of reflection, see
 // `CreateStructType` documentation for more information.
-// Fortunately, the resulting structure-type is cached so it can be freely
+// Fortunately, the resulting structure-type is cached so that it can be freely
 // re-used by later calls to `Decode`; i.e. you pay the price only once.
 //
-// Also when trying to decode a specific schema for the first-time, `Decode`
-// might not have the dependency available in its local `SchemaMap`, in which
-// case it will call the user-defined `TranscoderGetter` in the hope that
-// it might return the missing dependencies.
-// This user-defined function may or may not do some kind of I/O.
+// Also, when trying to decode a specific schema for the first-time, `Decode`
+// might not have all of the dependencies directly available in its local
+// `SchemaMap`, in which case it will call the user-defined `TranscoderGetter`
+// in the hope that it might return these missing dependencies.
+// This user-defined function may or may not do some kind of I/O; the given
+// context will be passed to it.
+//
 // Once again, this price is paid only once.
-func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
+func (t *Transcoder) Decode(
+	ctx context.Context, payload []byte,
+) (reflect.Value, error) {
 	var pp ProtobufPayload
 	if err := proto.Unmarshal(payload, &pp); err != nil {
 		return reflect.ValueOf(nil), errors.WithStack(err)
@@ -379,7 +386,7 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 	structType, ok = t.typeCache[schemaUID]
 	t.typeCacheLock.RUnlock()
 	if !ok {
-		if _, err := t.getAndUpsert(context.Background(), schemaUID); err != nil {
+		if _, err := t.getAndUpsert(ctx, schemaUID); err != nil {
 			return reflect.ValueOf(nil), errors.WithStack(err)
 		}
 		st, err := CreateStructType(schemaUID, t.sm)
@@ -397,7 +404,7 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 		t.typeCacheLock.Unlock()
 	}
 
-	// allocate a new structure using the given type definition, the
+	// allocate a new structure using the given structure-type definition, the
 	// returned `reflect.Value`'s underlying type is a pointer to struct
 	obj := reflect.New(structType)
 
@@ -417,8 +424,8 @@ func (t *Transcoder) Decode(payload []byte) (reflect.Value, error) {
 }
 
 // DecodeAs decodes the given protein-encoded `payload` into the specified
-// protobuf `Message`, thus bypassing all of the runtime-decoding and schema
-// versioning machinery.
+// protobuf `Message` using the standard protobuf methods, thus bypassing all
+// of the runtime-decoding and schema versioning machinery.
 //
 // It is very often used when you need to work with protein-encoded data in
 // a non-agnostic way (i.e. when you know beforehand how you want to decode
