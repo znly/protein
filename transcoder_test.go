@@ -81,9 +81,9 @@ func TestMain(m *testing.M) {
 // This example demonstrates the use the Protein package in order to:
 // initialize a `Transcoder`,
 // sniff the local protobuf schemas from memory,
-// synchronize the local schema-database with a remote datastore (redis),
-// use a `Transcoder` to encode & decode a protobuf payload with a known schema,
-// use a `Transcoder` to decode a protobuf payload with an unknown schema.
+// synchronize the local schema-database with a remote datastore (here `redis`),
+// use a `Transcoder` to encode & decode protobuf payloads with a known schema,
+// use a `Transcoder` to decode protobuf payloads with an unknown schema.
 func Example() {
 	// A local `redis` server must be up & running for this example to work:
 	//
@@ -104,22 +104,21 @@ func Example() {
 	trc, err := NewTranscoder(
 		// this context defines the timeout & deadline policies when pushing
 		// schemas to the local `redis`; i.e. it is forwarded to the
-		// `TranscoderSetter` that is set below
+		// `TranscoderSetter` function that is passed below
 		context.Background(),
 		// the schemas found in memory will be versioned using a MD5 hash
 		// algorithm, prefixed by the 'PROT-' string
 		protoscan.MD5, "PROT-",
 		// configure the `Transcoder` to push every protobuf schema it can find
-		// locally into the specified `redis` connection
+		// locally into the specified `redis` connection pool
 		TranscoderOptSetter(NewTranscoderSetterRedis(p)),
-		// configure the `Transcoder` to query the given `redis`
-		// connection when it cannot find a specific protobuf schema in its
-		// local cache
+		// configure the `Transcoder` to query the given `redis` connection pool
+		// when it cannot find a specific protobuf schema in its local cache
 		TranscoderOptGetter(NewTranscoderGetterRedis(p)),
 	)
 
 	// At this point, the local `redis` datastore should contain all the
-	// protobuf schemas known to the `Transcoder`, defined by their respective
+	// protobuf schemas known to the `Transcoder`, as defined by their respective
 	// versioning hashes:
 	//
 	//   $ docker run -it --link my-redis:redis --rm redis:3.2 redis-cli -h redis -p 6379 -c KEYS '*'
@@ -156,7 +155,8 @@ func Example() {
 	var myObj test.TestSchemaXXX
 
 	// /!\ This will fail in cryptic ways since vanilla protobuf is unaware
-	// of how Protein bundled the versioning metadata... Don't do this!
+	// of how Protein bundles the versioning metadata within the payload...
+	// Don't do this!
 	_ = proto.Unmarshal(payload, &myObj)
 
 	// this will properly unbundle the data from the metadata before
@@ -181,7 +181,9 @@ func Example() {
 	//    the `redis` datastore
 	// 3. a structure-type definition is created from these schemas using Go's
 	//    reflection APIs, with the right protobuf tags & hints
-	// 4. an instance of this structure is created and the payload is
+	// 3. a structure-type definition is created from these schemas using Go's
+	//    reflection APIs, with the right protobuf tags & hints for the protobuf 	//     deserializer to do its thing
+	// 4. an instance of this structure is created, then the payload is
 	//    unmarshalled into it
 	myRuntimeObj, err := trc.Decode(context.Background(), payload)
 	if err != nil {
