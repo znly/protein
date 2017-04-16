@@ -16,6 +16,8 @@ package protein
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"testing"
 
 	"go.uber.org/zap"
@@ -28,22 +30,61 @@ import (
 
 // This example demonstrates how to use Protein's `ScanSchemas` function in
 // order to sniff all the locally instanciated schemas into a `SchemaMap`,
-// then walk over this map to print each schema and its list of dependencies.
+// then walk over this map in order to print each schema as well as its
+// dependencies.
 func ExampleScanSchemas() {
-	// sniff protobuf schemas into a `SchemaMap`
-	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
+	// sniff local protobuf schemas into a `SchemaMap` using a MD5 hasher,
+	// and prefixing each resulting UID with 'PROT-'
+	sm, err := ScanSchemas(protoscan.MD5, "PROT-")
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
 
-	// walk over the map to display schemas and their dependencies
+	// walk over the map to print the schemas and their respective dependencies
+	var output string
 	sm.ForEach(func(ps *ProtobufSchema) error {
-		fmt.Printf("[%s] %s\n", ps.GetSchemaUID(), ps.GetFQName())
+		// discard schemas not orginating from protein's test package
+		if !strings.HasPrefix(ps.GetFQName(), ".test") {
+			return nil
+		}
+		output += fmt.Sprintf("[%s] %s\n", ps.GetSchemaUID(), ps.GetFQName())
 		for uid, name := range ps.GetDeps() {
-			fmt.Printf("\tdepends on: [%s] %s\n", uid, name)
+			// discard dependencies not orginating from protein's test package
+			if strings.HasPrefix(name, ".test") {
+				output += fmt.Sprintf(
+					"[%s] depends on: [%s] %s\n", ps.GetSchemaUID(), uid, name,
+				)
+			}
 		}
 		return nil
 	})
+
+	// sort rows so the output stays deterministic
+	rows := strings.Split(output, "\n")
+	sort.Strings(rows)
+	for i, r := range rows { // prettying
+		if strings.Contains(r, "depends on") {
+			rows[i] = "\t" + strings.Join(strings.Split(r, " ")[1:], " ")
+		}
+	}
+	output = strings.Join(rows, "\n")
+	fmt.Println(output)
+
+	// Output:
+	// [PROT-048ddab197df688302a76296293ba101] .test.OtherTestSchemaXXX
+	// [PROT-393cb6dc1b4fc350cf10ca99f429301d] .test.TestSchemaXXX.WeatherType
+	// [PROT-4f6928d2737ba44dac0e3df123f80284] .test.TestSchema.DepsEntry
+	// [PROT-528e869395e00dd5525c2c2c69bbd4d0] .test.TestSchema
+	// 	depends on: [PROT-4f6928d2737ba44dac0e3df123f80284] .test.TestSchema.DepsEntry
+	// [PROT-6926276ca6306966d1a802c3b8f75298] .test.TestSchemaXXX.IdsEntry
+	// [PROT-c2dbc910081a372f31594db2dc2adf72] .test.TestSchemaXXX
+	// 	depends on: [PROT-048ddab197df688302a76296293ba101] .test.OtherTestSchemaXXX
+	// 	depends on: [PROT-6926276ca6306966d1a802c3b8f75298] .test.TestSchemaXXX.IdsEntry
+	// 	depends on: [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
+	// 	depends on: [PROT-f6be24770f6e8d5edc8ef12c94a23010] .test.TestSchemaXXX.DepsEntry
+	// [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
+	// [PROT-f6be24770f6e8d5edc8ef12c94a23010] .test.TestSchemaXXX.DepsEntry
+	// 	depends on: [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
 }
 
 // -----------------------------------------------------------------------------

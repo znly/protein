@@ -31,15 +31,18 @@ import (
 
 // -----------------------------------------------------------------------------
 
+// This simple example demonstrates how to use the protostruct API in order to
+// create a structure-type at runtime for a given protobuf schema, specified by
+// its fully-qualified name.
 func ExampleCreateStructType() {
-	// sniff local protobuf schemas and store those in a `SchemaMap`
+	// sniff all of local protobuf schemas and store them in a `SchemaMap`
 	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
 
-	// creates a structure-type definition from the '.test.TestSchemaXXX'
-	// protobuf schema using Go's reflect APIs
+	// create a structure-type definition for the '.test.TestSchemaXXX'
+	// protobuf schema
 	structType, err := CreateStructType(
 		sm.GetByFQName(".test.TestSchemaXXX").SchemaUID, sm,
 	)
@@ -56,6 +59,31 @@ func ExampleCreateStructType() {
 		zap.L().Fatal(err.Error())
 	}
 	fmt.Println(string(b))
+
+	// Output:
+	//type TestSchemaXXX struct {
+	//	SchemaUID string
+	//	FQNames   string
+	//	Deps      struct {
+	//		Key   string
+	//		Value string
+	//	}
+	//	IDs string
+	//	TS  struct {
+	//		Seconds int64
+	//		Nanos   int32
+	//	}
+	//	Ots struct {
+	//		TS struct {
+	//			Seconds int64
+	//			Nanos   int32
+	//		}
+	//	}
+	//	Nss struct {
+	//		Key   string
+	//		Value string
+	//	}
+	//}
 }
 
 // -----------------------------------------------------------------------------

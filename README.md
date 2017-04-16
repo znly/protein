@@ -13,6 +13,7 @@ It has diverse use-cases, including but not limited to:
 - creating custom-made container formats for on-disk storage
 - ...and more!
 
+**Table of Contents:**  
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
@@ -24,12 +25,9 @@ It has diverse use-cases, including but not limited to:
 - [Contributing](#contributing)
   - [Running tests](#running-tests)
   - [Running benchmarks](#running-benchmarks)
-- [Internals overview](#internals-overview)
-  - [Shema scanning](#shema-scanning)
-  - [Schema versioning](#schema-versioning)
 - [Authors](#authors)
 - [See also](#see-also)
-- [License *](#license-)
+- [License](#license-)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -94,7 +92,7 @@ For more information, see *Zap*'s [documentation](https://godoc.org/go.uber.org/
 
 ## Monitoring
 
-*Protein* does not offer any kind of monitoring hooks yet.
+*Protein* does not offer any kind of monitoring hooks, yet.
 
 ## Contributing
 
@@ -114,11 +112,9 @@ $ make test
 $ make bench
 ```
 
-## Internals overview
+<!--## Internals overview-->
 
-### Shema scanning
-
-### Schema versioning
+<!--See the blog post.-->
 
 ## Authors
 
