@@ -6,14 +6,21 @@
 
 *Protein* is an encoding/decoding library for [*Protobuf*](https://developers.google.com/protocol-buffers/) that comes with schema-versioning and runtime-decoding capabilities.
 
-It has diverse use-cases, including but not limited to:
+It has multiple use-cases, including but not limited to:
 - setting up schema registries
-- decoding Protobuf payloads without the need to know their schema at compile-time
+- decoding Protobuf payloads without the need to know their schema at compile-time (all the while keeping strong-typing around!)
 - identifying & preventing applicative bugs and data corruption issues
 - creating custom-made container formats for on-disk storage
 - ...and more!
 
-<!--needs a quick note about how it works, so that the quickstart section can make sense-->
+*Protein* is divided into 3 sub-components that all play a critical role in its operation:
+- The [`protoscan` API](./protoscan.go) walks through the symbols of the running executable to find every instanciated protobuf schemas, collect them, build the dependency trees that link them together and finally compute the deterministic versioning hashes that ultimately define them.
+- The [`protostruct` API](./protostruct.go) is capable of creating structure definitions at runtime using the dependency trees of protobuf schemas that were previously computed by the `protoscan` API.
+- The [`Transcoder` class](./transcoder.go) implements the high-level, user-facing encoding/decoding API that ties all of this together and offers the tools to cover the various use-cases cited above.
+
+An upcoming blog post detailing the inner workings of these components is in the works and shall be available soon.
+
+Have a look at the [Quickstart](#quickstart) section to get started.
 
 ---
 
@@ -22,10 +29,12 @@ It has diverse use-cases, including but not limited to:
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 
+- [Usage](#usage)
+  - [Quickstart](#quickstart)
+  - [Error handling](#error-handling)
+  - [Logging](#logging)
+  - [Monitoring](#monitoring)
 - [Performance](#performance)
-- [Error handling](#error-handling)
-- [Logging](#logging)
-- [Monitoring](#monitoring)
 - [Contributing](#contributing)
   - [Running tests](#running-tests)
   - [Running benchmarks](#running-benchmarks)
@@ -39,18 +48,20 @@ It has diverse use-cases, including but not limited to:
 
 ### Quickstart
 
-This quickstart demonstrates the use the *Protein* package in order to:
+This quickstart demonstrates the use of the *Protein* package in order to:
 - initialize a `Transcoder`
 - sniff the local protobuf schemas from memory
-- synchronize the local schema-database with a remote datastore (here `redis`)
-- use a `Transcoder` to encode & decode protobuf payloads with a known schema
-- use a `Transcoder` to decode protobuf payloads with an unknown schema
+- synchronize the local schema-database with a remote datastore (`redis` in this example)
+- use a `Transcoder` to encode & decode protobuf payloads using an already known schema
+- use a `Transcoder` to decode protobuf payloads without any prior knowledge of their schema
+
+The complete code for the following quickstart can be found [here](./transcoder_test.go).
 
 **Prerequisites**
 
 First, we need to set up a local `redis` server that will be used as a schema registry later on:
 ```sh
-$ docker run -p 6379:6379 --name my-redis --rm redis:3.2 redis-server
+$ docker run -p 6379:6379 --name schema-reg --rm redis:3.2 redis-server
 ```
 Then we open up a pool of connections to this server using [*garyburd/redigo*](github.com/garyburd/redigo):
 ```Go
@@ -76,7 +87,7 @@ trc, err := NewTranscoder(
   // algorithm, prefixed by the 'PROT-' string
   protoscan.MD5, "PROT-",
   // configure the `Transcoder` to push every protobuf schema it can find
-  // locally into the specified `redis` connection pool
+  // in memory into the specified `redis` connection pool
   TranscoderOptSetter(NewTranscoderSetterRedis(p)),
   // configure the `Transcoder` to query the given `redis` connection pool
   // when it cannot find a specific protobuf schema in its local cache
@@ -86,7 +97,7 @@ trc, err := NewTranscoder(
 
 Now that the `Transcoder` has been initialized, the local `redis` datastore should contain all the protobuf schemas that were sniffed from memory, as defined by their respective versioning hashes:
 ```sh
-$ docker run -it --link my-redis:redis --rm redis:3.2 redis-cli -h redis -p 6379 -c KEYS '*'
+$ docker run -it --link schema-reg:redis --rm redis:3.2 redis-cli -h redis -p 6379 -c KEYS '*'
 
   1) "PROT-31c64ad1c6476720f3afee6881e6f257"
   2) "PROT-56b347c6c212d3176392ab9bf5bb21ee"
@@ -101,20 +112,18 @@ $ docker run -it --link my-redis:redis --rm redis:3.2 redis-cli -h redis -p 6379
 
 We'll create a simple object for testing encoding & decoding functions, using the `TestSchemaXXX` protobuf schema defined [here](./protobuf/test_schema_xxx.proto):
 ```Go
-ts, _ := types.TimestampProto(time.Now())
 obj := &test.TestSchemaXXX{
   Ids: map[int32]string{
     42:  "the-answer",
     666: "the-devil",
   },
-  Ts: *ts,
 }
 ```
 
-Encoding is nothing spectacular, the `Transcoder` will hide the "hard" work of bundling the metadata within the payload:
+Encoding is nothing spectacular, the `Transcoder` will hide the "hard" work of bundling the versioning metadata within the payload:
 ```Go
-// wrap the object and its versioning metadata within a `ProtobufPayload`,
-// then serializes the bundle as a protobuf binary blob
+// wrap the object and its versioning metadata within a `ProtobufPayload` object,
+// then serialize the bundle as a protobuf binary blob
 payload, err := trc.Encode(obj)
 if err != nil {
   log.Fatal(err)
@@ -133,20 +142,20 @@ Trying to decode the payload using the standard `proto.Unmarshal` method will fa
 _ = proto.Unmarshal(payload, &myObj) // NOPE NOPE NOPE!
 ```
 
-Using the `Transcoder`, on the other hand, will properly unbundle the data from the metadata before unmarshalling the payload:
+Using the `Transcoder`, on the other hand, will allow to properly unbundle the data from the metadata before unmarshalling the payload:
 ```Go
 err = trc.DecodeAs(payload, &myObj)
 if err != nil {
   log.Fatal(err)
 }
-fmt.Println(myObj.Ids[42]) // the answer!
+fmt.Println(myObj.Ids[42]) // prints the answer!
 ```
 
 **Decoding stuff dynamically (!)**
 
-Runtime-decoding does not require any more effort from the end-user than simple decoding does, although *a lot* of stuff is actually happening behind-the-scenes:
+Runtime-decoding does not require any more effort on the part of the end-user than simple decoding does, although *a lot* of stuff is actually happening behind-the-scenes:
 1. the versioning metadata is extracted from the payload
-2. the corresponding schema as well as its dependencies are fetched from the `redis` datastore if they're not already available in the local cache
+2. the corresponding schema as well as its dependencies are lazily fetched from the `redis` datastore if they're not already available in the local cache (using the `TranscoderGetter` that was passed to the constructor)
 3. a structure-type definition is created from these schemas using Go's reflection APIs, with the right protobuf tags & hints for the protobuf deserializer to do its thing
 4. an instance of this structure is created, then the payload is unmarshalled into it
 
@@ -156,7 +165,7 @@ if err != nil {
   log.Fatal(err)
 }
 myRuntimeIDs := myRuntimeObj.Elem().FieldByName("IDs")
-fmt.Println(myRuntimeIDs.MapIndex(reflect.ValueOf(int32(666)))) // the devil!
+fmt.Println(myRuntimeIDs.MapIndex(reflect.ValueOf(int32(666)))) // prints the devil!
 ```
 
 ### Error handling
@@ -224,13 +233,19 @@ See [*transcoder_test.go*](./transcoder_test.go) for the actual benchmarking cod
 
 ## Contributing
 
-Contributions of any kind are welcome.
+Contributions of any kind are welcome; whether it is to fix a bug, clarify some documentation/comments or simply correct english mistakes and typos: do feel free to send us a pull request.
+
+*Protein* is pretty-much frozen in terms of features; if you still find it to be lacking something, please file an issue to discuss it first.
+
+Don't hesitate to open an issue if you some piece of documentation looks either unclear, incomplete or just missing entirely.
+
+*Code contributions must be thoroughly tested and documented.*
 
 ### Running tests
 
 ```sh
 $ docker-compose -f test/docker-compose.yml up
-$ ## wait for the datastores to be up & running
+$ ## wait for the datastores to be up & running, then
 $ make test
 ```
 
@@ -240,13 +255,9 @@ $ make test
 $ make bench
 ```
 
-<!--## Internals overview-->
-
-<!--See the blog post.-->
-
 ## Authors
 
-See AUTHORS for the list of contributors.
+See [AUTHORS](./AUTHORS) for the list of contributors.
 
 ## See also
 
@@ -254,6 +265,6 @@ See AUTHORS for the list of contributors.
 
 ## License ![License](https://img.shields.io/badge/license-Apache2-blue.svg?style=plastic)
 
-The Apache License version 2.0 (Apache2) - see LICENSE for more details.
+The Apache License version 2.0 (Apache2) - see [LICENSE](./LICENSE) for more details.
 
 Copyright (c) 2017	Zenly	<hello@zen.ly> [@zenlyapp](https://twitter.com/zenlyapp)

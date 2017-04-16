@@ -82,8 +82,10 @@ func TestMain(m *testing.M) {
 // initialize a `Transcoder`,
 // sniff the local protobuf schemas from memory,
 // synchronize the local schema-database with a remote datastore (here `redis`),
-// use a `Transcoder` to encode & decode protobuf payloads with a known schema,
-// use a `Transcoder` to decode protobuf payloads with an unknown schema.
+// use a `Transcoder` to encode & decode protobuf payloads using an already
+// known schema,
+// use a `Transcoder` to decode protobuf payloads without any prior knowledge
+// of their schema.
 func Example() {
 	// A local `redis` server must be up & running for this example to work:
 	//
@@ -110,7 +112,7 @@ func Example() {
 		// algorithm, prefixed by the 'PROT-' string
 		protoscan.MD5, "PROT-",
 		// configure the `Transcoder` to push every protobuf schema it can find
-		// locally into the specified `redis` connection pool
+		// in memory into the specified `redis` connection pool
 		TranscoderOptSetter(NewTranscoderSetterRedis(p)),
 		// configure the `Transcoder` to query the given `redis` connection pool
 		// when it cannot find a specific protobuf schema in its local cache
@@ -143,8 +145,8 @@ func Example() {
 		Ts: *ts,
 	}
 
-	// wrap the object and its versioning metadata within a `ProtobufPayload`,
-	// then serializes the bundle as a protobuf binary blob
+	// wrap the object and its versioning metadata within a `ProtobufPayload`
+	// object, then serialize the bundle as a protobuf binary blob
 	payload, err := trc.Encode(obj)
 	if err != nil {
 		log.Fatal(err)
@@ -165,7 +167,7 @@ func Example() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("A:", myObj.Ids[42]) // the answer!
+	fmt.Println("A:", myObj.Ids[42]) // prints the answer!
 
 	/* RUNTIME-DECODING */
 
@@ -177,12 +179,12 @@ func Example() {
 	// the `Transcoder` will do a lot of stuff behind the scenes so it can
 	// successfully decode the payload:
 	// 1. the versioning metadata is extracted from the payload
-	// 2. the corresponding schema as well as its dependencies are fetched from
-	//    the `redis` datastore
+	// 2. the corresponding schema as well as its dependencies are lazily
+	//    fetched from the `redis` datastore (using the `TranscoderGetter` that
+	//    was passed to the constructor)
 	// 3. a structure-type definition is created from these schemas using Go's
-	//    reflection APIs, with the right protobuf tags & hints
-	// 3. a structure-type definition is created from these schemas using Go's
-	//    reflection APIs, with the right protobuf tags & hints for the protobuf 	//     deserializer to do its thing
+	//    reflection APIs, with the right protobuf tags & hints for the protobuf
+	//    deserializer to do its thing
 	// 4. an instance of this structure is created, then the payload is
 	//    unmarshalled into it
 	myRuntimeObj, err := trc.Decode(context.Background(), payload)
@@ -190,7 +192,7 @@ func Example() {
 		log.Fatal(err)
 	}
 	myRuntimeIDs := myRuntimeObj.Elem().FieldByName("IDs")
-	fmt.Println("B:", myRuntimeIDs.MapIndex(reflect.ValueOf(int32(666)))) // the devil!
+	fmt.Println("B:", myRuntimeIDs.MapIndex(reflect.ValueOf(int32(666)))) // prints the devil!
 
 	// Output:
 	// A: the-answer
