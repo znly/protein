@@ -1,5 +1,4 @@
 v1
-    doc (needs a note about linkname)
     set-up CI & coverage
     runtime decoding of enums
     runtime decoding of oneofs

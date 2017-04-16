@@ -2,7 +2,7 @@
   <img src="resources/pics/protein.png" alt="Protein"/>
 </p>
 
-# Protein
+# Protein ![Status](https://img.shields.io/badge/status-stable-green.svg?style=plastic) [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=plastic)](http://godoc.org/github.com/znly/protein)
 
 *Protein* is an encoding/decoding library for [*Protobuf*](https://developers.google.com/protocol-buffers/) that comes with schema-versioning and runtime-decoding capabilities.
 
@@ -21,6 +21,26 @@ It has multiple use-cases, including but not limited to:
 An upcoming blog post detailing the inner workings of these components is in the works and shall be available soon.
 
 Have a look at the [Quickstart](#quickstart) section to get started.
+
+---
+
+:warning: **IMPORTANT NOTE REGARDING VENDORING (I.E. IT WON'T COMPILE)** :warning:
+
+*Protein* makes use of Go's [`linkname` feature](https://golang.org/cmd/compile/) in order to be able to sniff protobuf schemas off of memory.
+
+The `go:linkname` directive instructs the compiler to declare a local symbol as an alias for an external one, whether it is public or private.
+This allows *Protein* to bind to some of the private methods of the official protobuf package for various reasons (see [here](https://github.com/znly/protein/blob/8e8fe658a5e929b325e8a6460da34393031bdfd8/transcoder.go#L334-L348) and [there](https://github.com/znly/protein/blob/36036430febc7b455e14830b6bfd9ac93f4d4633/protostruct.go#L293-L307) for more information).
+
+Unfortunately, vendoring modifies symbol names due to the way mangling works; e.g. a symbol called `github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag` actually becomes `github.com/myname/myproject/vendor/github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag` once the `gogo/protobuf` package gets vendored inside the `myname/myproject` package.  
+
+*These modifications to the symbol names result is the **dreaded** `relocation target <symbol-name> not defined` error at compile time.*
+
+The good news is that *Protein* provides all that's necessary to fix those errors automatically, you just have to follow these commands:
+```sh
+$ go get -u github.com/znly/linkname-gen
+$ go generate ./vendor/github.com/znly/protein/...
+```
+And voila, it compiles again!
 
 ---
 
@@ -63,7 +83,7 @@ First, we need to set up a local `redis` server that will be used as a schema re
 ```sh
 $ docker run -p 6379:6379 --name schema-reg --rm redis:3.2 redis-server
 ```
-Then we open up a pool of connections to this server using [*garyburd/redigo*](github.com/garyburd/redigo):
+Then we open up a pool of connections to this server using [*garyburd/redigo*](https://github.com/garyburd/redigo):
 ```Go
 p := &redis.Pool{
   Dial: func() (redis.Conn, error) {
