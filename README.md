@@ -33,7 +33,7 @@ This allows *Protein* to bind to some of the private methods of the official pro
 
 Unfortunately, vendoring modifies symbol names due to the way mangling works; e.g. a symbol called `github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag` actually becomes `github.com/myname/myproject/vendor/github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag` once the `gogo/protobuf` package gets vendored inside the `myname/myproject` package.  
 
-*These modifications to the symbol names result is the **dreaded** `relocation target <symbol-name> not defined` error at compile time.*
+*These modifications to the symbol names result in the **dreaded** `relocation target <symbol-name> not defined` error at compile time.*
 
 The good news is that *Protein* provides all that's necessary to fix those errors automatically, you just have to follow these commands:
 ```sh
@@ -255,9 +255,8 @@ See [*transcoder_test.go*](./transcoder_test.go) for the actual benchmarking cod
 
 Contributions of any kind are welcome; whether it is to fix a bug, clarify some documentation/comments or simply correct english mistakes and typos: do feel free to send us a pull request.
 
-*Protein* is pretty-much frozen in terms of features; if you still find it to be lacking something, please file an issue to discuss it first.
-
-Don't hesitate to open an issue if you some piece of documentation looks either unclear, incomplete or just missing entirely.
+*Protein* is pretty-much frozen in terms of features; if you still find it to be lacking something, please file an issue to discuss it first.  
+Also, do not hesitate to open an issue if some piece of documentation looks either unclear or incomplete to you, nay is just missing entirely.
 
 *Code contributions must be thoroughly tested and documented.*
 
