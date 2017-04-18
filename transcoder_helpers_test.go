@@ -29,6 +29,8 @@ import (
 
 // -----------------------------------------------------------------------------
 
+const _transcoderHelpersTestNbTries = 40 // 2 minutes
+
 func TestTranscoder_Helpers_Memcached(t *testing.T) {
 	c, err := memcache.New("localhost:11211")
 	assert.Nil(t, err)
@@ -36,7 +38,18 @@ func TestTranscoder_Helpers_Memcached(t *testing.T) {
 	defer c.Close()
 
 	// clear the store, just in case
-	assert.Nil(t, c.Flush(-1))
+	err = c.Flush(-1)
+	tries := 0
+	for err != nil {
+		time.Sleep(time.Second * 3)
+		tries++
+		if tries > _transcoderHelpersTestNbTries {
+			assert.Nil(t, err)
+			return
+		}
+		err = c.Flush(-1)
+	}
+	assert.Nil(t, err)
 
 	// create `Transcoder` and push all local schemas via user-defined setter
 	trc, err := NewTranscoder(context.Background(),
@@ -54,6 +67,16 @@ func TestTranscoder_Helpers_Redis(t *testing.T) {
 	p := &redis.Pool{
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.DialURL("redis://localhost:6379/0")
+			tries := 0
+			for err != nil {
+				time.Sleep(time.Second * 3)
+				tries++
+				if tries > _transcoderHelpersTestNbTries {
+					assert.Nil(t, err)
+					return nil, err
+				}
+				c, err = redis.DialURL("redis://localhost:6379/0")
+			}
 			assert.NotNil(t, c)
 			assert.Nil(t, err)
 			return c, nil
@@ -91,6 +114,16 @@ func TestTranscoder_Helpers_Cassandra(t *testing.T) {
 	//       the keyspace reserved for tuyauDB's blobs.
 	cluster.Keyspace = "system"
 	tmp, err := cluster.CreateSession()
+	tries := 0
+	for err != nil {
+		time.Sleep(time.Second * 3)
+		tries++
+		if tries > _transcoderHelpersTestNbTries {
+			assert.Nil(t, err)
+			return
+		}
+		tmp, err = cluster.CreateSession()
+	}
 	assert.Nil(t, err)
 	assert.NotNil(t, tmp)
 
