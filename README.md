@@ -2,7 +2,7 @@
   <img src="resources/pics/protein.png" alt="Protein"/>
 </p>
 
-# Protein ![Status](https://img.shields.io/badge/status-stable-green.svg?style=plastic) [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=plastic)](http://godoc.org/github.com/znly/protein)
+# Protein ![Status](https://img.shields.io/badge/status-stable-green.svg?style=plastic) [![Build Status](http://img.shields.io/travis/znly/protein.svg?style=plastic)](https://travis-ci.org/znly/protein) [![Coverage Status](https://coveralls.io/repos/github/znly/protein/badge.svg?branch=master)](https://coveralls.io/github/znly/protein?branch=master) [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=plastic)](http://godoc.org/github.com/znly/protein)
 
 *Protein* is an encoding/decoding library for [*Protobuf*](https://developers.google.com/protocol-buffers/) that comes with schema-versioning and runtime-decoding capabilities.
 

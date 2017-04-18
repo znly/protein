@@ -1,0 +1,24 @@
+sudo: required
+
+services:
+    - memcached
+    - redis-server
+    - cassandra
+
+language: go
+go:
+    - 1.7
+    - 1.8
+    - tip
+env:
+    - "PATH=/home/travis/gopath/bin:$PATH"
+before_install:
+    - go get -u github.com/mattn/goveralls
+    - go get -u golang.org/x/tools/cmd/cover
+install:
+    - go get -u github.com/znly/protein/... || true
+script:
+    - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=count -coverprofile=coverage1.out .
+    - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=count -coverprofile=coverage2.out ./protoscan
+    - bash coverage.sh
+    - goveralls -coverprofile=coverage.out -service travis-ci -repotoken $COVERALLS_TOKEN
