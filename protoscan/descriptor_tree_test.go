@@ -29,10 +29,13 @@ import (
 
 func _collectTestSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 	// retrieve instanciated gogo/protobuf protofiles
-	symbol := "github.com/gogo/protobuf/proto.protoFiles"
 	protoFilesBindings, err := BindProtofileSymbols()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, protoFilesBindings)
+	symbol := "github.com/gogo/protobuf/proto.protoFiles"
+	if protoFilesBindings[symbol] == nil { // travis-ci runs tests through vendoring
+		symbol = "github.com/znly/protein/vendor/" + symbol
+	}
 	assert.NotEmpty(t, protoFilesBindings[symbol])
 	protoFiles := *protoFilesBindings[symbol]
 	assert.NotEmpty(t, protoFiles)
@@ -164,10 +167,13 @@ func TestDescriptorTree_computeRecursiveHash(t *testing.T) {
 
 func TestProtoscan_NewDescriptorTrees(t *testing.T) {
 	// retrieve instanciated gogo/protobuf protofiles
-	symbol := "github.com/gogo/protobuf/proto.protoFiles"
 	protoFilesBindings, err := BindProtofileSymbols()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, protoFilesBindings)
+	symbol := "github.com/gogo/protobuf/proto.protoFiles"
+	if protoFilesBindings[symbol] == nil { // travis-ci runs tests through vendoring
+		symbol = "github.com/znly/protein/vendor/" + symbol
+	}
 	assert.NotEmpty(t, protoFilesBindings[symbol])
 	protoFiles := *protoFilesBindings[symbol]
 	assert.NotEmpty(t, protoFiles)

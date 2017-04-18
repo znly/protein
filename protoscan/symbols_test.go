@@ -25,13 +25,16 @@ import (
 // -----------------------------------------------------------------------------
 
 func TestProtoscan_BindProtofileSymbols(t *testing.T) {
-	// `protein/protoscan` only imports a non-vendored `gogo/protobuf` package,
-	// so the only symbol found should be the following one:
-	symbol := "github.com/gogo/protobuf/proto.protoFiles"
 	protoFilesBindings, err := BindProtofileSymbols()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, protoFilesBindings)
 	assert.Equal(t, 1, len(protoFilesBindings))
+	// `protein/protoscan` only imports a non-vendored `gogo/protobuf` package,
+	// so the only symbol found should be the following one:
+	symbol := "github.com/gogo/protobuf/proto.protoFiles"
+	if protoFilesBindings[symbol] == nil { // travis-ci runs tests through vendoring
+		symbol = "github.com/znly/protein/vendor/" + symbol
+	}
 	assert.NotEmpty(t, protoFilesBindings[symbol])
 
 	// at least `descriptor.proto`, `gogo.proto` & `test_schema.proto` are
