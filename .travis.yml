@@ -15,8 +15,12 @@ env:
 before_install:
     - go get -u github.com/mattn/goveralls
     - go get -u golang.org/x/tools/cmd/cover
+    - go get -u github.com/Masterminds/glide
+    - go get -u github.com/znly/linkname-gen
 install:
     - go get -u github.com/znly/protein/... || true
+    - glide update -v
+    - go generate . ./protoscan
 script:
     - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=count -coverprofile=coverage1.out .
     - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=count -coverprofile=coverage2.out ./protoscan
