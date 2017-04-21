@@ -179,7 +179,7 @@ func buildCompoundTypes(
 			case descriptor.FieldDescriptorProto_LABEL_REPEATED:
 				fType = reflect.SliceOf(fType)
 			default:
-				err = errors.Wrapf(failure.ErrFieldLabelNotSupported,
+				return errors.Wrapf(failure.ErrFieldLabelNotSupported,
 					"`%s`: field label not supported", f.GetLabel(),
 				)
 			}
