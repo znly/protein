@@ -23,4 +23,3 @@ script:
     - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage1.out .
     - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage2.out ./protoscan
     - bash coverage.sh
-    - goveralls -coverprofile=coverage.out -service travis-ci -repotoken $COVERALLS_TOKEN
