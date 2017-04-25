@@ -212,7 +212,7 @@ func TestTranscoder_localCache(t *testing.T) {
 	revUID = trc.sm.GetByFQName(".test.TestSchema").SchemaUID
 	assert.NotEmpty(t, revUID)
 	assert.Equal(t, expectedUID, revUID)
-	schemas, err := trc.getAndUpsert(context.Background(), revUID)
+	schemas, err := trc.GetAndUpsert(context.Background(), revUID)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schemas)
 	assert.Equal(t, 2, len(schemas)) // `.test.TestSchema` + nested `DepsEntry`
@@ -222,7 +222,7 @@ func TestTranscoder_localCache(t *testing.T) {
 	revUID = trc.sm.GetByFQName(".test.TestSchema.DepsEntry").SchemaUID
 	assert.NotEmpty(t, revUID)
 	assert.Equal(t, expectedUID, revUID)
-	schemas, err = trc.getAndUpsert(context.Background(), revUID)
+	schemas, err = trc.GetAndUpsert(context.Background(), revUID)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, schemas)
 	assert.Equal(t, 1, len(schemas)) // `.test.TestSchema.DepsEntry` only

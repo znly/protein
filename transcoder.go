@@ -194,26 +194,28 @@ func NewTranscoder(ctx context.Context,
 
 // -----------------------------------------------------------------------------
 
-// getAndUpsert retrieves the `ProtobufSchema` associated with the specified
+// GetAndUpsert retrieves the `ProtobufSchema` associated with the specified
 // `schemaUID`, plus all of its direct & indirect dependencies.
 //
 // The retrieval process is done in two steps:
+//
 // - First, the root schema, as identified by `schemaUID`, is fetched from the
-//   local `SchemaMap`; if it cannot be found in there, it'll try to retrieve
-//   it via the user-defined `TranscoderGetter`, as passed to the constructor
-//   of the `Transcoder`.
-//   If it cannot be found in there either, then a schema-not-found error is
-//   returned.
+// local `SchemaMap`; if it cannot be found in there, it'll try to retrieve
+// it via the user-defined `TranscoderGetter`, as passed to the constructor
+// of the `Transcoder`.
+// If it cannot be found in there either, then a schema-not-found error is
+// returned.
+//
 // - Second, this exact same process is applied for every direct & indirect
-//   dependency of the root schema.
-//   Once again, a schema-not-found error is returned if one or more dependency
-//   couldn't be found (the returned error does indicate which of them).
+// dependency of the root schema.
+// Once again, a schema-not-found error is returned if one or more dependency
+// couldn't be found (the returned error does indicate which of them).
 //
 // The `ProtobufSchema`s found during this process are both:
 // - added to the local `SchemaMap` so that they don't need to be searched for
 // ever again during the lifetime of this `Transcoder`, and
 // - returned to the caller as flattened map.
-func (t *Transcoder) getAndUpsert(
+func (t *Transcoder) GetAndUpsert(
 	ctx context.Context, schemaUID string,
 ) (map[string]*ProtobufSchema, error) {
 	schemas := map[string]*ProtobufSchema{}
@@ -386,7 +388,7 @@ func (t *Transcoder) Decode(
 	structType, ok = t.typeCache[schemaUID]
 	t.typeCacheLock.RUnlock()
 	if !ok {
-		if _, err := t.getAndUpsert(ctx, schemaUID); err != nil {
+		if _, err := t.GetAndUpsert(ctx, schemaUID); err != nil {
 			return reflect.ValueOf(nil), errors.WithStack(err)
 		}
 		st, err := CreateStructType(schemaUID, t.sm)
