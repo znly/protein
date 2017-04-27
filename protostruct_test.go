@@ -63,23 +63,24 @@ func ExampleCreateStructType() {
 	// Output:
 	//type TestSchemaXXX struct {
 	//	SchemaUID string
-	//	FQNames   string
-	//	Deps      struct {
+	//	FQNames   []string
+	//	Weathers  []int32
+	//	Deps      map[string]*struct {
 	//		Key   string
 	//		Value string
 	//	}
-	//	IDs string
+	//	IDs map[int32]string
 	//	TS  struct {
 	//		Seconds int64
 	//		Nanos   int32
 	//	}
-	//	Ots struct {
-	//		TS struct {
+	//	Ots *struct {
+	//		TS *struct {
 	//			Seconds int64
 	//			Nanos   int32
 	//		}
 	//	}
-	//	Nss struct {
+	//	Nss []struct {
 	//		Key   string
 	//		Value string
 	//	}

@@ -1,5 +1,5 @@
 hash: fe88ed1cd3b585723841f472836d4997079b3b1ba19e554d8ac618ad4e2baaed
-updated: 2017-04-18T19:30:54.163587495+02:00
+updated: 2017-04-27T16:37:09.627900215+02:00
 imports:
 - name: github.com/fatih/camelcase
   version: f6a740d52f961c60348ebb109adde9f4635d7540
@@ -9,7 +9,7 @@ imports:
   - internal
   - redis
 - name: github.com/gocql/gocql
-  version: 66628b367ca6d68ca135881f4d947bdf20d915b9
+  version: 79434f238fe5c76efa88f8ed131adefe5b31a0d1
   subpackages:
   - internal/lru
   - internal/murmur
@@ -25,11 +25,11 @@ imports:
   - sortkeys
   - types
 - name: github.com/golang/protobuf
-  version: 0c1f6d65b5a189c2250d10e71a5506f06f9fa0a0
+  version: 2bba0603135d7d7f5cb73b2125beeda19c09f4ef
   subpackages:
   - proto
 - name: github.com/golang/snappy
-  version: 5f1c01d9f64b941dd9582c638279d046eda6ca31
+  version: 553a641470496b2327abcac10b36396bd98e45c9
 - name: github.com/hailocab/go-hostpool
   version: e80d13ce29ede4452c43dea11e79b9bc8a15b478
 - name: github.com/kardianos/osext
@@ -41,7 +41,7 @@ imports:
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
 - name: go.uber.org/zap
-  version: 1550bc05539134bbf8612a35f34a79ab8bf34ee3
+  version: 6a4e056f2cc954cfec3581729e758909604b3f76
   subpackages:
   - buffer
   - internal/bufferpool
@@ -49,10 +49,6 @@ imports:
   - internal/exit
   - internal/multierror
   - zapcore
-- name: golang.org/x/net
-  version: 5602c733f70afc6dcec6766be0d5034d4c4f14de
-  subpackages:
-  - context
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 testImports:
@@ -69,6 +65,6 @@ testImports:
   subpackages:
   - assert
 - name: github.com/teh-cmc/gools
-  version: f347addd1be2d8f3b8f438043e16c19cb4ee22d1
+  version: f0c4d3b2cca7806f20207dfc1baf8e6e24a7cf63
   subpackages:
   - tagcleaner
