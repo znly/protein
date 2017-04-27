@@ -71,6 +71,5 @@ message TestSchemaXXX {
 		RAIN  = 2;
 		SNOW  = 3;
 	}
-	// ENUM isn't supported yet
-	// repeated WeatherType weathers = 13;
+	repeated WeatherType weathers = 13;
 }
