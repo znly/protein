@@ -62,6 +62,7 @@ var _transcoderTestSchemaXXX = &test.TestSchemaXXX{
 		{Key: "nss-key-A", Value: "nss-value-A"},
 		{Key: "nss-key-B", Value: "nss-value-B"},
 	},
+	Weathers: []test.TestSchemaXXX_WeatherType{test.TestSchemaXXX_RAIN},
 }
 
 var trc *Transcoder
@@ -362,12 +363,26 @@ func assertFieldValues(t *testing.T, expected, actual reflect.Value) {
 		}
 	case reflect.Struct:
 		for i := 0; i < expected.NumField(); i++ {
-			assertFieldValues(t, expected.Field(i), actual.Field(i))
+			name := expected.Type().Field(i).Name
+			switch name { // due to Protein's camel-casing features
+			case "Ids":
+				name = "IDs"
+			case "Ts":
+				name = "TS"
+			}
+			assertFieldValues(t, expected.Field(i), actual.FieldByName(name))
 		}
 	default:
-		assert.True(t,
-			reflect.DeepEqual(expected.Interface(), actual.Interface()),
-		)
+		// NOTE: Enums are not supported yet, we must specifically handle
+		// them as scalar types for now or the internal protobuf machinery
+		// would crash later on.
+		if e, ok := expected.Interface().(test.TestSchemaXXX_WeatherType); ok {
+			assert.True(t, reflect.DeepEqual(int32(e), actual.Interface()))
+		} else {
+			assert.True(t,
+				reflect.DeepEqual(expected.Interface(), actual.Interface()),
+			)
+		}
 	}
 }
 
