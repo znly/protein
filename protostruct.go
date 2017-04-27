@@ -99,7 +99,14 @@ func buildScalarTypes(
 
 		fields := make([]reflect.StructField, 0, len(msg.Message.GetField()))
 		for _, f := range msg.Message.GetField() {
-			if len(f.GetTypeName()) > 0 { // message or enum
+			// NOTE: Enums are not supported yet, we must specifically handle
+			// them as scalar types for now or the internal protobuf machinery
+			// would crash later on.
+			if f.IsEnum() {
+				*f.Type = descriptor.FieldDescriptorProto_TYPE_INT32
+			}
+
+			if f.IsMessage() || f.IsEnum() { // message or enum
 				continue
 			}
 
@@ -153,7 +160,7 @@ func buildCompoundTypes(
 
 	fields := structFields[ps.GetSchemaUID()]
 	for _, f := range msg.Message.GetField() {
-		if len(f.GetTypeName()) <= 0 { // neither message nor enum
+		if !(f.IsMessage() || f.IsEnum()) { // neither message nor enum
 			continue
 		}
 
