@@ -87,6 +87,8 @@ func CreateStructType(schemaUID string, sm *SchemaMap) (reflect.Type, error) {
 	return structTypes[schemaUID], nil
 }
 
+// -----------------------------------------------------------------------------
+
 func buildScalarTypes(
 	pss map[string]*ProtobufSchema,
 	structFields map[string][]reflect.StructField,
@@ -146,6 +148,12 @@ func buildCompoundTypes(
 	mapEntryTags map[string][2]reflect.StructTag,
 ) error {
 	for uid := range ps.GetDeps() {
+		if ps.SchemaUID == uid {
+			// If a compound type depends on itself (i.e. a recursive Message),
+			// we must NOT try to build the associated structure-type recursively,
+			// or dreaded stack-overflows will ensue.
+			continue
+		}
 		if err := buildCompoundTypes(
 			pss[uid], pss, pssRevMap,
 			structFields, structTypes, mapEntryTags,
@@ -158,59 +166,144 @@ func buildCompoundTypes(
 		return nil
 	}
 
-	fields := structFields[ps.GetSchemaUID()]
+	fields := structFields[ps.SchemaUID]
+	recursiveFields := make(
+		map[string]*descriptor.FieldDescriptorProto, len(msg.Message.GetField()),
+	)
 	for _, f := range msg.Message.GetField() {
 		if !(f.IsMessage() || f.IsEnum()) { // neither message nor enum
 			continue
 		}
-
 		// name
 		fName := fieldName(f)
-		// type
-		fType := structTypes[pssRevMap[f.GetTypeName()]]
-		// tag
-		fTag, err := fieldTag(msg.Message, f)
+		if f.GetTypeName() == ps.FQName {
+			// This type of this field is actually the structure-type the we are
+			// currently trying to build; hence we must ignore it for now and
+			// we shall come back to it later on.
+			recursiveFields[fName] = f
+			continue
+		}
+		field, err := finalizeField(msg.Message, f, pssRevMap, structTypes, mapEntryTags)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		if fType.Kind() == reflect.Map { // maps are special creatures
-			fTag = fieldTagEntries(fTag, mapEntryTags[pssRevMap[f.GetTypeName()]])
-		} else {
-			switch f.GetLabel() {
-			case descriptor.FieldDescriptorProto_LABEL_OPTIONAL:
-				if gogoproto.IsNullable(f) {
-					fType = reflect.PtrTo(fType)
-				}
-			case descriptor.FieldDescriptorProto_LABEL_REQUIRED:
-				// do nothing
-			case descriptor.FieldDescriptorProto_LABEL_REPEATED:
-				fType = reflect.SliceOf(fType)
-			default:
-				return errors.Wrapf(failure.ErrFieldLabelNotSupported,
-					"`%s`: field label not supported", f.GetLabel(),
-				)
-			}
-		}
+		field.Name = fName
+		fields = append(fields, field)
+	}
+	finalizeStruct(msg.Message, ps, fields, structTypes, mapEntryTags)
+	/* NOTE: At this point, we've got a complete structure-type except for
+	 * recursive fields.
+	 */
 
-		fields = append(fields, reflect.StructField{
-			Name: fName,
-			Type: fType,
-			Tag:  fTag,
-		})
+	// If the current compound type isn't recursive, we're free to stop early.
+	if _, ok := ps.Deps[ps.SchemaUID]; !ok {
+		return nil
 	}
 
-	if msg.Message.GetOptions().GetMapEntry() { // map type
-		structTypes[ps.GetSchemaUID()] = reflect.MapOf(
+	// If the compound type we've just created happens to depend on itself
+	// (i.e. recursive Message), it is now time to build those fields that we
+	// had to ignore earlier on.
+	for name, f := range recursiveFields {
+		field, err := finalizeField(msg.Message, f, pssRevMap, structTypes, mapEntryTags)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		field.Name = name
+		fields = append(fields, field)
+	}
+	// Now that the fields with recursive types have been created, we can
+	// overwrite the previously created structure-type definition that was
+	// missing them.
+	finalizeStruct(msg.Message, ps, fields, structTypes, mapEntryTags)
+	/* NOTE: At this point, we've got a complete structure-type with both
+	 * simple & recursive fields; except that the recursive fields' types are
+	 * still pointing to the previous structure-type from above (i.e. the one
+	 * without recursive fields)!
+	 */
+
+	// We need to hot-patch the recursive fields so that their type points to
+	// the latest structure-type definition available: the one that's actually
+	// aware of them!
+	t := structTypes[ps.SchemaUID]
+	for i, f := range fields {
+		if _, ok := recursiveFields[f.Name]; ok {
+			f.Type = t
+			fields[i] = f
+		}
+	}
+	// Finally, we overwrite the structure definition one last time: it now
+	// contains both the simple & recursive fields.
+	finalizeStruct(msg.Message, ps, fields, structTypes, mapEntryTags)
+	/* NOTE: At this point, we've got a complete structure-type with both
+	 * simple & recursive fields, which have been hot-patched so that the
+	 * structure-type they point to is actually aware of their own selves.
+	 *
+	 * TL;DR: we're done here.
+	 */
+
+	return nil
+}
+
+// finalizeField creates a structure field and returns it, it does NOT register it.
+//
+// NOTE(cmc): I clearly am not a fan of this nuclear helper.
+func finalizeField(
+	msg *descriptor.DescriptorProto,
+	f *descriptor.FieldDescriptorProto,
+	pssRevMap map[string]string,
+	structTypes map[string]reflect.Type,
+	mapEntryTags map[string][2]reflect.StructTag,
+) (reflect.StructField, error) {
+	// type
+	fType := structTypes[pssRevMap[f.GetTypeName()]]
+	// tag
+	fTag, err := fieldTag(msg, f)
+	if err != nil {
+		return reflect.StructField{}, errors.WithStack(err)
+	}
+	if fType.Kind() == reflect.Map { // maps are special creatures
+		fTag = fieldTagEntries(fTag, mapEntryTags[pssRevMap[f.GetTypeName()]])
+	} else {
+		switch f.GetLabel() {
+		case descriptor.FieldDescriptorProto_LABEL_OPTIONAL:
+			if gogoproto.IsNullable(f) {
+				fType = reflect.PtrTo(fType)
+			}
+		case descriptor.FieldDescriptorProto_LABEL_REQUIRED:
+			// do nothing
+		case descriptor.FieldDescriptorProto_LABEL_REPEATED:
+			fType = reflect.SliceOf(fType)
+		default:
+			return reflect.StructField{}, errors.Wrapf(
+				failure.ErrFieldLabelNotSupported,
+				"`%s`: field label not supported", f.GetLabel(),
+			)
+		}
+	}
+
+	return reflect.StructField{Type: fType, Tag: fTag}, nil
+}
+
+// finalizeStruct creates a structure AND registers it into the common map.
+//
+// NOTE(cmc): I clearly am not a fan of this nuclear helper.
+func finalizeStruct(
+	msg *descriptor.DescriptorProto,
+	ps *ProtobufSchema,
+	fields []reflect.StructField,
+	structTypes map[string]reflect.Type,
+	mapEntryTags map[string][2]reflect.StructTag,
+) {
+	if msg.GetOptions().GetMapEntry() { // map type
+		structTypes[ps.SchemaUID] = reflect.MapOf(
 			reflect.Type(fields[0].Type), reflect.Type(fields[1].Type),
 		)
-		mapEntryTags[ps.GetSchemaUID()] = [2]reflect.StructTag{
+		mapEntryTags[ps.SchemaUID] = [2]reflect.StructTag{
 			fields[0].Tag, fields[1].Tag,
 		}
 	} else { // everything else
-		structTypes[ps.GetSchemaUID()] = reflect.StructOf(fields)
+		structTypes[ps.SchemaUID] = reflect.StructOf(fields)
 	}
-
-	return nil
 }
 
 // -----------------------------------------------------------------------------
