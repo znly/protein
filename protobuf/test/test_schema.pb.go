@@ -42,7 +42,7 @@ type TestSchema struct {
 func (m *TestSchema) Reset()                    { *m = TestSchema{} }
 func (m *TestSchema) String() string            { return proto.CompactTextString(m) }
 func (*TestSchema) ProtoMessage()               {}
-func (*TestSchema) Descriptor() ([]byte, []int) { return fileDescriptorTestSchema, []int{0} }
+func (*TestSchema) Descriptor() ([]byte, []int) { return FileDescriptorTestSchema, []int{0} }
 
 func (m *TestSchema) GetUid() string {
 	if m != nil {
@@ -506,9 +506,9 @@ var (
 	ErrIntOverflowTestSchema   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("test_schema.proto", fileDescriptorTestSchema) }
+func init() { proto.RegisterFile("test_schema.proto", FileDescriptorTestSchema) }
 
-var fileDescriptorTestSchema = []byte{
+var FileDescriptorTestSchema = []byte{
 	// 188 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2c, 0x49, 0x2d, 0x2e,
 	0x89, 0x2f, 0x4e, 0xce, 0x48, 0xcd, 0x4d, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x01,

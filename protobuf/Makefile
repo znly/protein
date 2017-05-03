@@ -40,4 +40,7 @@ protobuf-test: protobuf-test-clean
 		   ${SCHEMAS_TEST}
 	sed -i '' 's#google_protobuf "google/protobuf"#google_protobuf "github.com/gogo/protobuf/types"#g' ${PATH_SCHEMAS_TEST}/*.pb.go
 	sed -i '' 's#"protobuf/gogoproto"#"github.com/gogo/protobuf/gogoproto"#g' ${PATH_SCHEMAS_TEST}/*.pb.go
+	sed -i '' 's#fileDescriptorTestSchema#FileDescriptorTestSchema#g' ${PATH_SCHEMAS_TEST}/*.pb.go
+
+
 

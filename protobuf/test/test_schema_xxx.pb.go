@@ -45,7 +45,7 @@ func (x TestSchemaXXX_WeatherType) String() string {
 	return proto.EnumName(TestSchemaXXX_WeatherType_name, int32(x))
 }
 func (TestSchemaXXX_WeatherType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorTestSchemaXxx, []int{1, 0}
+	return FileDescriptorTestSchemaXxx, []int{1, 0}
 }
 
 type OtherTestSchemaXXX struct {
@@ -55,7 +55,7 @@ type OtherTestSchemaXXX struct {
 func (m *OtherTestSchemaXXX) Reset()                    { *m = OtherTestSchemaXXX{} }
 func (m *OtherTestSchemaXXX) String() string            { return proto.CompactTextString(m) }
 func (*OtherTestSchemaXXX) ProtoMessage()               {}
-func (*OtherTestSchemaXXX) Descriptor() ([]byte, []int) { return fileDescriptorTestSchemaXxx, []int{0} }
+func (*OtherTestSchemaXXX) Descriptor() ([]byte, []int) { return FileDescriptorTestSchemaXxx, []int{0} }
 
 func (m *OtherTestSchemaXXX) GetTs() *google_protobuf.Timestamp {
 	if m != nil {
@@ -78,7 +78,7 @@ type TestSchemaXXX struct {
 func (m *TestSchemaXXX) Reset()                    { *m = TestSchemaXXX{} }
 func (m *TestSchemaXXX) String() string            { return proto.CompactTextString(m) }
 func (*TestSchemaXXX) ProtoMessage()               {}
-func (*TestSchemaXXX) Descriptor() ([]byte, []int) { return fileDescriptorTestSchemaXxx, []int{1} }
+func (*TestSchemaXXX) Descriptor() ([]byte, []int) { return FileDescriptorTestSchemaXxx, []int{1} }
 
 func (m *TestSchemaXXX) GetSchemaUID() string {
 	if m != nil {
@@ -145,7 +145,7 @@ func (m *TestSchemaXXX_NestedEntry) Reset()         { *m = TestSchemaXXX_NestedE
 func (m *TestSchemaXXX_NestedEntry) String() string { return proto.CompactTextString(m) }
 func (*TestSchemaXXX_NestedEntry) ProtoMessage()    {}
 func (*TestSchemaXXX_NestedEntry) Descriptor() ([]byte, []int) {
-	return fileDescriptorTestSchemaXxx, []int{1, 0}
+	return FileDescriptorTestSchemaXxx, []int{1, 0}
 }
 
 func (m *TestSchemaXXX_NestedEntry) GetKey() string {
@@ -245,9 +245,9 @@ func valueToGoStringTestSchemaXxx(v interface{}, typ string) string {
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
 
-func init() { proto.RegisterFile("test_schema_xxx.proto", fileDescriptorTestSchemaXxx) }
+func init() { proto.RegisterFile("test_schema_xxx.proto", FileDescriptorTestSchemaXxx) }
 
-var fileDescriptorTestSchemaXxx = []byte{
+var FileDescriptorTestSchemaXxx = []byte{
 	// 503 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x91, 0x41, 0x8f, 0xd2, 0x40,
 	0x14, 0xc7, 0xa7, 0x0c, 0x2c, 0xf4, 0x21, 0xa6, 0x99, 0x68, 0xd2, 0x34, 0xee, 0x94, 0x10, 0x0f,
