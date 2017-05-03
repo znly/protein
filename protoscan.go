@@ -159,16 +159,36 @@ func (sm *SchemaMap) GetByFQName(fqName string) *ProtobufSchema {
 func ScanSchemas(
 	hasher protoscan.Hasher, hashPrefix string, failOnDuplicate ...bool,
 ) (*SchemaMap, error) {
-	fod := true
-	if len(failOnDuplicate) > 0 {
-		fod = failOnDuplicate[0]
-	}
-
 	// get local pointers to `proto.protoFiles` instances
 	protoFiles, err := protoscan.BindProtofileSymbols()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	return scanSchemas(protoFiles, hasher, hashPrefix, failOnDuplicate...)
+}
+
+// LoadSchemas is the exact same thing as `ScanSchemas` except for the fact
+// that it uses the given set of user-specified `fileDescriptorProtos` instead
+// of scanning for matching symbols.
+//
+// See `ScanSchemas`'s documentation for more information.
+func LoadSchemas(fileDescriptorProtos map[string][]byte,
+	hasher protoscan.Hasher, hashPrefix string, failOnDuplicate ...bool,
+) (*SchemaMap, error) {
+	protoFiles := map[string]*map[string][]byte{
+		"user_specified": &fileDescriptorProtos,
+	}
+	return scanSchemas(protoFiles, hasher, hashPrefix, failOnDuplicate...)
+}
+
+func scanSchemas(protoFiles map[string]*map[string][]byte,
+	hasher protoscan.Hasher, hashPrefix string, failOnDuplicate ...bool,
+) (*SchemaMap, error) {
+	fod := true
+	if len(failOnDuplicate) > 0 {
+		fod = failOnDuplicate[0]
+	}
+
 	// unzip everything into a map of `FileDescriptorProto`s using the path of
 	// the original .proto as key
 	fdps := map[string]*descriptor.FileDescriptorProto{}

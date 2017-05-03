@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/znly/protein/protobuf/test"
 	"github.com/znly/protein/protoscan"
 )
 
@@ -92,6 +93,32 @@ func ExampleScanSchemas() {
 
 func TestProtoscan_ScanSchemas(t *testing.T) {
 	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
+	assert.Nil(t, err)
+
+	// should at least find the `.protoscan.TestSchema` and its nested
+	// `DepsEntry` message in the returned protobuf schemas
+
+	ps := sm.GetByUID(protoscan.TEST_TSKnownHashRecurse)
+	assert.NotNil(t, ps)
+	assert.Equal(t, protoscan.TEST_TSKnownName, ps.GetFQName())
+	assert.Equal(t, protoscan.TEST_TSKnownHashRecurse, ps.GetSchemaUID())
+	assert.NotNil(t, ps.GetDescr())
+	assert.NotEmpty(t, ps.GetDeps())
+	assert.NotNil(t, ps.GetDeps()[protoscan.TEST_DEKnownHashRecurse])
+
+	de := sm.GetByUID(protoscan.TEST_DEKnownHashRecurse)
+	assert.NotNil(t, de)
+	assert.Equal(t, protoscan.TEST_DEKnownName, de.GetFQName())
+	assert.Equal(t, protoscan.TEST_DEKnownHashRecurse, de.GetSchemaUID())
+	assert.NotNil(t, de.GetDescr())
+	assert.Empty(t, de.GetDeps())
+}
+
+func TestProtoscan_LoadSchemas(t *testing.T) {
+	protoFiles := map[string][]byte{
+		"test_schema.proto": test.FileDescriptorTestSchema,
+	}
+	sm, err := LoadSchemas(protoFiles, protoscan.SHA256, "PROT-")
 	assert.Nil(t, err)
 
 	// should at least find the `.protoscan.TestSchema` and its nested
