@@ -115,6 +115,7 @@ func (sm *SchemaMap) GetByFQName(fqName string) *ProtobufSchema {
 	sm.lock.RLock()
 	uids := sm.revmap[fqName]
 	if len(uids) <= 0 {
+		sm.lock.RUnlock() // avoid defer()
 		return nil
 	}
 	s := sm.schemaMap[uids[0]]
