@@ -137,12 +137,26 @@ type Transcoder struct {
 func NewTranscoder(ctx context.Context,
 	hasher protoscan.Hasher, hashPrefix string, opts ...TranscoderOpt,
 ) (*Transcoder, error) {
-	t := &Transcoder{}
-
 	sm, err := ScanSchemas(hasher, hashPrefix)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	return NewTranscoderFromSchemaMap(ctx, sm, opts...)
+}
+
+// NewTranscoderFromSchemaMap returns a new `Transcoder` backed by the
+// user-specified `sm` schema-map.
+// This is reserved for advanced usages.
+//
+// When using the vanilla `NewTranscoder` constructor, the schema-map is
+// internally computed using the `ScanSchemas` function of the protoscan API.
+// This constructor allows the developer to build this map themselves when
+// needed; more often than not, this is achieved by using the `LoadSchemas`
+// function from the protoscan API.
+func NewTranscoderFromSchemaMap(ctx context.Context,
+	sm *SchemaMap, opts ...TranscoderOpt,
+) (*Transcoder, error) {
+	t := &Transcoder{}
 	t.sm = sm
 	t.typeCacheLock = &sync.RWMutex{}
 	t.typeCache = map[string]reflect.Type{}

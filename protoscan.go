@@ -165,7 +165,7 @@ func ScanSchemas(
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return scanSchemas(protoFiles, hasher, hashPrefix, failOnDuplicate...)
+	return buildSchemas(protoFiles, hasher, hashPrefix, failOnDuplicate...)
 }
 
 // LoadSchemas is the exact same thing as `ScanSchemas` except for the fact
@@ -179,10 +179,10 @@ func LoadSchemas(fileDescriptorProtos map[string][]byte,
 	protoFiles := map[string]*map[string][]byte{
 		"user_specified": &fileDescriptorProtos,
 	}
-	return scanSchemas(protoFiles, hasher, hashPrefix, failOnDuplicate...)
+	return buildSchemas(protoFiles, hasher, hashPrefix, failOnDuplicate...)
 }
 
-func scanSchemas(protoFiles map[string]*map[string][]byte,
+func buildSchemas(protoFiles map[string]*map[string][]byte,
 	hasher protoscan.Hasher, hashPrefix string, failOnDuplicate ...bool,
 ) (*SchemaMap, error) {
 	fod := true
