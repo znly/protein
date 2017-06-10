@@ -65,6 +65,8 @@ func ExampleCreateStructType() {
 	//	SchemaUID string
 	//	FQNames   []string
 	//	Weathers  []int32
+	//	TSStd     time.Time
+	//	DurStd    time.Duration
 	//	Deps      map[string]*struct {
 	//		Key   string
 	//		Value string
@@ -232,6 +234,34 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	// scalar types (i.e. 'int32').
 	//assert.Equal(t, expectedField.Tag, actualField.Tag)
 	assertFieldTypes(t, reflect.TypeOf([]int32{}), actualField.Type)
+
+	// Attributes:
+	//   - name: "ts_std"
+	//   - custom_name: "TSStd"
+	//   - type: google.protobuf.Timestamp
+	//   - custom_type: ""
+	//   - id: 100
+	expectedField = expectedFields["TSStd"]
+	actualField = actualFields["TSStd"]
+	assert.Equal(t, expectedField.Anonymous, actualField.Anonymous)
+	assert.Equal(t, expectedField.Name, actualField.Name)
+	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
+	assert.Equal(t, expectedField.Tag, actualField.Tag)
+	assertFieldTypes(t, expectedField.Type, actualField.Type)
+
+	// Attributes:
+	//   - name: "dur_std"
+	//   - custom_name: ""
+	//   - type: google.protobuf.Duration
+	//   - custom_type: ""
+	//   - id: 101
+	expectedField = expectedFields["DurStd"]
+	actualField = actualFields["DurStd"]
+	assert.Equal(t, expectedField.Anonymous, actualField.Anonymous)
+	assert.Equal(t, expectedField.Name, actualField.Name)
+	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
+	assert.Equal(t, expectedField.Tag, actualField.Tag)
+	assertFieldTypes(t, expectedField.Type, actualField.Type)
 }
 
 func assertFieldTypes(t *testing.T, expected, actual reflect.Type) {
