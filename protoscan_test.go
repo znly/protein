@@ -78,13 +78,13 @@ func ExampleScanSchemas() {
 	// [PROT-528e869395e00dd5525c2c2c69bbd4d0] .test.TestSchema
 	// 	depends on: [PROT-4f6928d2737ba44dac0e3df123f80284] .test.TestSchema.DepsEntry
 	// [PROT-6926276ca6306966d1a802c3b8f75298] .test.TestSchemaXXX.IdsEntry
-	// [PROT-a4d5e1c2b7dd1ec744f529a1a0a2c8cc] .test.TestSchemaXXX
+	// [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
+	// [PROT-d6ca9f544f12b921f94db96607928af5] .test.TestSchemaXXX
 	// 	depends on: [PROT-048ddab197df688302a76296293ba101] .test.OtherTestSchemaXXX
 	// 	depends on: [PROT-393cb6dc1b4fc350cf10ca99f429301d] .test.TestSchemaXXX.WeatherType
 	// 	depends on: [PROT-6926276ca6306966d1a802c3b8f75298] .test.TestSchemaXXX.IdsEntry
 	// 	depends on: [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
 	// 	depends on: [PROT-f6be24770f6e8d5edc8ef12c94a23010] .test.TestSchemaXXX.DepsEntry
-	// [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
 	// [PROT-f6be24770f6e8d5edc8ef12c94a23010] .test.TestSchemaXXX.DepsEntry
 	// 	depends on: [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
 }
