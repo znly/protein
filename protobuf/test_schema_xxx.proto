@@ -24,6 +24,7 @@ syntax = "proto3";
 package test;
 
 import "google/protobuf/timestamp.proto";
+import weak "google/protobuf/duration.proto";
 import "protobuf/gogoproto/gogo.proto";
 
 option (gogoproto.marshaler_all) = false;
@@ -34,7 +35,7 @@ option (gogoproto.unsafe_marshaler_all) = false;
 option (gogoproto.unsafe_unmarshaler_all) = false;
 option (gogoproto.stable_marshaler_all) = false;
 option (gogoproto.typedecl_all) = true;
-option (gogoproto.gostring_all) = true;
+option (gogoproto.gostring_all) = false;
 option (gogoproto.stringer_all) = false;
 option (gogoproto.onlyone_all) = false;
 
@@ -72,4 +73,14 @@ message TestSchemaXXX {
 		SNOW  = 3;
 	}
 	repeated WeatherType weathers = 13;
+
+	google.protobuf.Timestamp ts_std = 100 [
+		(gogoproto.stdtime) = true,
+		(gogoproto.customname) = "TSStd",
+		(gogoproto.nullable) = false
+	];
+	google.protobuf.Duration dur_std = 101 [
+		(gogoproto.stdduration) = true,
+		(gogoproto.nullable) = false
+	];
 }
