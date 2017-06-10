@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/fatih/camelcase"
 	"github.com/gogo/protobuf/gogoproto"
@@ -75,7 +76,9 @@ func CreateStructType(schemaUID string, sm *SchemaMap) (reflect.Type, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	// TODO(cmc)[3]: handle gogo's custom/std types
+	if err := buildStdTypes(pss, structFields); err != nil {
+		return nil, errors.WithStack(err)
+	}
 
 	if err := buildCompoundTypes(
 		ps, pss, pssRevMap,
@@ -101,9 +104,8 @@ func buildScalarTypes(
 
 		fields := make([]reflect.StructField, 0, len(msg.Message.GetField()))
 		for _, f := range msg.Message.GetField() {
-			// NOTE: Enums are not supported yet, we must specifically handle
-			// them as scalar types for now or the internal protobuf machinery
-			// would crash later on.
+			// NOTE: Enums are not fully supported yet, we handle them as simple
+			// scalar types (i.e. 'int32').
 			if f.IsEnum() {
 				*f.Type = descriptor.FieldDescriptorProto_TYPE_INT32
 			}
@@ -133,10 +135,54 @@ func buildScalarTypes(
 				Tag:  fTag,
 			})
 		}
-		structFields[uid] = fields
+		structFields[uid] = append(structFields[uid], fields...)
 	}
 
 	return nil
+}
+
+func buildStdTypes(
+	pss map[string]*ProtobufSchema,
+	structFields map[string][]reflect.StructField,
+) error {
+	for uid, ps := range pss {
+		msg, ok := ps.GetDescr().(*ProtobufSchema_Message)
+		if !ok {
+			continue
+		}
+
+		fields := make([]reflect.StructField, 0, len(msg.Message.GetField()))
+		for _, f := range msg.Message.GetField() {
+			if !(gogoproto.IsStdTime(f) || gogoproto.IsStdDuration(f)) {
+				continue
+			}
+
+			// name
+			fName := fieldName(f)
+			// type
+			var fType reflect.Type
+			if gogoproto.IsStdTime(f) {
+				fType = reflect.TypeOf(time.Time{})
+			} else if gogoproto.IsStdDuration(f) {
+				fType = reflect.TypeOf(time.Duration(0))
+			}
+			// tag
+			fTag, err := fieldTag(msg.Message, f)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			fields = append(fields, reflect.StructField{
+				Name: fName,
+				Type: fType,
+				Tag:  fTag,
+			})
+		}
+		structFields[uid] = append(structFields[uid], fields...)
+	}
+
+	return nil
+
 }
 
 func buildCompoundTypes(
@@ -171,7 +217,8 @@ func buildCompoundTypes(
 		map[string]*descriptor.FieldDescriptorProto, len(msg.Message.GetField()),
 	)
 	for _, f := range msg.Message.GetField() {
-		if !(f.IsMessage() || f.IsEnum()) { // neither message nor enum
+		if !(f.IsMessage() || f.IsEnum()) || // neither message nor enum
+			gogoproto.IsStdTime(f) || gogoproto.IsStdDuration(f) { // nor std
 			continue
 		}
 		// name
