@@ -63,6 +63,8 @@ var _transcoderTestSchemaXXX = &test.TestSchemaXXX{
 		{Key: "nss-key-B", Value: "nss-value-B"},
 	},
 	Weathers: []test.TestSchemaXXX_WeatherType{test.TestSchemaXXX_RAIN},
+	TSStd:    time.Date(2003, time.April, 10, 10, 10, 10, 10, time.UTC),
+	DurStd:   time.Second*3 + time.Millisecond*100,
 }
 
 var trc *Transcoder
@@ -363,7 +365,11 @@ func assertFieldValues(t *testing.T, expected, actual reflect.Value) {
 		}
 	case reflect.Struct:
 		for i := 0; i < expected.NumField(); i++ {
-			name := expected.Type().Field(i).Name
+			f := expected.Type().Field(i)
+			if f.PkgPath == "time" {
+				return // let's not go there, few have come back
+			}
+			name := f.Name
 			switch name { // due to Protein's camel-casing features
 			case "Ids":
 				name = "IDs"
@@ -373,9 +379,8 @@ func assertFieldValues(t *testing.T, expected, actual reflect.Value) {
 			assertFieldValues(t, expected.Field(i), actual.FieldByName(name))
 		}
 	default:
-		// NOTE: Enums are not supported yet, we must specifically handle
-		// them as scalar types for now or the internal protobuf machinery
-		// would crash later on.
+		// NOTE: Enums are not fully supported yet, we handle them as simple
+		// scalar types (i.e. 'int32').
 		if e, ok := expected.Interface().(test.TestSchemaXXX_WeatherType); ok {
 			assert.True(t, reflect.DeepEqual(int32(e), actual.Interface()))
 		} else {

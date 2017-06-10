@@ -110,8 +110,6 @@ func TestTranscoder_Helpers_Cassandra(t *testing.T) {
 	cluster.ConnectTimeout = time.Second * 10
 	cluster.Timeout = time.Second * 10
 
-	// HACK: Connect to standard 'system' keyspace in order to create
-	//       the keyspace reserved for tuyauDB's blobs.
 	cluster.Keyspace = "system"
 	tmp, err := cluster.CreateSession()
 	tries := 0
