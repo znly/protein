@@ -216,6 +216,22 @@ func TestProtostruct_CreateStructType(t *testing.T) {
 	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
 	assert.Equal(t, expectedField.Tag, actualField.Tag)
 	assertFieldTypes(t, expectedField.Type, actualField.Type)
+
+	// Attributes:
+	//   - name: "weathers"
+	//   - custom_name: ""
+	//   - type: repeated .test.TestSchemaXXX.WeatherType
+	//   - custom_type: ""
+	//   - id: 13
+	expectedField = expectedFields["Weathers"]
+	actualField = actualFields["Weathers"]
+	assert.Equal(t, expectedField.Anonymous, actualField.Anonymous)
+	assert.Equal(t, expectedField.Name, actualField.Name)
+	assert.Equal(t, expectedField.PkgPath, actualField.PkgPath)
+	// NOTE: Enums are not fully supported yet, we handle them as simple
+	// scalar types (i.e. 'int32').
+	//assert.Equal(t, expectedField.Tag, actualField.Tag)
+	assertFieldTypes(t, reflect.TypeOf([]int32{}), actualField.Type)
 }
 
 func assertFieldTypes(t *testing.T, expected, actual reflect.Type) {
