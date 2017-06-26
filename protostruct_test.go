@@ -66,7 +66,7 @@ func ExampleCreateStructType() {
 	//	FQNames   []string
 	//	Weathers  []int32
 	//	TSStd     time.Time
-	//	DurStd    time.Duration
+	//	DurStd    []*time.Duration
 	//	Deps      map[string]*struct {
 	//		Key   string
 	//		Value string

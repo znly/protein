@@ -37,6 +37,7 @@ import (
 
 // -----------------------------------------------------------------------------
 
+var _testDur = time.Second*3 + time.Millisecond*100
 var _transcoderTestSchemaXXX = &test.TestSchemaXXX{
 	SchemaUID: "uuid-A",
 	FQNames:   []string{"fqname-A", "fqname-B"},
@@ -64,7 +65,7 @@ var _transcoderTestSchemaXXX = &test.TestSchemaXXX{
 	},
 	Weathers: []test.TestSchemaXXX_WeatherType{test.TestSchemaXXX_RAIN},
 	TSStd:    time.Date(2003, time.April, 10, 10, 10, 10, 10, time.UTC),
-	DurStd:   time.Second*3 + time.Millisecond*100,
+	DurStd:   []*time.Duration{&_testDur},
 }
 
 var trc *Transcoder

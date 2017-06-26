@@ -172,6 +172,13 @@ func buildStdTypes(
 				return errors.WithStack(err)
 			}
 
+			if gogoproto.IsNullable(f) {
+				fType = reflect.PtrTo(fType)
+			}
+			if f.IsRepeated() {
+				fType = reflect.SliceOf(fType)
+			}
+
 			fields = append(fields, reflect.StructField{
 				Name: fName,
 				Type: fType,
