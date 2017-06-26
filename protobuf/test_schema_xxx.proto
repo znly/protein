@@ -79,8 +79,8 @@ message TestSchemaXXX {
 		(gogoproto.customname) = "TSStd",
 		(gogoproto.nullable) = false
 	];
-	google.protobuf.Duration dur_std = 101 [
+	repeated google.protobuf.Duration dur_std = 101 [
 		(gogoproto.stdduration) = true,
-		(gogoproto.nullable) = false
+		(gogoproto.nullable) = true
 	];
 }
