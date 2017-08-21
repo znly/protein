@@ -36,6 +36,7 @@ target/
 zlunch/
 yarn.lock
 
-vendor/
+./vendor/
+./glide.lock
 
 coverage*.out
