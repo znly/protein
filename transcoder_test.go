@@ -17,6 +17,7 @@ package protein
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -474,4 +475,26 @@ func TestTranscoder_Parallelism(t *testing.T) {
 		}
 		wg.Wait()
 	})
+}
+
+// -----------------------------------------------------------------------------
+
+func TestTranscoder_SaveState_LoadState(t *testing.T) {
+	f, err := ioutil.TempFile("", "")
+	assert.NoError(t, err)
+	path := f.Name()
+	assert.NoError(t, f.Close())
+
+	assert.NoError(t, trc.SaveState(path))
+
+	trcEmpty, err := NewTranscoderFromSchemaMap(context.Background(),
+		NewSchemaMap())
+	assert.NoError(t, err)
+	assert.NoError(t, trcEmpty.LoadState(path))
+
+	for schemaUID, schema := range trc.sm.schemaMap {
+		assert.Equal(t, schemaUID, trcEmpty.sm.schemaMap[schemaUID].SchemaUID)
+		assert.Equal(t,
+			schema.String(), trcEmpty.sm.schemaMap[schemaUID].String())
+	}
 }
