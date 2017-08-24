@@ -15,7 +15,11 @@
 package protein
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"sync"
 	"unsafe"
@@ -476,4 +480,72 @@ func (t *Transcoder) DecodeAs(payload []byte, msg proto.Message) error {
 		return errors.WithStack(err)
 	}
 	return proto.Unmarshal(ps.Payload, msg)
+}
+
+// -----------------------------------------------------------------------------
+
+// SaveState saves the current state of the Transcoder to disk.
+//
+// The on-disk format is the following:
+//  PROT-xxx:::base64(schema1)\nPROT-xxx:::base64(schema2)\n...
+//
+// This can be useful in situations such as shell implementations or CLI tools,
+// where you don't want to re-fetch all the schemas you depend on every restart.
+// This is in absolutely no way designed with performance in mind.
+func (t *Transcoder) SaveState(path string) error {
+	var payloads [][]byte
+	if err := t.sm.ForEach(func(ps *ProtobufSchema) error {
+		b, err := proto.Marshal(ps)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		bEnc := make([]byte, base64.RawStdEncoding.EncodedLen(len(b)))
+		base64.RawStdEncoding.Encode(bEnc, b)
+		p := bytes.Join([][]byte{[]byte(ps.SchemaUID), bEnc}, []byte(":::"))
+		payloads = append(payloads, p)
+		return nil
+	}); err != nil {
+		return errors.WithStack(err)
+	}
+	payload := bytes.Join(payloads, []byte{'\n'})
+	return ioutil.WriteFile(path, payload, 0600)
+}
+
+// LoadState loads the state of the Transcoder from disk.
+// The current state is not overwritten, it is merely appended to.
+//
+// The on-disk format is the following:
+//  PROT-xxx:::base64(schema1)\nPROT-xxx:::base64(schema2)\n...
+//
+// This can be useful in situations such as shell implementations or CLI tools,
+// where you don't want to re-fetch all the schemas you depend on every restart.
+// This is in absolutely no way designed with performance in mind.
+func (t *Transcoder) LoadState(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	payload, err := ioutil.ReadAll(f)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	payloads := bytes.Split(payload, []byte{'\n'})
+	pss := make(map[string]*ProtobufSchema, len(payloads))
+	for _, p := range payloads {
+		bs := bytes.Split(p, []byte(":::"))
+		if len(bs) != 2 {
+			return errors.New("invalid format")
+		}
+		pDec := make([]byte, base64.RawStdEncoding.DecodedLen(len(bs[1])))
+		if _, err := base64.RawStdEncoding.Decode(pDec, bs[1]); err != nil {
+			return errors.WithStack(err)
+		}
+		var ps ProtobufSchema
+		if err := proto.Unmarshal(pDec, &ps); err != nil {
+			return errors.WithStack(err)
+		}
+		pss[string(bs[0])] = &ps
+	}
+	t.sm.Add(pss)
+	return nil
 }
