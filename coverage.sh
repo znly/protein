@@ -8,4 +8,4 @@ echo "mode: set" > coverage.out
 cat *.out | grep -v mode: | sort -r | awk '{if($1 != last) {print $0;last=$1}}' >> coverage.out
 
 
-goveralls -coverprofile=coverage.out -service travis-ci -repotoken "$COVERALLS_TOKEN"
+goveralls -coverprofile=coverage.out -service travis-ci -repotoken "$COVERALLS_TOKEN" || true
