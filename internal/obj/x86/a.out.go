@@ -1,5 +1,5 @@
 // Inferno utils/6c/6.out.h
-// http://code.google.com/p/inferno-os/source/browse/utils/6c/6.out.h
+// https://bitbucket.org/inferno-os/inferno-os/src/default/utils/6c/6.out.h
 //
 //	Copyright © 1994-1999 Lucent Technologies Inc.  All rights reserved.
 //	Portions Copyright © 1995-1997 C H Forsyth (forsyth@terzarima.net)
@@ -746,7 +746,6 @@ const (
 	ARETFQ
 	ASWAPGS
 
-	AMODE
 	ACRC32B
 	ACRC32Q
 	AIMUL3Q
@@ -771,6 +770,9 @@ const (
 	AROUNDSS
 	AROUNDPD
 	AROUNDSD
+	AMOVDDUP
+	AMOVSHDUP
+	AMOVSLDUP
 
 	APSHUFD
 	APCLMULQDQ
@@ -803,6 +805,11 @@ const (
 	AVPERM2I128
 	ARORXL
 	ARORXQ
+	AVBROADCASTSS
+	AVBROADCASTSD
+	AVMOVDDUP
+	AVMOVSHDUP
+	AVMOVSLDUP
 
 	// from 386
 	AJCXZW

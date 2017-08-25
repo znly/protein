@@ -2,16 +2,15 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package obj
+package objabi
 
 // For the linkers. Must match Go definitions.
-// TODO(rsc): Share Go definitions with linkers directly.
 
 const (
 	STACKSYSTEM = 0
 	StackSystem = STACKSYSTEM
 	StackBig    = 4096
-	StackGuard  = 720*stackGuardMultiplier + StackSystem
+	StackGuard  = 880*stackGuardMultiplier + StackSystem
 	StackSmall  = 128
 	StackLimit  = StackGuard - StackSystem - StackSmall
 )

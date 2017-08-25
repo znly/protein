@@ -1,5 +1,5 @@
 // Inferno utils/5c/list.c
-// http://code.google.com/p/inferno-os/source/browse/utils/5c/list.c
+// https://bitbucket.org/inferno-os/inferno-os/src/default/utils/5c/list.c
 //
 //	Copyright © 1994-1999 Lucent Technologies Inc.  All rights reserved.
 //	Portions Copyright © 1995-1997 C H Forsyth (forsyth@terzarima.net)
@@ -36,11 +36,11 @@ import (
 )
 
 func init() {
-	obj.RegisterRegister(obj.RBaseARM, MAXREG, Rconv)
+	obj.RegisterRegister(obj.RBaseARM, MAXREG, rconv)
 	obj.RegisterOpcode(obj.ABaseARM, Anames)
 }
 
-func Rconv(r int) string {
+func rconv(r int) string {
 	if r == 0 {
 		return "NONE"
 	}

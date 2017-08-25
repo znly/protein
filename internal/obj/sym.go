@@ -1,6 +1,6 @@
 // Derived from Inferno utils/6l/obj.c and utils/6l/span.c
-// http://code.google.com/p/inferno-os/source/browse/utils/6l/obj.c
-// http://code.google.com/p/inferno-os/source/browse/utils/6l/span.c
+// https://bitbucket.org/inferno-os/inferno-os/src/default/utils/6l/obj.c
+// https://bitbucket.org/inferno-os/inferno-os/src/default/utils/6l/span.c
 //
 //	Copyright © 1994-1999 Lucent Technologies Inc.  All rights reserved.
 //	Portions Copyright © 1995-1997 C H Forsyth (forsyth@terzarima.net)
@@ -32,104 +32,94 @@
 package obj
 
 import (
+	"github.com/znly/protein/internal/objabi"
+	"fmt"
 	"log"
-	"os"
-	"path/filepath"
-	"strconv"
-
-	"github.com/znly/protein/internal/sys"
+	"math"
 )
-
-var headers = []struct {
-	name string
-	val  int
-}{
-	{"darwin", Hdarwin},
-	{"dragonfly", Hdragonfly},
-	{"freebsd", Hfreebsd},
-	{"linux", Hlinux},
-	{"android", Hlinux}, // must be after "linux" entry or else headstr(Hlinux) == "android"
-	{"nacl", Hnacl},
-	{"netbsd", Hnetbsd},
-	{"openbsd", Hopenbsd},
-	{"plan9", Hplan9},
-	{"solaris", Hsolaris},
-	{"windows", Hwindows},
-	{"windowsgui", Hwindows},
-}
-
-func headtype(name string) int {
-	for i := 0; i < len(headers); i++ {
-		if name == headers[i].name {
-			return headers[i].val
-		}
-	}
-	return -1
-}
-
-func Headstr(v int) string {
-	for i := 0; i < len(headers); i++ {
-		if v == headers[i].val {
-			return headers[i].name
-		}
-	}
-	return strconv.Itoa(v)
-}
 
 func Linknew(arch *LinkArch) *Link {
 	ctxt := new(Link)
-	ctxt.Hash = make(map[SymVer]*LSym)
+	ctxt.hash = make(map[string]*LSym)
+	ctxt.statichash = make(map[string]*LSym)
 	ctxt.Arch = arch
-	ctxt.Version = HistVersion
-	ctxt.Goroot = Getgoroot()
-	ctxt.Goroot_final = os.Getenv("GOROOT_FINAL")
+	ctxt.Pathname = objabi.WorkingDir()
 
-	var buf string
-	buf, _ = os.Getwd()
-	if buf == "" {
-		buf = "/???"
-	}
-	buf = filepath.ToSlash(buf)
-	ctxt.Pathname = buf
-
-	ctxt.LineHist.GOROOT = ctxt.Goroot
-	ctxt.LineHist.GOROOT_FINAL = ctxt.Goroot_final
-	ctxt.LineHist.Dir = ctxt.Pathname
-
-	ctxt.Headtype = headtype(Getgoos())
+	ctxt.Headtype.Set(objabi.GOOS)
 	if ctxt.Headtype < 0 {
-		log.Fatalf("unknown goos %s", Getgoos())
-	}
-
-	// On arm, record goarm.
-	if ctxt.Arch.Family == sys.ARM {
-		ctxt.Goarm = Getgoarm()
+		log.Fatalf("unknown goos %s", objabi.GOOS)
 	}
 
 	ctxt.Flag_optimize = true
-	ctxt.Framepointer_enabled = Framepointer_enabled(Getgoos(), arch.Name)
+	ctxt.Framepointer_enabled = objabi.Framepointer_enabled(objabi.GOOS, arch.Name)
 	return ctxt
 }
 
-func Linklookup(ctxt *Link, name string, v int) *LSym {
-	s := ctxt.Hash[SymVer{name, v}]
-	if s != nil {
-		return s
+// LookupDerived looks up or creates the symbol with name name derived from symbol s.
+// The resulting symbol will be static iff s is.
+func (ctxt *Link) LookupDerived(s *LSym, name string) *LSym {
+	if s.Static() {
+		return ctxt.LookupStatic(name)
 	}
+	return ctxt.Lookup(name)
+}
 
-	s = &LSym{
-		Name:    name,
-		Type:    0,
-		Version: int16(v),
-		Size:    0,
+// LookupStatic looks up the static symbol with name name.
+// If it does not exist, it creates it.
+func (ctxt *Link) LookupStatic(name string) *LSym {
+	s := ctxt.statichash[name]
+	if s == nil {
+		s = &LSym{Name: name, Attribute: AttrStatic}
+		ctxt.statichash[name] = s
 	}
-	ctxt.Hash[SymVer{name, v}] = s
 	return s
 }
 
-func Linksymfmt(s *LSym) string {
+// Lookup looks up the symbol with name name.
+// If it does not exist, it creates it.
+func (ctxt *Link) Lookup(name string) *LSym {
+	return ctxt.LookupInit(name, nil)
+}
+
+// LookupInit looks up the symbol with name name.
+// If it does not exist, it creates it and
+// passes it to init for one-time initialization.
+func (ctxt *Link) LookupInit(name string, init func(s *LSym)) *LSym {
+	ctxt.hashmu.Lock()
+	s := ctxt.hash[name]
 	if s == nil {
-		return "<nil>"
+		s = &LSym{Name: name}
+		ctxt.hash[name] = s
+		if init != nil {
+			init(s)
+		}
 	}
-	return s.Name
+	ctxt.hashmu.Unlock()
+	return s
+}
+
+func (ctxt *Link) Float32Sym(f float32) *LSym {
+	i := math.Float32bits(f)
+	name := fmt.Sprintf("$f32.%08x", i)
+	return ctxt.LookupInit(name, func(s *LSym) {
+		s.Size = 4
+		s.Set(AttrLocal, true)
+	})
+}
+
+func (ctxt *Link) Float64Sym(f float64) *LSym {
+	i := math.Float64bits(f)
+	name := fmt.Sprintf("$f64.%016x", i)
+	return ctxt.LookupInit(name, func(s *LSym) {
+		s.Size = 8
+		s.Set(AttrLocal, true)
+	})
+}
+
+func (ctxt *Link) Int64Sym(i int64) *LSym {
+	name := fmt.Sprintf("$i64.%016x", uint64(i))
+	return ctxt.LookupInit(name, func(s *LSym) {
+		s.Size = 8
+		s.Set(AttrLocal, true)
+	})
 }
