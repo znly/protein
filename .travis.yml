@@ -7,9 +7,10 @@ services:
 
 language: go
 go:
-    - 1.7.5
     - 1.8
     - 1.8.1
+    - 1.8.3
+    - 1.9
 env:
     - "PATH=/home/travis/gopath/bin:$PATH"
 before_install:
