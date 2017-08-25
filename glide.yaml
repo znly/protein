@@ -34,6 +34,8 @@ import:
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 - package: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+- package: golang.org/x/arch
+  version: master
 testImport:
 - package: github.com/stretchr/testify
   version: ^1.1.4
