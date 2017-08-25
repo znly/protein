@@ -23,6 +23,10 @@ install:
     - glide update -v --force
     - go generate . ./protoscan
 script:
-    - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage1.out .
-    - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage2.out ./protoscan
+    ## Note that we MUST specify an output path for the test binary, otherwise
+    ## Go 1.9+ will silently strip the symbols during test execution, and break
+    ## everything in the process.
+    ## This affects only `go test`, not `go build`, and only on Linux.
+    - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage1.out -o protein1.test .
+    - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage2.out -o protein2.test ./protoscan
     - bash coverage.sh
