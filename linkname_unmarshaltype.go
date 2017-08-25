@@ -5,7 +5,6 @@ package protein
 import (
 	"reflect"
 	"unsafe"
-	_ "unsafe"
 
 	"github.com/gogo/protobuf/proto"
 )
