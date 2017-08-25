@@ -41,3 +41,12 @@ protobuf-test: protobuf-test-clean
 	sed -i '' 's#google_protobuf "google/protobuf"#google_protobuf "github.com/gogo/protobuf/types"#g' ${PATH_SCHEMAS_TEST}/*.pb.go
 	sed -i '' 's#"protobuf/gogoproto"#"github.com/gogo/protobuf/gogoproto"#g' ${PATH_SCHEMAS_TEST}/*.pb.go
 	sed -i '' 's#fileDescriptorTestSchema#FileDescriptorTestSchema#g' ${PATH_SCHEMAS_TEST}/*.pb.go
+
+protobuf-java:
+	rm -rf java
+	mkdir -p java
+	protoc --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ \
+		   --proto_path=${GOPATH}/src/github.com/gogo/                   \
+		   --proto_path=${PATH_PROTOS}/                                  \
+		   --java_out java \
+		   ${SCHEMAS_TEST}
