@@ -40,3 +40,5 @@ yarn.lock
 ./glide.lock
 
 coverage*.out
+
+protobuf/java/
