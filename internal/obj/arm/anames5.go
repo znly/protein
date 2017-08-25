@@ -16,6 +16,8 @@ var cnames5 = []string{
 	"FCR",
 	"RCON",
 	"NCON",
+	"RCON2A",
+	"RCON2S",
 	"SCON",
 	"LCON",
 	"LCONADDR",

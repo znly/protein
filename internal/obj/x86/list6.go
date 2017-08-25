@@ -1,5 +1,5 @@
 // Inferno utils/6c/list.c
-// http://code.google.com/p/inferno-os/source/browse/utils/6c/list.c
+// https://bitbucket.org/inferno-os/inferno-os/src/default/utils/6c/list.c
 //
 //	Copyright © 1994-1999 Lucent Technologies Inc.  All rights reserved.
 //	Portions Copyright © 1995-1997 C H Forsyth (forsyth@terzarima.net)
@@ -168,11 +168,11 @@ var Register = []string{
 }
 
 func init() {
-	obj.RegisterRegister(REG_AL, REG_AL+len(Register), Rconv)
+	obj.RegisterRegister(REG_AL, REG_AL+len(Register), rconv)
 	obj.RegisterOpcode(obj.ABaseAMD64, Anames)
 }
 
-func Rconv(r int) string {
+func rconv(r int) string {
 	if REG_AL <= r && r-REG_AL < len(Register) {
 		return Register[r-REG_AL]
 	}

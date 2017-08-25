@@ -29,7 +29,9 @@
 
 package mips
 
-import "github.com/znly/protein/internal/obj"
+import (
+	"github.com/znly/protein/internal/obj"
+)
 
 //go:generate go run ../stringer.go -i $GOFILE -o anames.go -p mips
 
@@ -44,7 +46,7 @@ const (
 )
 
 const (
-	REG_R0 = obj.RBaseMIPS64 + iota
+	REG_R0 = obj.RBaseMIPS + iota
 	REG_R1
 	REG_R2
 	REG_R3
@@ -185,22 +187,18 @@ const (
 
 	REG_SPECIAL = REG_M0
 
-	REGZERO  = REG_R0 /* set to zero */
-	REGSP    = REG_R29
-	REGSB    = REG_R28
-	REGLINK  = REG_R31
-	REGRET   = REG_R1
-	REGARG   = -1      /* -1 disables passing the first argument in register */
-	REGRT1   = REG_R1  /* reserved for runtime, duffzero and duffcopy */
-	REGRT2   = REG_R2  /* reserved for runtime, duffcopy */
-	REGCTXT  = REG_R22 /* context for closures */
-	REGG     = REG_R30 /* G */
-	REGTMP   = REG_R23 /* used by the linker */
-	FREGRET  = REG_F0
-	FREGZERO = REG_F24 /* both float and double */
-	FREGHALF = REG_F26 /* double */
-	FREGONE  = REG_F28 /* double */
-	FREGTWO  = REG_F30 /* double */
+	REGZERO = REG_R0 /* set to zero */
+	REGSP   = REG_R29
+	REGSB   = REG_R28
+	REGLINK = REG_R31
+	REGRET  = REG_R1
+	REGARG  = -1      /* -1 disables passing the first argument in register */
+	REGRT1  = REG_R1  /* reserved for runtime, duffzero and duffcopy */
+	REGRT2  = REG_R2  /* reserved for runtime, duffcopy */
+	REGCTXT = REG_R22 /* context for closures */
+	REGG    = REG_R30 /* G */
+	REGTMP  = REG_R23 /* used by the linker */
+	FREGRET = REG_F0
 )
 
 const (
@@ -262,7 +260,7 @@ const (
 )
 
 const (
-	AABSD = obj.ABaseMIPS64 + obj.A_ARCHSPECIFIC + iota
+	AABSD = obj.ABaseMIPS + obj.A_ARCHSPECIFIC + iota
 	AABSF
 	AABSW
 	AADD
@@ -282,6 +280,12 @@ const (
 	ABLTZAL
 	ABNE
 	ABREAK
+	ACLO
+	ACLZ
+	ACMOVF
+	ACMOVN
+	ACMOVT
+	ACMOVZ
 	ACMPEQD
 	ACMPEQF
 	ACMPGED
@@ -294,6 +298,8 @@ const (
 	ADIVU
 	ADIVW
 	AGOK
+	ALL
+	ALLV
 	ALUI
 	AMOVB
 	AMOVBU
@@ -318,14 +324,19 @@ const (
 	ANEGD
 	ANEGF
 	ANEGW
+	ANOOP // hardware nop
 	ANOR
 	AOR
 	AREM
 	AREMU
 	ARFE
+	ASC
+	ASCV
 	ASGT
 	ASGTU
 	ASLL
+	ASQRTD
+	ASQRTF
 	ASRA
 	ASRL
 	ASUB
@@ -333,11 +344,14 @@ const (
 	ASUBF
 	ASUBU
 	ASUBW
+	ASYNC
 	ASYSCALL
+	ATEQ
 	ATLBP
 	ATLBR
 	ATLBWI
 	ATLBWR
+	ATNE
 	AWORD
 	AXOR
 
