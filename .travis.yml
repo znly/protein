@@ -20,7 +20,7 @@ before_install:
     - go get -u github.com/znly/linkname-gen
 install:
     - go get -u github.com/znly/protein/... || true
-    - glide update -v
+    - glide update -v --force
     - go generate . ./protoscan
 script:
     - go test -v -race -cpu 1,2,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage1.out .
