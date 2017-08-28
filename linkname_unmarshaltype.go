@@ -10,5 +10,5 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-//go:linkname unmarshalType github.com/gogo/protobuf/proto.(*Buffer).unmarshalType
+//go:linkname unmarshalType github.com/znly/protein/vendor/github.com/gogo/protobuf/proto.(*Buffer).unmarshalType
 func unmarshalType(*proto.Buffer, reflect.Type, *proto.StructProperties, bool, unsafe.Pointer) error

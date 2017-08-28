@@ -9,5 +9,5 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 )
 
-//go:linkname goTag github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag
+//go:linkname goTag github.com/znly/protein/vendor/github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag
 func goTag(*generator.Generator, *generator.Descriptor, *descriptor.FieldDescriptorProto, string) string

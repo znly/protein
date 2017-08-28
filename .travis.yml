@@ -17,11 +17,10 @@ before_install:
     - go get -u github.com/mattn/goveralls
     - go get -u golang.org/x/tools/cmd/cover
     - go get -u github.com/Masterminds/glide
-    - go get -u github.com/znly/linkname-gen
+    #- go get -u github.com/znly/linkname-gen
 install:
-    - go get -u github.com/znly/protein/... || true
     - glide update -v --force
-    - go generate . ./protoscan
+    #- go generate . ./protoscan
 script:
     ## Note that we MUST specify an output path for the test binary, otherwise
     ## Go 1.9+ will silently strip the symbols during test execution, and break
