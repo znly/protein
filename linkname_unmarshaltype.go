@@ -10,5 +10,14 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-//go:linkname unmarshalType github.com/znly/protein/vendor/github.com/gogo/protobuf/proto.(*Buffer).unmarshalType
+// This avoids some weird goimports issues that I've been facing on linux/amd64
+// since Go1.9+.
+var (
+	_ *proto.Buffer
+	_ reflect.Type
+	_ *proto.StructProperties
+	_ unsafe.Pointer
+)
+
+//go:linkname unmarshalType github.com/gogo/protobuf/proto.(*Buffer).unmarshalType
 func unmarshalType(*proto.Buffer, reflect.Type, *proto.StructProperties, bool, unsafe.Pointer) error

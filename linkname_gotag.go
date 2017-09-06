@@ -9,5 +9,13 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 )
 
-//go:linkname goTag github.com/znly/protein/vendor/github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag
+// This avoids some weird goimports issues that I've been facing on linux/amd64
+// since Go1.9+.
+var (
+	_ *generator.Generator
+	_ *generator.Descriptor
+	_ *descriptor.FieldDescriptorProto
+)
+
+//go:linkname goTag github.com/gogo/protobuf/protoc-gen-gogo/generator.(*Generator).goTag
 func goTag(*generator.Generator, *generator.Descriptor, *descriptor.FieldDescriptorProto, string) string
