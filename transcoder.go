@@ -28,6 +28,7 @@ import (
 	proto_vanilla "github.com/golang/protobuf/proto"
 	"github.com/znly/protein/failure"
 	"github.com/znly/protein/protoscan"
+	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 )
@@ -63,6 +64,33 @@ type TranscoderGetter func(ctx context.Context, schemaUID string) ([]byte, error
 //
 // The default `TranscoderSetter` is a no-op.
 type TranscoderSetter func(ctx context.Context, schemaUID string, payload []byte) error
+
+// A TranscoderSetterMulti is called by the `Transcoder` at the end of the initial
+// schema scan in order to publish all the newly found schemas at once.
+//
+// If a `TranscoderSetterMulti` is set-up, it will take precedence over any vanilla
+// `TranscoderSetter` that might also be configured.
+// In case of failure, the client will fallback to the simple `TranscoderSetter`,
+// if any.
+//
+// The function receives a slice of byte-slices that corresponds to all the
+// `ProtobufSchema`s that were found in memory, and which have been previously
+// serialized by a `TranscoderSerializer` (see below).
+//
+// A `TranscoderSetterMulti` is typically used to push the local `ProtobufSchema`s
+// sniffed from memory into a remote data-store.
+// To that end, several ready-to-use implementations are provided by this
+// package for different protocols: redis.
+// See `transcoder_helpers.go` for more information.
+//
+// Unlike its vanilla `TranscoderSetter` counterpart, this -Multi version guarantees
+// a single round-trip to the remote database, independently of the number of
+// schemas that were fetched from memory; i.e. it guarantees constant latencies.
+//
+// The default `TranscoderSetterMulti` fallbacks to the simple `TranscoderSetter`.
+type TranscoderSetterMulti func(
+	ctx context.Context, schemaUIDs []string, payloads [][]byte,
+) error
 
 // A TranscoderSerializer is used to serialize `ProtobufSchema`s before passing
 // them to a `TranscoderSetter`.
@@ -100,6 +128,12 @@ var (
 	TranscoderOptSetter = func(setter TranscoderSetter) TranscoderOpt {
 		return func(trc *Transcoder) { trc.setter = setter }
 	}
+	// TranscoderOptSetterMulti is used to configure the `TranscoderSetterMulti`
+	// used by the `Transcoder`.
+	// See `TranscoderSetterMulti` documentation for more information.
+	TranscoderOptSetterMulti = func(setterM TranscoderSetterMulti) TranscoderOpt {
+		return func(trc *Transcoder) { trc.setterMulti = setterM }
+	}
 	// TranscoderOptSerializer is used to configure the `TranscoderSerializer`
 	// used by the `Transcoder`.
 	// See `TranscoderSerializer` documentation for more information.
@@ -123,6 +157,7 @@ type Transcoder struct {
 
 	getter       TranscoderGetter
 	setter       TranscoderSetter
+	setterMulti  TranscoderSetterMulti
 	serializer   TranscoderSerializer
 	deserializer TranscoderDeserializer
 
@@ -172,13 +207,14 @@ func NewTranscoderFromSchemaMap(ctx context.Context,
 		) ([]byte, error) {
 			/* err not found */
 			return nil, errors.Wrapf(failure.ErrSchemaNotFound,
-				"`%s`: no schema with this schemaUID", schemaUID,
-			)
+				"`%s`: no schema with this schemaUID", schemaUID)
 		}),
 		/* default setter: no-op */
 		TranscoderOptSetter(func(context.Context, string, []byte) error {
 			return nil
 		}),
+		/* default setterMulti: fallback to vanilla setter */
+		TranscoderOptSetterMulti(nil),
 		/* default serializer: wraps the `ProtobufSchema` within a `ProtobufPayload` */
 		TranscoderOptSerializer(func(ps *ProtobufSchema) ([]byte, error) {
 			return t.Encode(ps)
@@ -192,19 +228,33 @@ func NewTranscoderFromSchemaMap(ctx context.Context,
 		opt(t)
 	}
 
+	schemaUIDs := []string{}
+	schemaPayloads := [][]byte{}
 	if err := sm.ForEach(func(ps *ProtobufSchema) error {
-		select {
-		case <-ctx.Done():
-			return errors.WithStack(ctx.Err())
-		default:
-		}
 		b, err := t.serializer(ps)
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		return t.setter(ctx, ps.GetSchemaUID(), b)
+		schemaUIDs = append(schemaUIDs, ps.GetSchemaUID())
+		schemaPayloads = append(schemaPayloads, b)
+		return nil
 	}); err != nil {
 		return nil, errors.WithStack(err)
+	}
+
+	if t.setterMulti != nil {
+		var err error
+		if err = t.setterMulti(ctx, schemaUIDs, schemaPayloads); err == nil {
+			return t, nil
+		}
+		zap.L().Warn("TranscoderSetterMulti failed, falling back...",
+			zap.Error(err))
+	}
+
+	for i := 0; i < len(schemaUIDs); i++ {
+		if err := t.setter(ctx, schemaUIDs[i], schemaPayloads[i]); err != nil {
+			return nil, errors.WithStack(err)
+		}
 	}
 
 	return t, nil
