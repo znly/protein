@@ -20,6 +20,4 @@ RUN cp id_rsa /id_rsa \
 
 RUN .buildkite/scripts/vendors.sh
 
-RUN make -f Makefile deps
-
 RUN go install $(go list ./... | grep -v vendor) || true
