@@ -61,6 +61,7 @@
 
 [[constraint]]
   name = "golang.org/x/arch"
+  revision = "893b1271f1c79eb661bf3cbe4416fb866d42ed39"
 
 [[constraint]]
   name = "github.com/cespare/xxhash"
