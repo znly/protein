@@ -101,6 +101,25 @@ func NewTranscoderSetterRedis(p *redis.Pool) TranscoderSetter {
 	}
 }
 
+// NewTranscoderSetterMultiRedis returns a `TranscoderSetterMulti` suitable for
+// setting a set of binary blobs into a redis-compatible store.
+//
+// The specified context will be ignored.
+func NewTranscoderSetterMultiRedis(p *redis.Pool) TranscoderSetterMulti {
+	return func(_ context.Context, schemaUIDs []string, payloads [][]byte) error {
+		c := p.Get() // avoid defer()
+		itfs := make([]interface{}, 0, len(schemaUIDs))
+		for i := 0; i < len(schemaUIDs); i++ {
+			itfs = append(itfs, schemaUIDs[i], payloads[i])
+		}
+		_, err := c.Do("MSET", itfs...)
+		if err := c.Close(); err != nil {
+			zap.L().Error(err.Error())
+		}
+		return errors.WithStack(err)
+	}
+}
+
 // -----------------------------------------------------------------------------
 
 /* Cassandra */

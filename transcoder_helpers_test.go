@@ -22,6 +22,7 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/gocql/gocql"
+	"github.com/pkg/errors"
 	"github.com/rainycape/memcache"
 	"github.com/stretchr/testify/assert"
 	"github.com/znly/protein/protoscan"
@@ -84,22 +85,79 @@ func TestTranscoder_Helpers_Redis(t *testing.T) {
 	}
 	defer p.Close()
 
-	// clear the store, just in case
-	c := p.Get()
-	_, err := c.Do("FLUSHALL")
-	c.Close()
-	assert.Nil(t, err)
+	t.Run("single_only", func(t *testing.T) {
+		c := p.Get()
+		_, err := c.Do("FLUSHALL")
+		c.Close()
+		assert.Nil(t, err)
 
-	// create `Transcoder` and push all local schemas via user-defined setter
-	trc, err := NewTranscoder(context.Background(),
-		protoscan.SHA256, "PROT-",
-		TranscoderOptGetter(NewTranscoderGetterRedis(p)),
-		TranscoderOptSetter(NewTranscoderSetterRedis(p)),
-	)
-	assert.Nil(t, err)
-	assert.NotNil(t, trc)
+		// create `Transcoder` and push all local schemas via user-defined setter
+		trc, err := NewTranscoder(context.Background(),
+			protoscan.SHA256, "PROT-",
+			TranscoderOptGetter(NewTranscoderGetterRedis(p)),
+			TranscoderOptSetter(NewTranscoderSetterRedis(p)),
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, trc)
+		testTranscoder_Helpers_common(t, trc)
+	})
 
-	testTranscoder_Helpers_common(t, trc)
+	t.Run("multi_only", func(t *testing.T) {
+		c := p.Get()
+		_, err := c.Do("FLUSHALL")
+		c.Close()
+		assert.Nil(t, err)
+
+		// create `Transcoder` and push all local schemas via user-defined setter
+		trc, err := NewTranscoder(context.Background(),
+			protoscan.SHA256, "PROT-",
+			TranscoderOptGetter(NewTranscoderGetterRedis(p)),
+			TranscoderOptSetterMulti(NewTranscoderSetterMultiRedis(p)),
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, trc)
+		testTranscoder_Helpers_common(t, trc)
+	})
+
+	t.Run("simple_and_multi_success", func(t *testing.T) {
+		c := p.Get()
+		_, err := c.Do("FLUSHALL")
+		c.Close()
+		assert.Nil(t, err)
+
+		// create `Transcoder` and push all local schemas via user-defined setter
+		trc, err := NewTranscoder(context.Background(),
+			protoscan.SHA256, "PROT-",
+			TranscoderOptGetter(NewTranscoderGetterRedis(p)),
+			TranscoderOptSetter(NewTranscoderSetterRedis(p)),
+			TranscoderOptSetterMulti(NewTranscoderSetterMultiRedis(p)),
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, trc)
+		testTranscoder_Helpers_common(t, trc)
+	})
+
+	t.Run("simple_and_multi_failure", func(t *testing.T) {
+		c := p.Get()
+		_, err := c.Do("FLUSHALL")
+		c.Close()
+		assert.Nil(t, err)
+
+		// create `Transcoder` and push all local schemas via user-defined setter
+		trc, err := NewTranscoder(context.Background(),
+			protoscan.SHA256, "PROT-",
+			TranscoderOptGetter(NewTranscoderGetterRedis(p)),
+			TranscoderOptSetter(NewTranscoderSetterRedis(p)),
+			TranscoderOptSetterMulti(func(
+				ctx context.Context, schemaUIDs []string, payloads [][]byte,
+			) error {
+				return errors.New("some error")
+			}),
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, trc)
+		testTranscoder_Helpers_common(t, trc)
+	})
 }
 
 func TestTranscoder_Helpers_Cassandra(t *testing.T) {
