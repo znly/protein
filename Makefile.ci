@@ -1,17 +1,16 @@
-.PHONY: deps_external deps test_root test_protoscan tests coverage
+.PHONY: deps_external tools_external test_root test_protoscan tests coverage
 
 deps_external:
-	go get -u github.com/Masterminds/glide
 	go get -u github.com/golang/dep/cmd/dep
-	go get -u github.com/mattn/goveralls
 	go get -u github.com/znly/linkname-gen
-	go get -u golang.org/x/tools/cmd/cover
 	go get -u golang.org/x/tools/cmd/stringer
 
-deps:
-	dep ensure
-	go generate . ./protoscan
-	go tool fix -force context -r context . || true
+tools_external:
+	go get -u github.com/mattn/goveralls
+	go get -u golang.org/x/tools/cmd/cover
+
+base:
+	.buildkite/scripts/vendors.sh
 
 ## Note that we MUST specify an output path for the test binary, otherwise
 ## Go 1.9+ will silently strip the symbols during test execution, and break

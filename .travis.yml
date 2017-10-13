@@ -14,8 +14,9 @@ env:
     - "PATH=/home/travis/gopath/bin:$PATH"
 before_install:
     - make -f Makefile.ci deps_external
+    - make -f Makefile.ci tools_external
 install:
-    - make -f Makefile.ci deps
+    - make -f Makefile deps
 script:
-    - make -f Makefile.ci test_root
+    - make -f Makefile.ci tests
     - make -f Makefile.ci coverage
