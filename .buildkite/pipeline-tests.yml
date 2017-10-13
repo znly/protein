@@ -1,0 +1,23 @@
+steps:
+  - command: "make -f Makefile.ci base"
+    label: "setup"
+    agents:
+      - "docker=true"
+      - "os=linux"
+      - "type=heavy"
+
+  - wait
+
+  - command: "make -f Makefile.ci test_root"
+    label: "root pkg"
+    agents:
+      - "docker=true"
+      - "os=linux"
+      - "type=heavy"
+
+  - command: "make -f Makefile.ci test_protoscan"
+    label: "protoscan pkg"
+    agents:
+      - "docker=true"
+      - "os=linux"
+      - "type=lite"
