@@ -16,7 +16,9 @@ package protein
 
 import (
 	"context"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,7 +35,8 @@ import (
 const _transcoderHelpersTestNbTries = 40 // 2 minutes
 
 func TestTranscoder_Helpers_Memcached(t *testing.T) {
-	c, err := memcache.New("localhost:11211")
+	mcAddrs := strings.Split(os.Getenv("PROT_MEMCACHED_ADDRS"), ",")
+	c, err := memcache.New(mcAddrs...)
 	assert.Nil(t, err)
 	assert.NotNil(t, c)
 	defer c.Close()
@@ -65,9 +68,10 @@ func TestTranscoder_Helpers_Memcached(t *testing.T) {
 }
 
 func TestTranscoder_Helpers_Redis(t *testing.T) {
+	redisURI := os.Getenv("PROT_REDIS_URI")
 	p := &redis.Pool{
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.DialURL("redis://localhost:6379/0")
+			c, err := redis.DialURL(redisURI)
 			tries := 0
 			for err != nil {
 				time.Sleep(time.Second * 3)
@@ -76,7 +80,7 @@ func TestTranscoder_Helpers_Redis(t *testing.T) {
 					assert.Nil(t, err)
 					return nil, err
 				}
-				c, err = redis.DialURL("redis://localhost:6379/0")
+				c, err = redis.DialURL(redisURI)
 			}
 			assert.NotNil(t, c)
 			assert.Nil(t, err)
@@ -161,7 +165,8 @@ func TestTranscoder_Helpers_Redis(t *testing.T) {
 }
 
 func TestTranscoder_Helpers_Cassandra(t *testing.T) {
-	cluster := gocql.NewCluster("localhost:9042")
+	cqlAddrs := strings.Split(os.Getenv("PROT_CQL_ADDRS"), ",")
+	cluster := gocql.NewCluster(cqlAddrs...)
 	cluster.Consistency = gocql.LocalQuorum
 	cluster.NumConns = 1
 	gocql.TimeoutLimit = 10
