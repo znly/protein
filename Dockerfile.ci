@@ -19,5 +19,6 @@ RUN cp id_rsa /id_rsa \
       &&  git config --global url."git@github.com:".insteadOf "https://github.com/"
 
 RUN .buildkite/scripts/vendors.sh
+RUN go generate . ./protoscan
 
 RUN go install $(go list ./... | grep -v vendor) || true
