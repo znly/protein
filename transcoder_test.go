@@ -121,8 +121,10 @@ func Example() {
 		TranscoderOptSetter(NewTranscoderSetterRedis(p)),
 		// configure the `Transcoder` to query the given `redis` connection pool
 		// when it cannot find a specific protobuf schema in its local cache
-		TranscoderOptGetter(NewTranscoderGetterRedis(p)),
-	)
+		TranscoderOptGetter(NewTranscoderGetterRedis(p)))
+	if err != nil {
+		panic(err)
+	}
 
 	// At this point, the local `redis` datastore should contain all the
 	// protobuf schemas known to the `Transcoder`, as defined by their respective
