@@ -11,7 +11,10 @@ go:
     - 1.8.4
     - 1.9.1
 env:
-    - "PATH=/home/travis/gopath/bin:$PATH"
+    - PATH=/home/travis/gopath/bin:$PATH
+      PROT_CQL_ADDRS=localhost:9042
+      PROT_REDIS_URI=redis://localhost:6379/0
+      PROT_MEMCACHED_ADDRS=localhost:11211
 before_install:
     - make -f Makefile.ci deps_external
     - make -f Makefile.ci tools_external
