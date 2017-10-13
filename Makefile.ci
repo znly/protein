@@ -1,5 +1,8 @@
 .PHONY: deps_external tools_external deps test_root test_protoscan tests coverage
 
+DKR_IMG_ID := $(shell git rev-parse --short=7 HEAD)
+DKR_IMG_PATH := localhost:5000/protein/tests/base-go1.9:${DKR_IMG_ID}
+
 deps_external:
 	go get -u github.com/golang/dep/cmd/dep
 	go get -u github.com/znly/linkname-gen
@@ -9,8 +12,11 @@ tools_external:
 	go get -u github.com/mattn/goveralls
 	go get -u golang.org/x/tools/cmd/cover
 
-base: deps_external
-	.buildkite/scripts/vendors.sh
+base_dkr:
+	.buildkite/scripts/base.sh $(DKR_IMG_PATH)
+
+pull_dkr:
+	docker pull $(DKR_IMG_PATH)
 
 ## Note that we MUST specify an output path for the test binary, otherwise
 ## Go 1.9+ will silently strip the symbols during test execution, and break
@@ -20,10 +26,18 @@ base: deps_external
 test_root:
 	go test -v -race -cpu 1,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage1.out -o protein1.test .
 
+test_root_dkr: pull_dkr
+	docker run -e $(ENV_DKR_REDIS) -e $(ENV_DKR_CQL) -e $(ENV_DKR_MEMCACHED) $(DKR_IMG_PATH) go test -v -race -cpu 1,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage1.out -o protein1.test .
+
 test_protoscan:
 	go test -v -race -cpu 1,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage2.out -o protein2.test ./protoscan
 
+test_protoscan_dkr: pull_dkr
+	docker run -e $(ENV_DKR_REDIS) -e $(ENV_DKR_CQL) -e $(ENV_DKR_MEMCACHED) $(DKR_IMG_PATH) go test -v -race -cpu 1,4 -run=. -bench=. -covermode=atomic -coverprofile=coverage2.out -o protein2.test ./protoscan
+
 tests: test_root test_protoscan
+
+tests_dkr: test_root_dkr test_protoscan_dkr
 
 coverage:
 	bash coverage.sh

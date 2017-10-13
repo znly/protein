@@ -1,6 +1,6 @@
 steps:
-  - command: "make -f Makefile.ci base"
-    label: "setup"
+  - command: "make -f Makefile.ci base_dkr"
+    label: "build base image"
     agents:
       - "docker=true"
       - "os=linux"
@@ -8,14 +8,14 @@ steps:
 
   - wait
 
-  - command: "make -f Makefile.ci test_root"
+  - command: "make -f Makefile.ci test_root_dkr"
     label: "root pkg"
     agents:
       - "docker=true"
       - "os=linux"
       - "type=heavy"
 
-  - command: "make -f Makefile.ci test_protoscan"
+  - command: "make -f Makefile.ci test_protoscan_dkr"
     label: "protoscan pkg"
     agents:
       - "docker=true"
