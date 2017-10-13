@@ -63,4 +63,11 @@ func TestProtoscan_ByteSSlice_Hash(t *testing.T) {
 		assert.NotNil(t, h)
 		assert.Equal(t, expectedH, hex.EncodeToString(h))
 	})
+	t.Run("xxHash", func(t *testing.T) {
+		expectedH := "64d8af0073ca65d6"
+		h, err := XXHash(bss)
+		assert.Nil(t, err)
+		assert.NotNil(t, h)
+		assert.Equal(t, expectedH, hex.EncodeToString(h))
+	})
 }

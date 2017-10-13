@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/cespare/xxhash"
+  packages = ["."]
+  revision = "5c37fe3735342a2e0d01c87a907579987c8936cc"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "6d212800a42e8ab5c146b8ace3490ee17e5225f9"
@@ -112,6 +118,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "970810f6db6c20228aa11cfd0fe8b63be6ddb2f904a69e6066e94b594269f45e"
+  inputs-digest = "5a34cffd7d1b27809d8699f34f60a1eff4c8eeed7a4f6d5b9d348d601d846737"
   solver-name = "gps-cdcl"
   solver-version = 1

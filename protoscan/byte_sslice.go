@@ -23,6 +23,7 @@ import (
 	"hash"
 	"sort"
 
+	"github.com/cespare/xxhash"
 	"github.com/pkg/errors"
 )
 
@@ -35,7 +36,7 @@ import (
 // and associated dependencies found by the `protoscan` package.
 //
 // This package provides some basic, ready-to-use hashers: `MD5`, `SHA1`,
-// `SHA256`, `SHA512`.
+// `SHA256`, `SHA512`, `xxHash`.
 type Hasher func(bss ByteSSlice) ([]byte, error)
 
 // MD5 implements a Hasher using the MD5 hashing algorithm.
@@ -49,6 +50,9 @@ func SHA256(bss ByteSSlice) ([]byte, error) { return hashIt(bss, sha256.New()) }
 
 // SHA512 implements a Hasher using the SHA512 hashing algorithm.
 func SHA512(bss ByteSSlice) ([]byte, error) { return hashIt(bss, sha512.New()) }
+
+// XXHash implements a Hasher using the xxHash hashing algorithm.
+func XXHash(bss ByteSSlice) ([]byte, error) { return hashIt(bss, xxhash.New()) }
 
 func hashIt(bss ByteSSlice, h hash.Hash) ([]byte, error) {
 	var err error
