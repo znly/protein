@@ -20,6 +20,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"hash"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -38,47 +39,18 @@ import (
 type Hasher func(bss ByteSSlice) ([]byte, error)
 
 // MD5 implements a Hasher using the MD5 hashing algorithm.
-func MD5(bss ByteSSlice) ([]byte, error) {
-	h := md5.New()
-	var err error
-	for _, bs := range bss {
-		_, err = h.Write(bs)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-	return h.Sum(nil), nil
-}
+func MD5(bss ByteSSlice) ([]byte, error) { return hashIt(bss, md5.New()) }
 
 // SHA1 implements a Hasher using the SHA1 hashing algorithm.
-func SHA1(bss ByteSSlice) ([]byte, error) {
-	h := sha1.New()
-	var err error
-	for _, bs := range bss {
-		_, err = h.Write(bs)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-	return h.Sum(nil), nil
-}
+func SHA1(bss ByteSSlice) ([]byte, error) { return hashIt(bss, sha1.New()) }
 
 // SHA256 implements a Hasher using the SHA256 hashing algorithm.
-func SHA256(bss ByteSSlice) ([]byte, error) {
-	h := sha256.New()
-	var err error
-	for _, bs := range bss {
-		_, err = h.Write(bs)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-	return h.Sum(nil), nil
-}
+func SHA256(bss ByteSSlice) ([]byte, error) { return hashIt(bss, sha256.New()) }
 
 // SHA512 implements a Hasher using the SHA512 hashing algorithm.
-func SHA512(bss ByteSSlice) ([]byte, error) {
-	h := sha512.New()
+func SHA512(bss ByteSSlice) ([]byte, error) { return hashIt(bss, sha512.New()) }
+
+func hashIt(bss ByteSSlice, h hash.Hash) ([]byte, error) {
 	var err error
 	for _, bs := range bss {
 		_, err = h.Write(bs)

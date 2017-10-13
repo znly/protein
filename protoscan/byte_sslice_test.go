@@ -35,27 +35,32 @@ func TestProtoscan_ByteSSlice_Hash(t *testing.T) {
 	assert.Equal(t, myNameIsGiovanniGiorgio, bss[1])
 	assert.Equal(t, butEverybodyCallsMe, bss[2])
 
-	expectedH := "c1fa5baca4b8561b1ec19a5defb3127c"
-	h, err := MD5(bss)
-	assert.Nil(t, err)
-	assert.NotNil(t, h)
-	assert.Equal(t, expectedH, hex.EncodeToString(h))
-
-	expectedH = "e87a0ce42bab6297ae8b4821e1aae04e52f993e5"
-	h, err = SHA1(bss)
-	assert.Nil(t, err)
-	assert.NotNil(t, h)
-	assert.Equal(t, expectedH, hex.EncodeToString(h))
-
-	expectedH = "f27edac4d321e0b20a955c3b2d1d77cb6331eab6954e02cb5621c37a9775869f"
-	h, err = SHA256(bss)
-	assert.Nil(t, err)
-	assert.NotNil(t, h)
-	assert.Equal(t, expectedH, hex.EncodeToString(h))
-
-	expectedH = "941bd5b6e6d43f344f2668e6736cf8de621ce4940fb18795c94ecc339dd935cd88716acc952bf1b1d2d34883aba3cc5a6228472e19e4e4d0945a0eb315619e7e"
-	h, err = SHA512(bss)
-	assert.Nil(t, err)
-	assert.NotNil(t, h)
-	assert.Equal(t, expectedH, hex.EncodeToString(h))
+	t.Run("md5", func(t *testing.T) {
+		expectedH := "c1fa5baca4b8561b1ec19a5defb3127c"
+		h, err := MD5(bss)
+		assert.Nil(t, err)
+		assert.NotNil(t, h)
+		assert.Equal(t, expectedH, hex.EncodeToString(h))
+	})
+	t.Run("sha1", func(t *testing.T) {
+		expectedH := "e87a0ce42bab6297ae8b4821e1aae04e52f993e5"
+		h, err := SHA1(bss)
+		assert.Nil(t, err)
+		assert.NotNil(t, h)
+		assert.Equal(t, expectedH, hex.EncodeToString(h))
+	})
+	t.Run("sha256", func(t *testing.T) {
+		expectedH := "f27edac4d321e0b20a955c3b2d1d77cb6331eab6954e02cb5621c37a9775869f"
+		h, err := SHA256(bss)
+		assert.Nil(t, err)
+		assert.NotNil(t, h)
+		assert.Equal(t, expectedH, hex.EncodeToString(h))
+	})
+	t.Run("sha512", func(t *testing.T) {
+		expectedH := "941bd5b6e6d43f344f2668e6736cf8de621ce4940fb18795c94ecc339dd935cd88716acc952bf1b1d2d34883aba3cc5a6228472e19e4e4d0945a0eb315619e7e"
+		h, err := SHA512(bss)
+		assert.Nil(t, err)
+		assert.NotNil(t, h)
+		assert.Equal(t, expectedH, hex.EncodeToString(h))
+	})
 }
