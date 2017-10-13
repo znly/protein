@@ -97,9 +97,10 @@ func Example() {
 	//   $ docker run -p 6379:6379 --name my-redis --rm redis:3.2 redis-server
 
 	// open up a new `redis` connection pool
+	redisURI := os.Getenv("PROT_REDIS_URI")
 	p := &redis.Pool{
 		Dial: func() (redis.Conn, error) {
-			return redis.DialURL("redis://localhost:6379/0")
+			return redis.DialURL(redisURI)
 		},
 	}
 	defer p.Close()
