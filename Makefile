@@ -1,15 +1,13 @@
-.PHONY: toc test bench test-bench
+.PHONY: toc test deps
 
 toc:
 	docker run --rm -it -v ${PWD}:/usr/src jorgeandrada/doctoc --github
 
 test:
 	staticcheck . ./protoscan
-	go vet . # ./protoscan ## unsafe use due to sym-scan
-	go test -v -race -cpu 4 -cover -run=. -bench=. . ./protoscan
+	go test -v -cpu 1,4 -run=. -bench=xxx . ./protoscan
 
-bench:
-	go test -v -cpu 1,2,4,8,24 -cover -run=xxx -bench=. . ./protoscan
-
-test-bench:
-	go test -v -cpu 1,2,4,8,24 -cover -run=. -bench=. . ./protoscan
+deps:
+	dep ensure
+	go generate .
+	go tool fix -force context -r context . || true
