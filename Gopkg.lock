@@ -94,7 +94,7 @@
   branch = "master"
   name = "github.com/znly/reflect"
   packages = ["."]
-  revision = "84616f55d7f6f9eb9d8d4efd17e7cb27a70b7129"
+  revision = "ee0ffb3cef0a3739ec1eb54693c12e0ca27fc8c7"
 
 [[projects]]
   name = "go.uber.org/atomic"
