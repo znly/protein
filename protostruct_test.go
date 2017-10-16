@@ -17,8 +17,9 @@ package protein
 import (
 	"fmt"
 	"go/format"
-	"reflect"
 	"testing"
+
+	reflect "reflect"
 
 	"go.uber.org/zap"
 
@@ -44,8 +45,7 @@ func ExampleCreateStructType() {
 	// create a structure-type definition for the '.test.TestSchemaXXX'
 	// protobuf schema
 	structType, err := CreateStructType(
-		sm.GetByFQName(".test.TestSchemaXXX").SchemaUID, sm,
-	)
+		sm.GetByFQName(".test.TestSchemaXXX").SchemaUID, sm)
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
@@ -53,8 +53,7 @@ func ExampleCreateStructType() {
 	// pretty-print the resulting structure-type
 	structType = tagcleaner.Clean(structType) // remove tags to ease reading
 	b, err := format.Source(                  // gofmt
-		[]byte(fmt.Sprintf("type TestSchemaXXX %s", structType)),
-	)
+		[]byte(fmt.Sprintf("type TestSchemaXXX %s", structType)))
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}

@@ -16,9 +16,13 @@ package protein
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
+	"unsafe"
+
+	reflect_raw "reflect"
+
+	reflect "github.com/znly/reflect"
 
 	"github.com/fatih/camelcase"
 	"github.com/gogo/protobuf/gogoproto"
@@ -41,20 +45,18 @@ import (
 // the result like the `Transcoder` does.
 //
 // It requires the new `reflect` APIs provided by Go 1.7+.
-func CreateStructType(schemaUID string, sm *SchemaMap) (reflect.Type, error) {
+func CreateStructType(schemaUID string, sm *SchemaMap) (reflect_raw.Type, error) {
 	ps := sm.GetByUID(schemaUID)
 	if ps == nil {
-		return reflect.TypeOf(nil), errors.Wrapf(failure.ErrSchemaNotFound,
-			"`%s`: no schema with this UID", schemaUID,
-		)
+		return reflect_raw.TypeOf(nil), errors.Wrapf(failure.ErrSchemaNotFound,
+			"`%s`: no schema with this UID", schemaUID)
 	}
 	deps := ps.GetDeps()
 	pss := make(map[string]*ProtobufSchema, len(deps))
 	for depUID := range deps {
 		if dep := sm.GetByUID(depUID); dep == nil {
-			return reflect.TypeOf(nil), errors.Wrapf(failure.ErrDependencyNotFound,
-				"`%s`: no dependency with this UID", depUID,
-			)
+			return reflect_raw.TypeOf(nil), errors.Wrapf(failure.ErrDependencyNotFound,
+				"`%s`: no dependency with this UID", depUID)
 		} else {
 			pss[depUID] = dep
 		}
@@ -87,7 +89,27 @@ func CreateStructType(schemaUID string, sm *SchemaMap) (reflect.Type, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	return structTypes[schemaUID], nil
+	st := structTypes[schemaUID]
+	if st.Kind() != reflect.Struct {
+		return nil, errors.Errorf("`%s`: not a struct type", st)
+	}
+	return convertInternalTypeToReflectType(st), nil
+}
+
+// convertInternalTypeToReflectType converts a `Type`, as defined by our internal
+// fork of the reflect package (github.com/znly/reflect) back to an original
+// `Type`, as is normally defined by the standard library.
+//
+// The goal here is to avoid leaking these private types to the outside world,
+// where they would create lots of conflicts as well as confusion due to the
+// strong-typing incompabilities with the stdlib.
+func convertInternalTypeToReflectType(t reflect.Type) (tRaw reflect_raw.Type) {
+	tRaw = reflect_raw.TypeOf(struct{}{})
+	tArr := *(*[2]uintptr)(unsafe.Pointer(&t))
+	tRaw1 := (*uintptr)(unsafe.Pointer(
+		(uintptr(unsafe.Pointer(&tRaw)) + unsafe.Sizeof(uintptr(0)))))
+	*tRaw1 = tArr[1]
+	return tRaw
 }
 
 // -----------------------------------------------------------------------------
@@ -356,7 +378,7 @@ func finalizeStruct(
 			fields[0].Tag, fields[1].Tag,
 		}
 	} else { // everything else
-		structTypes[ps.SchemaUID] = reflect.StructOf(fields)
+		structTypes[ps.SchemaUID] = reflect.StructOf(ps.SchemaUID, fields)
 	}
 }
 

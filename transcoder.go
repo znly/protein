@@ -482,11 +482,7 @@ func (t *Transcoder) Decode(
 		if err != nil {
 			return reflect.ValueOf(nil), errors.WithStack(err)
 		}
-		if st.Kind() != reflect.Struct {
-			return reflect.ValueOf(nil), errors.Errorf(
-				"`%s`: not a struct type", structType,
-			)
-		}
+
 		structType = st
 		t.typeCacheLock.Lock()
 		t.typeCache[schemaUID] = st // upsert type-cache
@@ -506,8 +502,7 @@ func (t *Transcoder) Decode(
 		// is_group, deprecated
 		false,
 		// the address we want to deserialize to
-		unsafe.Pointer(obj.Elem().Addr().Pointer()),
-	)
+		unsafe.Pointer(obj.Elem().Addr().Pointer()))
 
 	return obj, nil
 }
