@@ -22,47 +22,53 @@
 
 
 [[constraint]]
+  name = "github.com/cespare/xxhash"
+  version = "~1.0.0"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/fatih/camelcase"
 
 [[constraint]]
   name = "github.com/garyburd/redigo"
-  version = "1.1.0"
+  version = "~1.1.0"
 
 [[constraint]]
+  revision = "2e7ada62e73eec9d70e5558e2a08d6925ba20226"
   name = "github.com/gocql/gocql"
 
 [[constraint]]
   name = "github.com/gogo/protobuf"
-  version = "0.5.0"
+  version = "~0.5.0"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/golang/protobuf"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/kardianos/osext"
 
 [[constraint]]
   name = "github.com/pkg/errors"
-  version = "0.8.0"
+  version = "~0.8.0"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/rainycape/memcache"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
-  version = "1.1.4"
+  version = "~1.1.4"
 
 [[constraint]]
   name = "github.com/teh-cmc/gools"
+  version = "~0.2.0"
 
 [[constraint]]
   name = "go.uber.org/zap"
-  version = "1.5.0"
+  version = "~1.7.1"
 
 [[constraint]]
-  name = "golang.org/x/arch"
   revision = "893b1271f1c79eb661bf3cbe4416fb866d42ed39"
-
-[[constraint]]
-  name = "github.com/cespare/xxhash"
-  version = "1.0.0"
+  name = "golang.org/x/arch"

@@ -10,7 +10,8 @@
 [[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
-  revision = "6d212800a42e8ab5c146b8ace3490ee17e5225f9"
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -27,7 +28,7 @@
 [[projects]]
   name = "github.com/gocql/gocql"
   packages = [".","internal/lru","internal/murmur","internal/streams"]
-  revision = "066e974c166d59aa2d3aee45b234d8c21c631180"
+  revision = "2e7ada62e73eec9d70e5558e2a08d6925ba20226"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -36,9 +37,10 @@
   version = "v0.5"
 
 [[projects]]
+  branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "ab9f9a6dab164b7d1246e0e688b0ab7b94d8553e"
+  revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
 
 [[projects]]
   branch = "master"
@@ -67,7 +69,8 @@
 [[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
-  revision = "d8ed2627bdf02c080bf22230dbb337003b7aba2d"
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -84,7 +87,8 @@
 [[projects]]
   name = "github.com/teh-cmc/gools"
   packages = ["tagcleaner"]
-  revision = "2598bd6ce343bf9e92afb95fa8a0979c3fc03eea"
+  revision = "1a61a473807978e9daead1c6acdc71b7640e2c20"
+  version = "v0.2.0"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -101,8 +105,8 @@
 [[projects]]
   name = "go.uber.org/zap"
   packages = [".","buffer","internal/bufferpool","internal/color","internal/exit","zapcore"]
-  revision = "3216c4c73e8ebbafff73c456dd27143f4a7c1f94"
-  version = "v1.6.0"
+  revision = "35aad584952c3e7020db7b839f6b102de6271f89"
+  version = "v1.7.1"
 
 [[projects]]
   name = "golang.org/x/arch"
@@ -118,6 +122,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "16f7599c1df03d2eb0a974426fcfaab377cb4ef838e283275076a3847a8c4719"
+  inputs-digest = "1300da7e1f67ebd879f30c91cf59efae7bef03872cfc76d24fe70b8f9de8b4ca"
   solver-name = "gps-cdcl"
   solver-version = 1
