@@ -72,3 +72,7 @@
 [[constraint]]
   revision = "893b1271f1c79eb661bf3cbe4416fb866d42ed39"
   name = "golang.org/x/arch"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/znly/reflect"

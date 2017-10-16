@@ -91,6 +91,12 @@
   version = "v0.2.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/znly/reflect"
+  packages = ["."]
+  revision = "84616f55d7f6f9eb9d8d4efd17e7cb27a70b7129"
+
+[[projects]]
   name = "go.uber.org/atomic"
   packages = ["."]
   revision = "4e336646b2ef9fc6e47be8e21594178f98e5ebcf"
@@ -122,6 +128,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1300da7e1f67ebd879f30c91cf59efae7bef03872cfc76d24fe70b8f9de8b4ca"
+  inputs-digest = "1f59e746658f8ae17fdc0f81694e7e9205d698a2e35a066991205575d4b4a0fb"
   solver-name = "gps-cdcl"
   solver-version = 1
