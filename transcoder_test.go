@@ -612,3 +612,30 @@ func TestTranscoder_GetFieldDescriptors(t *testing.T) {
 	assert.Equal(t, fdps912, fdpsM["ots.ts.nanos"])
 }
 
+func ExampleTranscoder_GetFieldDescriptors() {
+	ctx := context.Background()
+
+	msg := &test.TestSchemaXXX{}
+	trc, err := NewTranscoder(ctx, protoscan.MD5, "PROT-")
+	if err != nil {
+		panic(err)
+	}
+	nestedTags := [][]int32{
+		{100},     // TestSchemaXXX.ts_std
+		{13},      // TestSchemaXXX.weathers
+		{9, 1, 2}, // TestSchemaXXX.ots.ts.nanos
+	}
+	fdpsM, err := trc.GetFieldDescriptors(ctx, trc.UIDFromMsg(msg), nestedTags...)
+	if err != nil {
+		panic(err)
+	}
+
+	for name := range fdpsM {
+		fmt.Println(name)
+	}
+
+	// Output:
+	// ts_std
+	// weathers
+	// ots.ts.nanos
+}
