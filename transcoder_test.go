@@ -291,8 +291,7 @@ func BenchmarkTranscoder_Encode(b *testing.B) {
 			var err error
 			for pb.Next() {
 				payload, err = trc.Encode(
-					_transcoderTestSchemaXXX, "test.TestSchemaXXX",
-				)
+					_transcoderTestSchemaXXX, ".test.TestSchemaXXX")
 				assert.Nil(b, err)
 				assert.NotNil(b, payload)
 			}
