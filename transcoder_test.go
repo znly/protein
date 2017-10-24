@@ -22,6 +22,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -552,4 +553,31 @@ func TestTranscoder_GetFieldDescriptor(t *testing.T) {
 		assert.Empty(t, fdps)
 		assert.Equal(t, failure.ErrNestedTagInvalid, errors.Cause(err))
 	})
+}
+
+func ExampleTranscoder_GetFieldDescriptor() {
+	ctx := context.Background()
+
+	msg := &test.TestSchemaXXX{}
+	trc, err := NewTranscoder(ctx, protoscan.MD5, "PROT-")
+	if err != nil {
+		panic(err)
+	}
+	nestedTag := []int32{
+		9, // TestSchemaXXX.ots
+		1, // TestSchemaXXX.ots.ts
+	}
+	fdps, err := trc.GetFieldDescriptor(ctx, trc.UIDFromMsg(msg), nestedTag...)
+	if err != nil {
+		panic(err)
+	}
+
+	name := make([]string, 0, len(fdps))
+	for _, fdp := range fdps {
+		name = append(name, fdp.GetName())
+	}
+	fmt.Println(strings.Join(name, "."))
+
+	// Output:
+	// ots.ts
 }
