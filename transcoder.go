@@ -25,6 +25,7 @@ import (
 	"unsafe"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	proto_vanilla "github.com/golang/protobuf/proto"
 	"github.com/znly/protein/failure"
 	"github.com/znly/protein/protoscan"
@@ -601,4 +602,53 @@ func (t *Transcoder) LoadState(path string) error {
 	}
 	t.sm.Add(pss)
 	return nil
+}
+
+// -----------------------------------------------------------------------------
+
+// GetFieldDescriptor returns the protobuf descriptors that describe a
+// (potentially nested) field in a protobuf schema.
+//
+// Iff this schema cannot be found in the local cache, it'll try and fetch it
+// from the remote registry via a call to `GetAndUpsert`.
+//
+// A `failure.ErrNestedTagInvalid` error is returned if the tag is considered
+// invalid for some reason.
+func (t *Transcoder) GetFieldDescriptor(ctx context.Context,
+	schemaUID string, nestedTag ...int32,
+) ([]*descriptor.FieldDescriptorProto, error) {
+	schemasM, err := t.GetAndUpsert(ctx, schemaUID)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	schema := schemasM[schemaUID]
+	fdps := make([]*descriptor.FieldDescriptorProto, 0, len(nestedTag))
+	t.getFieldDescriptorR(schemasM, schema.Descr, nestedTag, &fdps)
+	if len(fdps) != len(nestedTag) {
+		return nil, errors.WithStack(failure.ErrNestedTagInvalid)
+	}
+	return fdps, nil
+}
+func (t *Transcoder) getFieldDescriptorR(
+	schemasM map[string]*ProtobufSchema, descr isProtobufSchema_Descr,
+	nestedTag []int32, fdps *[]*descriptor.FieldDescriptorProto,
+) {
+	if len(nestedTag) <= 0 {
+		return // end of recursion
+	}
+	if msg, ok := descr.(*ProtobufSchema_Message); ok {
+		for _, fdp := range msg.Message.Field {
+			if fdp.GetNumber() == nestedTag[0] {
+				*fdps = append(*fdps, fdp)
+				for _, schema := range schemasM {
+					if schema.FQName == fdp.GetTypeName() {
+						descr = schema.GetDescr()
+						break
+					}
+				}
+				t.getFieldDescriptorR(schemasM, descr, nestedTag[1:], fdps)
+				return
+			}
+		}
+	}
 }

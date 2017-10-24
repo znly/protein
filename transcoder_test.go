@@ -26,14 +26,13 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/garyburd/redigo/redis"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/znly/protein/protobuf/test"
 	"github.com/znly/protein/protoscan"
+	"go.uber.org/zap"
 )
 
 // -----------------------------------------------------------------------------
@@ -500,4 +499,53 @@ func TestTranscoder_SaveState_LoadState(t *testing.T) {
 		assert.Equal(t,
 			schema.String(), trcEmpty.sm.schemaMap[schemaUID].String())
 	}
+}
+
+func TestTranscoder_GetFieldDescriptor(t *testing.T) {
+	msg := _transcoderTestSchemaXXX
+	fqn := trc.FQNameFromMsg(msg)
+	assert.NotEmpty(t, fqn)
+	schema := trc.sm.GetByFQName(fqn)
+	assert.NotNil(t, schema)
+
+	tests := map[string]struct {
+		nestedTag      []int32
+		name, typeName string
+	}{
+		"simple": {
+			nestedTag: []int32{100},
+			name:      "ts_std",
+			typeName:  ".google.protobuf.Timestamp",
+		},
+		"simple-repeated": {
+			nestedTag: []int32{13},
+			name:      "weathers",
+			typeName:  ".test.TestSchemaXXX.WeatherType",
+		},
+		"nested": {
+			nestedTag: []int32{7, 1, 2},
+			name:      "nanos",
+			typeName:  "",
+		},
+	}
+	for tName, tVars := range tests {
+		t.Run(tName, func(t *testing.T) {
+			ctx := context.Background()
+			depth := len(tVars.nestedTag)
+			fdps, err := trc.GetFieldDescriptor(ctx, schema.SchemaUID, tVars.nestedTag...)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, fdps)
+			t.Logf("%+v\n", fdps)
+			assert.Len(t, fdps, depth)
+			assert.Equal(t, tVars.name, fdps[depth-1].GetName())
+			assert.Equal(t, tVars.typeName, fdps[depth-1].GetTypeName())
+		})
+	}
+
+	t.Run("invalid", func(t *testing.T) {
+		ctx := context.Background()
+		fdps, err := trc.GetFieldDescriptor(ctx, schema.SchemaUID, 13, 2, 42)
+		assert.Error(t, err)
+		assert.Empty(t, fdps)
+	})
 }
