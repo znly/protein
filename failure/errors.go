@@ -39,6 +39,9 @@ const (
 	ErrFDAlreadyInstanciated Error = iota // proto-file-descriptor instanciated multiple times
 	ErrFDUnknownType         Error = iota // proto-file-descriptor is of unknown type
 	ErrFDMissingDependency   Error = iota // proto-file-descriptor depends on missing schemas
+
+	/* Transcoder */
+	ErrNestedTagInvalid Error = iota // nested-tag is invalid
 )
 
 // IsProteinError returns true if `err` originates from this package.
@@ -69,6 +72,9 @@ func (e Error) Error() string {
 		return "error [protoscan]: this protobuf file-descriptor is of unknown type"
 	case ErrFDMissingDependency:
 		return "error [protoscan]: this protobuf file-descriptor depends on missing protobuf schemas"
+
+	case ErrNestedTagInvalid:
+		return "error [transcoder]: this nested-tag is invalid"
 
 	default:
 		return "error: undefined"
