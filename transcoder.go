@@ -367,6 +367,18 @@ func (t *Transcoder) FQName(ctx context.Context, schemaUID string) string {
 	return pss[schemaUID].FQName
 }
 
+// FQNameFromMsg returns the fully-qualified name of the protobuf schema associated
+// with `msg`, or an empty string if it cannot be found (which would be very weird
+// considering you've just passed an instance of it).
+func (t *Transcoder) FQNameFromMsg(msg proto.Message) (fqn string) {
+	if fqn = proto_vanilla.MessageName(msg); len(fqn) > 0 {
+	} else if fqn = proto.MessageName(msg); len(fqn) > 0 {
+	} else {
+		return ""
+	}
+	return "." + fqn
+}
+
 // -----------------------------------------------------------------------------
 
 // Encode bundles the given protobuf `Message` and its associated versioning
@@ -399,12 +411,9 @@ func (t *Transcoder) Encode(msg proto.Message, fqName ...string) ([]byte, error)
 	var fqn string
 	if len(fqName) > 0 {
 		fqn = fqName[0]
-	} else if fqn = proto_vanilla.MessageName(msg); len(fqn) > 0 {
-	} else if fqn = proto.MessageName(msg); len(fqn) > 0 {
-	} else {
+	} else if fqn = t.FQNameFromMsg(msg); len(fqn) <= 0 {
 		return nil, errors.Errorf("cannot encode, unknown protobuf schema")
 	}
-	fqn = "." + fqn
 
 	// fetch the first-registered schema associated with the FQN of `msg`
 	ps := t.sm.GetByFQName(fqn)
@@ -482,7 +491,6 @@ func (t *Transcoder) Decode(
 		if err != nil {
 			return reflect.ValueOf(nil), errors.WithStack(err)
 		}
-
 		structType = st
 		t.typeCacheLock.Lock()
 		t.typeCache[schemaUID] = st // upsert type-cache
