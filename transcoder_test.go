@@ -29,7 +29,9 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/znly/protein/failure"
 	"github.com/znly/protein/protobuf/test"
 	"github.com/znly/protein/protoscan"
 	"go.uber.org/zap"
@@ -500,6 +502,8 @@ func TestTranscoder_SaveState_LoadState(t *testing.T) {
 	}
 }
 
+// -----------------------------------------------------------------------------
+
 func TestTranscoder_GetFieldDescriptor(t *testing.T) {
 	msg := _transcoderTestSchemaXXX
 	fqn := trc.FQNameFromMsg(msg)
@@ -546,5 +550,6 @@ func TestTranscoder_GetFieldDescriptor(t *testing.T) {
 		fdps, err := trc.GetFieldDescriptor(ctx, schema.SchemaUID, 13, 2, 42)
 		assert.Error(t, err)
 		assert.Empty(t, fdps)
+		assert.Equal(t, failure.ErrNestedTagInvalid, errors.Cause(err))
 	})
 }
