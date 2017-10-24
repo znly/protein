@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strings"
 	"sync"
 	"unsafe"
 
@@ -683,4 +684,30 @@ func (t *Transcoder) getFieldDescriptorR(
 			}
 		}
 	}
+}
+
+// GetFieldDescriptors returns the protobuf descriptors that describe one or more
+// (potentially nested) fields in a protobuf schema.
+//
+// The result is returned as a map of slice of field descriptors where each key
+// corresponds to the absolute name of the associated field.
+//
+// This is mostly just a helper for GetFieldDescriptor, have a look at the
+// documentation over there for more information.
+func (t *Transcoder) GetFieldDescriptors(ctx context.Context,
+	schemaUID string, nestedTags ...[]int32,
+) (map[string][]*descriptor.FieldDescriptorProto, error) {
+	fdpsM := make(map[string][]*descriptor.FieldDescriptorProto, len(nestedTags))
+	for _, nestedTag := range nestedTags {
+		fdps, err := t.GetFieldDescriptor(ctx, schemaUID, nestedTag...)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		absName := make([]string, 0, len(fdps))
+		for _, fdp := range fdps {
+			absName = append(absName, fdp.GetName())
+		}
+		fdpsM[strings.Join(absName, ".")] = fdps
+	}
+	return fdpsM, nil
 }

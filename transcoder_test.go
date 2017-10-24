@@ -581,3 +581,34 @@ func ExampleTranscoder_GetFieldDescriptor() {
 	// Output:
 	// ots.ts
 }
+
+func TestTranscoder_GetFieldDescriptors(t *testing.T) {
+	ctx := context.Background()
+
+	msg := _transcoderTestSchemaXXX
+	fqn := trc.FQNameFromMsg(msg)
+	assert.NotEmpty(t, fqn)
+	schema := trc.sm.GetByFQName(fqn)
+	assert.NotNil(t, schema)
+
+	fdpsM, err := trc.GetFieldDescriptors(ctx, schema.SchemaUID,
+		[]int32{100}, []int32{13}, []int32{9, 1, 2})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, fdpsM)
+	assert.Len(t, fdpsM, 3)
+
+	fdps100, err := trc.GetFieldDescriptor(ctx, schema.SchemaUID, []int32{100}...)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, fdps100)
+	fdps13, err := trc.GetFieldDescriptor(ctx, schema.SchemaUID, []int32{13}...)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, fdps13)
+	fdps912, err := trc.GetFieldDescriptor(ctx, schema.SchemaUID, []int32{9, 1, 2}...)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, fdps912)
+
+	assert.Equal(t, fdps100, fdpsM["ts_std"])
+	assert.Equal(t, fdps13, fdpsM["weathers"])
+	assert.Equal(t, fdps912, fdpsM["ots.ts.nanos"])
+}
+
