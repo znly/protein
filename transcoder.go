@@ -543,7 +543,7 @@ func (t *Transcoder) DecodeAs(payload []byte, msg proto.Message) error {
 //  PROT-xxx:::base64(schema1)\nPROT-xxx:::base64(schema2)\n...
 //
 // This can be useful in situations such as shell implementations or CLI tools,
-// where you don't want to re-fetch all the schemas you depend on every restart.
+// where you don't want to re-fetch all the schemas you depend on on every restart.
 // This is in absolutely no way designed with performance in mind.
 func (t *Transcoder) SaveState(path string) error {
 	var payloads [][]byte
@@ -571,7 +571,7 @@ func (t *Transcoder) SaveState(path string) error {
 //  PROT-xxx:::base64(schema1)\nPROT-xxx:::base64(schema2)\n...
 //
 // This can be useful in situations such as shell implementations or CLI tools,
-// where you don't want to re-fetch all the schemas you depend on every restart.
+// where you don't want to re-fetch all the schemas you depend on on every restart.
 // This is in absolutely no way designed with performance in mind.
 func (t *Transcoder) LoadState(path string) error {
 	f, err := os.Open(path)
