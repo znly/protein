@@ -22,6 +22,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -630,12 +631,15 @@ func ExampleTranscoder_GetFieldDescriptors() {
 		panic(err)
 	}
 
+	names := make([]string, 0, len(fdpsM))
 	for name := range fdpsM {
-		fmt.Println(name)
+		names = append(names, name)
 	}
+	sort.Strings(names)
+	fmt.Println(strings.Join(names, "\n"))
 
 	// Output:
+	// ots.ts.nanos
 	// ts_std
 	// weathers
-	// ots.ts.nanos
 }
