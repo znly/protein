@@ -349,6 +349,10 @@ func (t *Transcoder) GetAndUpsert(
 	return schemas, nil
 }
 
+// -----------------------------------------------------------------------------
+
+// TODO(cmc): add some common test suite for the symmetric getters.
+
 // FQName is deprecated; use FQNameFromUID instead.
 func (t *Transcoder) FQName(ctx context.Context, schemaUID string) string {
 	zap.L().Warn("FQName is deprecated; use FQNameFromUID instead")
@@ -384,6 +388,28 @@ func (t *Transcoder) FQNameFromMsg(msg proto.Message) (fqn string) {
 		return ""
 	}
 	return "." + fqn
+}
+
+// UIDFromFQName returns the UID of the protobuf schema associated with `fqName`.
+// An empty string is returned if the schema cannot be found locally.
+//
+// Note that a single fully-qualified name might point to multiple schemaUIDs
+// if multiple versions of that schema are currently available in the `SchemaMap`.
+// When this happens, the first schemaUID from the list will be used, which
+// corresponds to the first version of the schema to have ever been added to
+// the local `SchemaMap` (i.e. the oldest one).
+func (t *Transcoder) UIDFromFQName(fqName string) string {
+	if ps := t.sm.GetByFQName(fqName); ps != nil {
+		return ps.SchemaUID
+	}
+	return ""
+}
+
+// UIDFromMsg returns the schemaUID of the protobuf schema associated with `msg`,
+// or an empty string if it cannot be found (which would be very weird considering
+// you've just passed an instance of it).
+func (t *Transcoder) UIDFromMsg(msg proto.Message) (fqn string) {
+	return t.UIDFromFQName(t.FQNameFromMsg(msg))
 }
 
 // -----------------------------------------------------------------------------
