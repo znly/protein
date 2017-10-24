@@ -349,7 +349,13 @@ func (t *Transcoder) GetAndUpsert(
 	return schemas, nil
 }
 
-// FQName returns the fully-qualified name of the protobuf schema associated
+// FQName is deprecated; use FQNameFromUID instead.
+func (t *Transcoder) FQName(ctx context.Context, schemaUID string) string {
+	zap.L().Warn("FQName is deprecated; use FQNameFromUID instead")
+	return t.FQNameFromUID(ctx, schemaUID)
+}
+
+// FQNameFromUID returns the fully-qualified name of the protobuf schema associated
 // with `schemaUID`.
 //
 // Iff this schema cannot be found in the local cache, it'll try and fetch it
@@ -357,7 +363,7 @@ func (t *Transcoder) GetAndUpsert(
 //
 // An empty string is returned if the schema is found neither locally nor
 // remotely.
-func (t *Transcoder) FQName(ctx context.Context, schemaUID string) string {
+func (t *Transcoder) FQNameFromUID(ctx context.Context, schemaUID string) string {
 	if ps := t.sm.GetByUID(schemaUID); ps != nil {
 		return ps.FQName
 	}
