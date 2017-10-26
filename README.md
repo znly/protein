@@ -50,6 +50,7 @@ And voila, it compiles again!
 
 
 - [Usage](#usage)
+  - [Building](#building)
   - [Quickstart](#quickstart)
   - [Error handling](#error-handling)
   - [Logging](#logging)
@@ -65,6 +66,17 @@ And voila, it compiles again!
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Usage
+
+### Building
+
+Install dependencies:
+```sh
+$ make deps
+```
+Build *Protein*:
+```sh
+$ go build ./...
+```
 
 ### Quickstart
 
