@@ -291,18 +291,17 @@ func (d *Disasm) Decode(start, end uint64, relocs []Reloc, f func(pc, size uint6
 	}
 }
 
-type lookupFunc func(addr uint64) (sym string, base uint64)
-type disasmFunc func(code []byte, pc uint64, lookup lookupFunc, ord binary.ByteOrder) (text string, size int)
+type disasmFunc func(code []byte, pc uint64, lookup x86asm.SymLookup, ord binary.ByteOrder) (text string, size int)
 
-func disasm_386(code []byte, pc uint64, lookup lookupFunc, _ binary.ByteOrder) (string, int) {
+func disasm_386(code []byte, pc uint64, lookup x86asm.SymLookup, _ binary.ByteOrder) (string, int) {
 	return disasm_x86(code, pc, lookup, 32)
 }
 
-func disasm_amd64(code []byte, pc uint64, lookup lookupFunc, _ binary.ByteOrder) (string, int) {
+func disasm_amd64(code []byte, pc uint64, lookup x86asm.SymLookup, _ binary.ByteOrder) (string, int) {
 	return disasm_x86(code, pc, lookup, 64)
 }
 
-func disasm_x86(code []byte, pc uint64, lookup lookupFunc, arch int) (string, int) {
+func disasm_x86(code []byte, pc uint64, lookup x86asm.SymLookup, arch int) (string, int) {
 	inst, err := x86asm.Decode(code, 64)
 	var text string
 	size := inst.Len
@@ -335,7 +334,7 @@ func (r textReader) ReadAt(data []byte, off int64) (n int, err error) {
 	return
 }
 
-func disasm_arm(code []byte, pc uint64, lookup lookupFunc, _ binary.ByteOrder) (string, int) {
+func disasm_arm(code []byte, pc uint64, lookup x86asm.SymLookup, _ binary.ByteOrder) (string, int) {
 	inst, err := armasm.Decode(code, armasm.ModeARM)
 	var text string
 	size := inst.Len
@@ -348,7 +347,7 @@ func disasm_arm(code []byte, pc uint64, lookup lookupFunc, _ binary.ByteOrder) (
 	return text, size
 }
 
-func disasm_ppc64(code []byte, pc uint64, lookup lookupFunc, byteOrder binary.ByteOrder) (string, int) {
+func disasm_ppc64(code []byte, pc uint64, lookup x86asm.SymLookup, byteOrder binary.ByteOrder) (string, int) {
 	inst, err := ppc64asm.Decode(code, byteOrder)
 	var text string
 	size := inst.Len
