@@ -711,3 +711,83 @@ func (t *Transcoder) GetFieldDescriptors(ctx context.Context,
 	}
 	return fdpsM, nil
 }
+
+// TODO(cmc)
+func (t *Transcoder) MergePayloads(ctx context.Context,
+	l, r []byte, fdpsM map[string][]*descriptor.FieldDescriptorProto,
+) (*ProtobufPayload, error) {
+	// get left & right payload's schemaUID
+	var lpp, rpp ProtobufPayload
+	if err := proto.Unmarshal(l, &lpp); err != nil {
+		return nil, errors.New("todo")
+	}
+	if err := proto.Unmarshal(r, &rpp); err != nil {
+		return nil, errors.New("todo")
+	}
+
+	// check that left & right payloads refer to the same FQN
+	// (*though not necessarily the same version of it)
+	lfqn := t.FQNameFromUID(ctx, lpp.SchemaUID)
+	rfqn := t.FQNameFromUID(ctx, rpp.SchemaUID)
+	if lfqn != rfqn {
+		return nil, errors.New("todo")
+	}
+
+	// decode left & right payloads as runtime-defined structures
+	lv, err := t.Decode(ctx, l)
+	if lfqn != rfqn {
+		return nil, errors.New("todo")
+	}
+	rv, err := t.Decode(ctx, r)
+	if lfqn != rfqn {
+		return nil, errors.New("todo")
+	}
+
+	// regenerate nested-tags from user-specified field descriptors
+	nestedTags := make([][]int32, 0, len(fdpsM))
+	for _, fdps := range fdpsM {
+		nestedTag := make([]int32, 0, len(fdps))
+		for _, fdp := range fdps {
+			nestedTag = append(nestedTag, fdp.GetNumber())
+		}
+		nestedTags = append(nestedTags, nestedTag)
+	}
+
+	// regenerate field descriptors for left & right payloads based on
+	// their respective version of the underlying shared schema
+	lfdpsM, err := t.GetFieldDescriptors(ctx, lpp.SchemaUID, nestedTags...)
+	if err != nil {
+		return nil, errors.New("todo")
+	}
+	rfdpsM, err := t.GetFieldDescriptors(ctx, rpp.SchemaUID, nestedTags...)
+	if err != nil {
+		return nil, errors.New("todo")
+	}
+
+	// make sure that both left & right schema versions are compatible with
+	// the constraints described by the user-specified field-descriptors
+	for fName, fdps := range fdpsM {
+		rfdps := rfdpsM[fName]
+		if len(rfdps) != len(fdps) {
+			return nil, errors.New("todo")
+		}
+		lfdps := lfdpsM[fName]
+		if len(lfdps) != len(fdps) {
+			return nil, errors.New("todo")
+		}
+		for i, fdp := range fdps {
+			t := fdp.GetType()
+			if t != lfdps[i].GetType() || t != rfdps[i].GetType() {
+				return nil, errors.New("todo")
+			}
+
+			// actual merge of left & right payloads
+			if err := SetByName(lv, fName, FieldByName(rv, fName)); err != nil {
+				return nil, errors.New("todo")
+			}
+
+		}
+	}
+
+	return nil, nil
+}

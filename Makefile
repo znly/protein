@@ -11,3 +11,6 @@ deps:
 	dep ensure -v
 	go generate .
 	go tool fix -force context -r context . || true
+
+tags:
+	gotags -R -f tags .
