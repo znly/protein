@@ -1,5 +1,5 @@
 PATH_PROTOS=${GOPATH}/src/github.com/znly/protein/protobuf
-PATH_SCHEMAS=${PATH_PROTOS}/..
+PATH_SCHEMAS=${PATH_PROTOS}
 PATH_SCHEMAS_TEST=${PATH_PROTOS}/test
 
 SCHEMAS=                                  \
@@ -22,11 +22,12 @@ protobuf: protobuf-clean
 	mkdir -p ${PATH_SCHEMAS}
 	protoc --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ \
 		   --proto_path=${GOPATH}/src/github.com/gogo/                   \
-		   --proto_path=${PATH_PROTOS}/                                  \
+		   --proto_path=${GOPATH}/src/                                   \
 		   --gogofaster_out=${PATH_SCHEMAS}/                             \
 		   ${SCHEMAS}
-	sed -i '' 's#google_protobuf "google/protobuf"#google_protobuf "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"#g' ${PATH_SCHEMAS}/*.pb.go
-	sed -i '' 's#"protobuf/gogoproto"#"github.com/gogo/protobuf/gogoproto"#g' ${PATH_SCHEMAS}/*.pb.go
+	cp ${PATH_PROTOS}/github.com/znly/protein/protobuf/*.pb.go ${PATH_SCHEMAS}/..
+	sed -i '' 's#google_protobuf "google/protobuf"#google_protobuf "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"#g' ${PATH_SCHEMAS}/../*.pb.go
+	sed -i '' 's#"protobuf/gogoproto"#"github.com/gogo/protobuf/gogoproto"#g' ${PATH_SCHEMAS}/../*.pb.go
 
 protobuf-test-clean:
 	rm -f ${PATH_SCHEMAS_TEST}/*.pb.go
@@ -47,6 +48,6 @@ protobuf-java:
 	mkdir -p java
 	protoc --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf/ \
 		   --proto_path=${GOPATH}/src/github.com/gogo/                   \
-		   --proto_path=${PATH_PROTOS}/                                  \
+		   --proto_path=${GOPATH}/src/                                   \
 		   --java_out java \
 		   ${SCHEMAS_TEST}
