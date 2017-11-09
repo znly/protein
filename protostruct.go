@@ -26,6 +26,7 @@ import (
 
 	"github.com/fatih/camelcase"
 	"github.com/gogo/protobuf/gogoproto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
@@ -134,6 +135,37 @@ func buildScalarTypes(
 
 			if f.IsMessage() || f.IsEnum() { // message or enum
 				continue
+			}
+
+			// NOTE: Internal extensions are often used by proto-compilers such
+			// as gogo to implement custom, user-defined Go types to serve as
+			// deserialization targets.
+			//
+			// These custom-types don't make sense in the context of a runtime
+			// decoder such as Protein, since they exist only in Go-space and
+			// never ever register themselves with the protobuf toolchain.
+			// (They don't even have a protobuf schema to begin with).
+			//
+			// The following disables gogo's custom-type extensions for standard
+			// scalar types, so that the runtime-decoder doesn't end up exploding
+			// when faced with type names that simply don't exist anywhere other
+			// than the original writer's codebase; but can still be decoded by
+			// falling back to native types.
+			if opts := f.GetOptions(); opts != nil {
+				p := reflect.
+					ValueOf(opts.XXX_InternalExtensions).
+					FieldByName("p")
+				if !p.IsNil() {
+					var em map[int32]proto.Extension
+					em = *(*map[int32]proto.Extension)(unsafe.Pointer(
+						p.Elem().FieldByName("extensionMap").UnsafeAddr(),
+					))
+					for k := range em {
+						if k == gogoproto.E_Customtype.Field {
+							delete(em, k)
+						}
+					}
+				}
 			}
 
 			// name
