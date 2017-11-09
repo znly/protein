@@ -14,12 +14,17 @@
 
 syntax = "proto3";
 
-package protein;
+package zenly.protein;
 
 import "google/protobuf/descriptor.proto";
 import "protobuf/gogoproto/gogo.proto";
 
 // -----------------------------------------------------------------------------
+
+option go_package = "protein";
+
+option java_multiple_files = true;
+option java_package = "co.znly.protein";
 
 option (gogoproto.marshaler_all) = false;
 option (gogoproto.unmarshaler_all) = false;
