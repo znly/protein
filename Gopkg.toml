@@ -23,7 +23,7 @@
 
 [[constraint]]
   name = "github.com/cespare/xxhash"
-  version = "~1.0.0"
+  version = "1.*"
 
 [[constraint]]
   branch = "master"
@@ -31,15 +31,15 @@
 
 [[constraint]]
   name = "github.com/garyburd/redigo"
-  version = "~1.1.0"
+  version = "1.*"
 
 [[constraint]]
-  revision = "2e7ada62e73eec9d70e5558e2a08d6925ba20226"
+  revision = "master"
   name = "github.com/gocql/gocql"
 
 [[constraint]]
   name = "github.com/gogo/protobuf"
-  version = "~0.5.0"
+  version = "0.5.*"
 
 [[constraint]]
   branch = "master"
@@ -51,7 +51,7 @@
 
 [[constraint]]
   name = "github.com/pkg/errors"
-  version = "~0.8.0"
+  version = "0.8.*"
 
 [[constraint]]
   branch = "master"
@@ -59,20 +59,20 @@
 
 [[constraint]]
   name = "github.com/stretchr/testify"
-  version = "~1.1.4"
+  version = "1.*"
 
 [[constraint]]
   name = "github.com/teh-cmc/gools"
-  version = "~0.2.0"
+  version = "0.3.*"
 
 [[constraint]]
   name = "go.uber.org/zap"
-  version = "~1.7.1"
+  version = "1.*"
 
-[[constraint]]
+[[override]]
   revision = "893b1271f1c79eb661bf3cbe4416fb866d42ed39"
   name = "golang.org/x/arch"
 
-[[constraint]]
+[[override]]
   branch = "master"
   name = "github.com/znly/reflect"

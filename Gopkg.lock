@@ -28,7 +28,7 @@
 [[projects]]
   name = "github.com/gocql/gocql"
   packages = [".","internal/lru","internal/murmur","internal/streams"]
-  revision = "2e7ada62e73eec9d70e5558e2a08d6925ba20226"
+  revision = "master"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -87,8 +87,8 @@
 [[projects]]
   name = "github.com/teh-cmc/gools"
   packages = ["tagcleaner"]
-  revision = "1a61a473807978e9daead1c6acdc71b7640e2c20"
-  version = "v0.2.0"
+  revision = "7bc81b3644804a5539fb362394b3b2e6d01445da"
+  version = "v0.3.0"
 
 [[projects]]
   branch = "master"
@@ -128,6 +128,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1f59e746658f8ae17fdc0f81694e7e9205d698a2e35a066991205575d4b4a0fb"
+  inputs-digest = "f43b93080b1949416a828ccb81ce7c34b112b36b8931ce450ef27a1be46ac97c"
   solver-name = "gps-cdcl"
   solver-version = 1
