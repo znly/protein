@@ -1,6 +1,6 @@
 FROM google/cloud-sdk:alpine as gcloud
 
-FROM golang:1.9
+FROM golang:1.9.2
 
 ARG GS_PATH=undefined
 ENV GS_PATH ${GS_PATH}
