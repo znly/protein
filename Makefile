@@ -14,5 +14,6 @@ deps_external:
 
 deps: deps_external
 	dep ensure -v
+	dep prune -v
 	go generate .
 	go tool fix -force context -r context . || true
