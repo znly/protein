@@ -2,7 +2,7 @@ version: '2'
 services:
 
     redis:
-        image: redis:3.2
+        image: redis:4
         ports:
             - "6379:6379"
         restart: on-failure
@@ -14,7 +14,8 @@ services:
         restart: on-failure
 
     scylla:
-        image: scylladb/scylla:1.7.4
+        image: scylladb/scylla:2.0.2
         ports:
             - "9042:9042"
+        command: "--developer-mode 1 --smp 1 --broadcast-address 127.0.0.1 --listen-address 0.0.0.0 --broadcast-rpc-address 127.0.0.1"
         restart: on-failure
