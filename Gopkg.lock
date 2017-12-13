@@ -17,13 +17,13 @@
   branch = "master"
   name = "github.com/fatih/camelcase"
   packages = ["."]
-  revision = "f6a740d52f961c60348ebb109adde9f4635d7540"
+  revision = "44e46d280b43ec1531bb25252440e34f1b800b65"
 
 [[projects]]
   name = "github.com/garyburd/redigo"
   packages = ["internal","redis"]
-  revision = "433969511232c397de61b1442f9fd49ec06ae9ba"
-  version = "v1.1.0"
+  revision = "47dc60e71eed504e3ef8e77ee3c6fe720f3be57f"
+  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/gocql/gocql"
@@ -40,7 +40,7 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
+  revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
 
 [[projects]]
   branch = "master"
@@ -87,8 +87,8 @@
 [[projects]]
   name = "github.com/teh-cmc/gools"
   packages = ["tagcleaner"]
-  revision = "7bc81b3644804a5539fb362394b3b2e6d01445da"
-  version = "v0.3.0"
+  revision = "cd53071b8ec72b4af1190020121f08f48e6ed844"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -99,8 +99,8 @@
 [[projects]]
   name = "go.uber.org/atomic"
   packages = ["."]
-  revision = "4e336646b2ef9fc6e47be8e21594178f98e5ebcf"
-  version = "v1.2.0"
+  revision = "8474b86a5a6f79c443ce4b2992817ff32cf208b8"
+  version = "v1.3.1"
 
 [[projects]]
   name = "go.uber.org/multierr"
@@ -128,6 +128,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f43b93080b1949416a828ccb81ce7c34b112b36b8931ce450ef27a1be46ac97c"
+  inputs-digest = "be6d480a35137f76e33fc52d6839ccef49b78e52e785e7ec92361f2f79d45828"
   solver-name = "gps-cdcl"
   solver-version = 1

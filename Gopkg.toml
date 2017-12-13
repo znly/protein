@@ -63,12 +63,13 @@
 
 [[constraint]]
   name = "github.com/teh-cmc/gools"
-  version = "0.3.*"
+  version = "1.*"
 
 [[constraint]]
   name = "go.uber.org/zap"
   version = "1.*"
 
+## NOTE(cmc): don't fiddle around with this, trust me.
 [[override]]
   revision = "893b1271f1c79eb661bf3cbe4416fb866d42ed39"
   name = "golang.org/x/arch"
