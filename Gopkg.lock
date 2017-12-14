@@ -26,9 +26,10 @@
   version = "v1.3.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/gocql/gocql"
   packages = [".","internal/lru","internal/murmur","internal/streams"]
-  revision = "master"
+  revision = "9ce8b08dfa5559eb86592129986654503cf40cf7"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -128,6 +129,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5091828ed3bae25bc3822d939e8624285e72240edc13698d66f9842ef459c4dc"
+  inputs-digest = "2fb7877f0b274b2c9df52369b29099e7727d699b461217054ed54883fdde93ba"
   solver-name = "gps-cdcl"
   solver-version = 1

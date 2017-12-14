@@ -34,7 +34,7 @@
   version = "1.*"
 
 [[constraint]]
-  revision = "master"
+  branch = "master"
   name = "github.com/gocql/gocql"
 
 [[constraint]]
