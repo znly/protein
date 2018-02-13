@@ -143,7 +143,8 @@ func NewDescriptorTrees(
 		dt.hashPrefix = hashPrefix
 	}
 
-	// This computes the immediate dependencies of every available `DescriptorTree`.
+	// This computes the immediate dependencies of every available
+	// `DescriptorTree`.
 	//
 	// We need all the dependency trees of all `DescriptorTree`s to be already
 	// computed before we can compute the definitive recursive hashes.
@@ -239,7 +240,8 @@ func (dt *DescriptorTree) computeDependencyLinks(
 	switch descr := dt.descr.(type) {
 	case *descriptor.DescriptorProto:
 		for _, f := range descr.GetField() {
-			// `typeName` is non-empty only when it references a Message or Enum type
+			// `typeName` is non-empty only when it references a Message
+			// or Enum type
 			if typeName := f.GetTypeName(); len(typeName) > 0 {
 				dep, ok := dtsByName[typeName]
 				if !ok {
@@ -253,9 +255,39 @@ func (dt *DescriptorTree) computeDependencyLinks(
 				dt.deps = append(dt.deps, dep)
 			}
 		}
+		// /!\ NESTED GHOST TYPES! /!\
+		// This one is really tricky: a message might define a nested type and
+		// never end up using it (e.g. by embedding it as `bytes` instead, for
+		// whatever reason).
+		// When that happens, none of the fields of the message actually
+		// reference this nested-type, so it *won't* be added to the message
+		// dependencies in the loop just above (it is still versioned and pushed
+		// to the registry as a stand-alone type though).
+		// This might not seem like an issue at first (after all, this type is
+		// not required to unmarshal the payload), but some implementations of
+		// protobuf and related tooling will expect it to be there nonetheless
+		// since, technically, it exists. And if it's not, things will get ugly.
+		for _, nt := range descr.GetNestedType() {
+			// `typeName` is non-empty only when it references a Message
+			// or Enum type
+			if typeName := nt.GetName(); len(typeName) > 0 {
+				// we're looking for nested-types only, so we know their fq-path
+				typeName = dt.fqName + "." + typeName
+				dep, ok := dtsByName[typeName]
+				if !ok {
+					// that one is expected due to protobuf internal meta-types
+					// that will start appearing out of the blue
+					continue
+				}
+				if _, ok := alreadyMet[dep]; ok {
+					continue
+				}
+				alreadyMet[dep] = struct{}{} // hey, I've just met you!
+				dt.deps = append(dt.deps, dep)
+			}
+		}
 	case *descriptor.EnumDescriptorProto:
-		// nothing to do
-		// UPDATE(cmc): I don't really remember why tho...
+		// enum cannot have dependencies
 	default:
 		return errors.Wrapf(failure.ErrFDUnknownType,
 			"`%v`: unknown type", reflect.TypeOf(descr))

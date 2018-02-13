@@ -26,10 +26,13 @@ package protoscan
 const (
 	TEST_TSKnownName = ".test.TestSchema"
 	TEST_DEKnownName = ".test.TestSchema.DepsEntry"
+	TEST_GTKnownName = ".test.TestSchema.GhostType"
 
-	TEST_TSKnownHashSingle = "PROT-deb943a90ae14e23e35aa3c445cc1c7f"
+	TEST_TSKnownHashSingle = "PROT-00ede76a8940ef0f5d9022ecbca679d9"
 	TEST_DEKnownHashSingle = "PROT-624796f94565bcdd2e785ef24a037ebb"
+	TEST_GTKnownHashSingle = "PROT-f4d9460136ed7169a701ac2bab5a642b"
 
-	TEST_TSKnownHashRecurse = "PROT-528e869395e00dd5525c2c2c69bbd4d0"
+	TEST_TSKnownHashRecurse = "PROT-8b244a1a35e88f1e1aad8915dd603021"
 	TEST_DEKnownHashRecurse = "PROT-4f6928d2737ba44dac0e3df123f80284"
+	TEST_GTKnownHashRecurse = "PROT-3fecf73710581dfb3f46718988b9316e"
 )

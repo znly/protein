@@ -95,6 +95,22 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	assert.Equal(t, TEST_DEKnownHashSingle, "PROT-"+hex.EncodeToString(deExpectedHash))
 	assert.Equal(t, deExpectedHash, deDT.hashSingle)
 	assert.Nil(t, deDT.hashRecursive)
+
+	gtDT := dtsByName[TEST_GTKnownName]
+	assert.Nil(t, gtDT.deps) // shouldn't have dependencies linked yet
+	assert.Equal(t, TEST_GTKnownName, gtDT.fqName)
+	assert.NotNil(t, gtDT.descr)
+	assert.Equal(t, "GhostType", gtDT.descr.(*descriptor.DescriptorProto).GetName())
+	b, err = proto.Marshal(gtDT.descr)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, b)
+	bss = ByteSSlice{[]byte(gtDT.FQName()), b}
+	bss.Sort()
+	gtExpectedHash, err := MD5(bss)
+	assert.Nil(t, err)
+	assert.Equal(t, TEST_GTKnownHashSingle, "PROT-"+hex.EncodeToString(gtExpectedHash))
+	assert.Equal(t, gtExpectedHash, gtDT.hashSingle)
+	assert.Nil(t, gtDT.hashRecursive)
 }
 
 // -----------------------------------------------------------------------------
@@ -112,8 +128,9 @@ func TestDescriptorTree_computeDependencyLinks(t *testing.T) {
 		depsMap[dep.FQName()] = dep
 	}
 	// should only find a dependency to `DepsEntry` in here
-	assert.Len(t, depsMap, 1)
+	assert.Len(t, depsMap, 2)
 	assert.Contains(t, depsMap, TEST_DEKnownName)
+	assert.Contains(t, depsMap, TEST_GTKnownName)
 	// recursive hash still shouldn't have been computed at this point
 	assert.Nil(t, psDT.hashRecursive)
 
@@ -121,6 +138,11 @@ func TestDescriptorTree_computeDependencyLinks(t *testing.T) {
 	assert.Empty(t, deDT.deps) // DepsEntry has no dependency
 	// recursive hash still shouldn't have been computed at this point
 	assert.Nil(t, deDT.hashRecursive)
+
+	gtDT := dtsByName[TEST_GTKnownName]
+	assert.Empty(t, gtDT.deps) // DepsEntry has no dependency
+	// recursive hash still shouldn't have been computed at this point
+	assert.Nil(t, gtDT.hashRecursive)
 }
 
 func TestDescriptorTree_computeRecursiveHash(t *testing.T) {
@@ -140,11 +162,16 @@ func TestDescriptorTree_computeRecursiveHash(t *testing.T) {
 		depsMap[dep.FQName()] = dep
 	}
 	// should only find a dependency to `DepsEntry` in here
-	assert.Len(t, depsMap, 1)
+	assert.Len(t, depsMap, 2)
 	assert.Contains(t, depsMap, TEST_DEKnownName)
+	assert.Contains(t, depsMap, TEST_GTKnownName)
 	// since `TestSchema` has no dependency, its recursive hash should just
 	// be a re-hash of its single hash
-	bss = ByteSSlice{psDT.hashSingle, depsMap[TEST_DEKnownName].hashSingle}
+	bss = ByteSSlice{
+		psDT.hashSingle,
+		depsMap[TEST_DEKnownName].hashSingle,
+		depsMap[TEST_GTKnownName].hashSingle,
+	}
 	bss.Sort()
 	psExpectedHash, err := MD5(bss)
 	assert.Nil(t, err)
@@ -161,6 +188,17 @@ func TestDescriptorTree_computeRecursiveHash(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, TEST_DEKnownHashRecurse, "PROT-"+hex.EncodeToString(deExpectedHash))
 	assert.Equal(t, deDT.hashRecursive, deExpectedHash)
+
+	gtDT := dtsByName[TEST_GTKnownName]
+	assert.Empty(t, gtDT.deps) // DepsEntry has no dependency
+	// since `DepsEntry` has no dependency, its recursive hash should just
+	// be a re-hash of its single hash
+	bss = ByteSSlice{gtDT.hashSingle}
+	bss.Sort()
+	gtExpectedHash, err := MD5(bss)
+	assert.Nil(t, err)
+	assert.Equal(t, TEST_GTKnownHashRecurse, "PROT-"+hex.EncodeToString(gtExpectedHash))
+	assert.Equal(t, gtDT.hashRecursive, gtExpectedHash)
 }
 
 // -----------------------------------------------------------------------------

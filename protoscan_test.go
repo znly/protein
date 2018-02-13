@@ -80,10 +80,12 @@ func ExampleScanSchemas() {
 	// 	depends on: [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
 	// 	depends on: [PROT-f6be24770f6e8d5edc8ef12c94a23010] .test.TestSchemaXXX.DepsEntry
 	// [PROT-393cb6dc1b4fc350cf10ca99f429301d] .test.TestSchemaXXX.WeatherType
+	// [PROT-3fecf73710581dfb3f46718988b9316e] .test.TestSchema.GhostType
 	// [PROT-4f6928d2737ba44dac0e3df123f80284] .test.TestSchema.DepsEntry
-	// [PROT-528e869395e00dd5525c2c2c69bbd4d0] .test.TestSchema
-	// 	depends on: [PROT-4f6928d2737ba44dac0e3df123f80284] .test.TestSchema.DepsEntry
 	// [PROT-6926276ca6306966d1a802c3b8f75298] .test.TestSchemaXXX.IdsEntry
+	// [PROT-8b244a1a35e88f1e1aad8915dd603021] .test.TestSchema
+	// 	depends on: [PROT-3fecf73710581dfb3f46718988b9316e] .test.TestSchema.GhostType
+	// 	depends on: [PROT-4f6928d2737ba44dac0e3df123f80284] .test.TestSchema.DepsEntry
 	// [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
 	// [PROT-f6be24770f6e8d5edc8ef12c94a23010] .test.TestSchemaXXX.DepsEntry
 	// 	depends on: [PROT-c43da9745d68bd3cb97dc0f4905f3279] .test.TestSchemaXXX.NestedEntry
@@ -95,23 +97,7 @@ func TestProtoscan_ScanSchemas(t *testing.T) {
 	sm, err := ScanSchemas(protoscan.MD5, "PROT-")
 	assert.Nil(t, err)
 
-	// should at least find the `.protoscan.TestSchema` and its nested
-	// `DepsEntry` message in the returned protobuf schemas
-
-	ps := sm.GetByUID(protoscan.TEST_TSKnownHashRecurse)
-	assert.NotNil(t, ps)
-	assert.Equal(t, protoscan.TEST_TSKnownName, ps.GetFQName())
-	assert.Equal(t, protoscan.TEST_TSKnownHashRecurse, ps.GetSchemaUID())
-	assert.NotNil(t, ps.GetDescr())
-	assert.NotEmpty(t, ps.GetDeps())
-	assert.NotNil(t, ps.GetDeps()[protoscan.TEST_DEKnownHashRecurse])
-
-	de := sm.GetByUID(protoscan.TEST_DEKnownHashRecurse)
-	assert.NotNil(t, de)
-	assert.Equal(t, protoscan.TEST_DEKnownName, de.GetFQName())
-	assert.Equal(t, protoscan.TEST_DEKnownHashRecurse, de.GetSchemaUID())
-	assert.NotNil(t, de.GetDescr())
-	assert.Empty(t, de.GetDeps())
+	testProtoscan_schemas(t, sm)
 }
 
 func TestProtoscan_LoadSchemas(t *testing.T) {
@@ -121,8 +107,13 @@ func TestProtoscan_LoadSchemas(t *testing.T) {
 	sm, err := LoadSchemas(protoFiles, protoscan.MD5, "PROT-")
 	assert.Nil(t, err)
 
-	// should at least find the `.protoscan.TestSchema` and its nested
-	// `DepsEntry` message in the returned protobuf schemas
+	testProtoscan_schemas(t, sm)
+}
+
+func testProtoscan_schemas(t *testing.T, sm *SchemaMap) {
+	// Should at least find the `.protoscan.TestSchema`, its nested
+	// `DepsEntry` message as well as its nested ghost-type `GhostType`
+	// in the returned protobuf schemas.
 
 	ps := sm.GetByUID(protoscan.TEST_TSKnownHashRecurse)
 	assert.NotNil(t, ps)
@@ -138,4 +129,11 @@ func TestProtoscan_LoadSchemas(t *testing.T) {
 	assert.Equal(t, protoscan.TEST_DEKnownHashRecurse, de.GetSchemaUID())
 	assert.NotNil(t, de.GetDescr())
 	assert.Empty(t, de.GetDeps())
+
+	gt := sm.GetByUID(protoscan.TEST_GTKnownHashRecurse)
+	assert.NotNil(t, gt)
+	assert.Equal(t, protoscan.TEST_GTKnownName, gt.GetFQName())
+	assert.Equal(t, protoscan.TEST_GTKnownHashRecurse, gt.GetSchemaUID())
+	assert.NotNil(t, gt.GetDescr())
+	assert.Empty(t, gt.GetDeps())
 }

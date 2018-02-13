@@ -27,4 +27,11 @@ message TestSchema {
 	string uid = 1;
 	string fq_name = 2;
 	map<string, string> deps = 4;
+
+	// Note that this little guy isn't used by its parent.
+	// It should still be considered as a dependency though.
+	message GhostType {
+		string stuff = 1;
+		uint32 things = 2;
+	}
 }

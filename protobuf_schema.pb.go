@@ -11,7 +11,7 @@ import _ "github.com/gogo/protobuf/gogoproto"
 
 import strings "strings"
 import reflect "reflect"
-import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+import sortkeys "github.com/gogo/protobuf/sortkeys"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -196,7 +196,7 @@ func (this *ProtobufSchema) GoString() string {
 	for k, _ := range this.Deps {
 		keysForDeps = append(keysForDeps, k)
 	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForDeps)
+	sortkeys.Strings(keysForDeps)
 	mapStringForDeps := "map[string]string{"
 	for _, k := range keysForDeps {
 		mapStringForDeps += fmt.Sprintf("%#v: %#v,", k, this.Deps[k])
