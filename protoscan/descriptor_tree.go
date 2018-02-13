@@ -114,8 +114,8 @@ func (dt *DescriptorTree) DependencyUIDs() []string {
 			alreadyMet[dt] = struct{}{} // hey, I've just met you!
 			recursiveHashes = append(recursiveHashes, dt.UID())
 			recursiveHashes = append(
-				recursiveHashes, recurseChildren(dt.deps)...,
-			)
+				recursiveHashes,
+				recurseChildren(dt.deps)...)
 		}
 		return recursiveHashes
 	}
@@ -244,8 +244,7 @@ func (dt *DescriptorTree) computeDependencyLinks(
 				dep, ok := dtsByName[typeName]
 				if !ok {
 					return errors.Wrapf(failure.ErrDependencyNotFound,
-						"`%s`: no dependency with this name", typeName,
-					)
+						"`%s`: no dependency with this name", typeName)
 				}
 				if _, ok := alreadyMet[dep]; ok {
 					continue
@@ -259,8 +258,7 @@ func (dt *DescriptorTree) computeDependencyLinks(
 		// UPDATE(cmc): I don't really remember why tho...
 	default:
 		return errors.Wrapf(failure.ErrFDUnknownType,
-			"`%v`: unknown type", reflect.TypeOf(descr),
-		)
+			"`%v`: unknown type", reflect.TypeOf(descr))
 	}
 	return nil
 }
@@ -388,8 +386,7 @@ func checkDescriptorType(descr proto.Message) error {
 	case *descriptor.EnumDescriptorProto:
 	default:
 		return errors.Wrapf(failure.ErrFDUnknownType,
-			"`%v`: unknown type", reflect.TypeOf(descr),
-		)
+			"`%v`: unknown type", reflect.TypeOf(descr))
 	}
 	return nil
 }
