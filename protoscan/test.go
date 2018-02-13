@@ -27,9 +27,9 @@ const (
 	TEST_TSKnownName = ".test.TestSchema"
 	TEST_DEKnownName = ".test.TestSchema.DepsEntry"
 
-	TEST_TSKnownHashSingle = "PROT-d12b5690ec5877c9c5f6c84b57523b14291b46de50ffaf487a8a3f04d8198bff"
-	TEST_DEKnownHashSingle = "PROT-39b441710129f5f7e4c92863b02173db7aa71658799031d6a1dedca260842dfa"
+	TEST_TSKnownHashSingle = "PROT-deb943a90ae14e23e35aa3c445cc1c7f"
+	TEST_DEKnownHashSingle = "PROT-624796f94565bcdd2e785ef24a037ebb"
 
-	TEST_TSKnownHashRecurse = "PROT-aae11ece4778cf8da20b7e436958feebcc0a1237807866603d1c197f27a3cb5b"
-	TEST_DEKnownHashRecurse = "PROT-d278f5561f05e68f6e68fcbc6b801d29a69b4bf6044bf3e6242ea8fe388ebd6e"
+	TEST_TSKnownHashRecurse = "PROT-528e869395e00dd5525c2c2c69bbd4d0"
+	TEST_DEKnownHashRecurse = "PROT-4f6928d2737ba44dac0e3df123f80284"
 )

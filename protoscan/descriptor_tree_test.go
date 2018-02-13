@@ -47,7 +47,7 @@ func _collectTestSchemaTrees(t *testing.T) map[string]*DescriptorTree {
 		fdps[file] = fdp
 	}
 
-	dtsByName, err := collectDescriptorTypes(SHA256, fdps)
+	dtsByName, err := collectDescriptorTypes(MD5, fdps)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, dtsByName)
 
@@ -74,7 +74,7 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	assert.NotEmpty(t, b)
 	bss = ByteSSlice{[]byte(psDT.FQName()), b}
 	bss.Sort()
-	psExpectedHash, err := SHA256(bss)
+	psExpectedHash, err := MD5(bss)
 	assert.Nil(t, err)
 	assert.Equal(t, TEST_TSKnownHashSingle, "PROT-"+hex.EncodeToString(psExpectedHash))
 	assert.Equal(t, psExpectedHash, psDT.hashSingle)
@@ -90,7 +90,7 @@ func TestProtoscan_collectDescriptorTypes(t *testing.T) {
 	assert.NotEmpty(t, b)
 	bss = ByteSSlice{[]byte(deDT.FQName()), b}
 	bss.Sort()
-	deExpectedHash, err := SHA256(bss)
+	deExpectedHash, err := MD5(bss)
 	assert.Nil(t, err)
 	assert.Equal(t, TEST_DEKnownHashSingle, "PROT-"+hex.EncodeToString(deExpectedHash))
 	assert.Equal(t, deExpectedHash, deDT.hashSingle)
@@ -130,7 +130,7 @@ func TestDescriptorTree_computeRecursiveHash(t *testing.T) {
 		assert.Nil(t, dt.computeDependencyLinks(dtsByName))
 	}
 	for _, dt := range dtsByName {
-		assert.Nil(t, dt.computeRecursiveHash(SHA256))
+		assert.Nil(t, dt.computeRecursiveHash(MD5))
 	}
 
 	psDT := dtsByName[TEST_TSKnownName]
@@ -146,7 +146,7 @@ func TestDescriptorTree_computeRecursiveHash(t *testing.T) {
 	// be a re-hash of its single hash
 	bss = ByteSSlice{psDT.hashSingle, depsMap[TEST_DEKnownName].hashSingle}
 	bss.Sort()
-	psExpectedHash, err := SHA256(bss)
+	psExpectedHash, err := MD5(bss)
 	assert.Nil(t, err)
 	assert.Equal(t, TEST_TSKnownHashRecurse, "PROT-"+hex.EncodeToString(psExpectedHash))
 	assert.Equal(t, psDT.hashRecursive, psExpectedHash)
@@ -157,7 +157,7 @@ func TestDescriptorTree_computeRecursiveHash(t *testing.T) {
 	// be a re-hash of its single hash
 	bss = ByteSSlice{deDT.hashSingle}
 	bss.Sort()
-	deExpectedHash, err := SHA256(bss)
+	deExpectedHash, err := MD5(bss)
 	assert.Nil(t, err)
 	assert.Equal(t, TEST_DEKnownHashRecurse, "PROT-"+hex.EncodeToString(deExpectedHash))
 	assert.Equal(t, deDT.hashRecursive, deExpectedHash)
@@ -185,7 +185,7 @@ func TestProtoscan_NewDescriptorTrees(t *testing.T) {
 		fdps[file] = fdp
 	}
 
-	dtsByUID, err := NewDescriptorTrees(SHA256, "PROT-", fdps)
+	dtsByUID, err := NewDescriptorTrees(MD5, "PROT-", fdps)
 	assert.Nil(t, err)
 
 	// should at least find the `.test.TestSchema` and its nested

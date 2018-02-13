@@ -92,7 +92,7 @@ func ExampleScanSchemas() {
 // -----------------------------------------------------------------------------
 
 func TestProtoscan_ScanSchemas(t *testing.T) {
-	sm, err := ScanSchemas(protoscan.SHA256, "PROT-")
+	sm, err := ScanSchemas(protoscan.MD5, "PROT-")
 	assert.Nil(t, err)
 
 	// should at least find the `.protoscan.TestSchema` and its nested
@@ -118,7 +118,7 @@ func TestProtoscan_LoadSchemas(t *testing.T) {
 	protoFiles := map[string][]byte{
 		"test_schema.proto": test.FileDescriptorTestSchema,
 	}
-	sm, err := LoadSchemas(protoFiles, protoscan.SHA256, "PROT-")
+	sm, err := LoadSchemas(protoFiles, protoscan.MD5, "PROT-")
 	assert.Nil(t, err)
 
 	// should at least find the `.protoscan.TestSchema` and its nested
