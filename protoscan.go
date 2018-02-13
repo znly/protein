@@ -60,8 +60,8 @@ func (sm *SchemaMap) Add(schemas map[string]*ProtobufSchema) *SchemaMap {
 	sm.lock.Lock()
 	for _, s := range schemas {
 		zap.L().Debug("schema found",
-			zap.String("uid", s.SchemaUID), zap.String("fq-name", s.FQName),
-		)
+			zap.String("uid", s.SchemaUID),
+			zap.String("fq-name", s.FQName))
 		sm.schemaMap[s.SchemaUID] = s
 		sm.revmap[s.FQName] = append(sm.revmap[s.FQName], s.SchemaUID)
 	}
@@ -210,8 +210,7 @@ func buildSchemas(protoFiles map[string]*map[string][]byte,
 			//   better off crashing right now
 			if _, ok := fdps[file]; ok && fod {
 				return nil, errors.Wrapf(failure.ErrFDAlreadyInstanciated,
-					"`%s` is instanciated multiple times", file,
-				)
+					"`%s` is instanciated multiple times", file)
 			}
 			fdp, err := protoscan.UnzipAndUnmarshal(descr)
 			if err != nil {
@@ -241,15 +240,13 @@ func buildSchemas(protoFiles map[string]*map[string][]byte,
 			ps.Descr = &ProtobufSchema_Enum{Enum: descr}
 		default:
 			return nil, errors.Wrapf(failure.ErrFDUnknownType,
-				"`%v`: unknown type", reflect.TypeOf(descr),
-			)
+				"`%v`: unknown type", reflect.TypeOf(descr))
 		}
 		for _, depUID := range dt.DependencyUIDs() {
 			dep, ok := dtsByUID[depUID]
 			if !ok {
 				return nil, errors.Wrapf(failure.ErrDependencyNotFound,
-					"`%s`: no dependency with this schemaUID", depUID,
-				)
+					"`%s`: no dependency with this schemaUID", depUID)
 			}
 			ps.Deps[depUID] = dep.FQName()
 		}
