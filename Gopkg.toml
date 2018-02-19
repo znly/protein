@@ -66,5 +66,5 @@
   version = "1.*"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/znly/reflect"
+  version = "1.10.*"

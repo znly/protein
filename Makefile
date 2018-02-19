@@ -10,7 +10,6 @@ test:
 deps_external:
 	go get -u github.com/znly/linkname-gen
 	go get -u golang.org/x/tools/cmd/stringer
-
 deps: deps_external
 	dep ensure -v
 	go generate .

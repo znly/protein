@@ -25,8 +25,8 @@
     "internal",
     "redis"
   ]
-  revision = "47dc60e71eed504e3ef8e77ee3c6fe720f3be57f"
-  version = "v1.3.0"
+  revision = "d1ed5c67e5794de818ea85e6b522fda02623a484"
+  version = "v1.5.0"
 
 [[projects]]
   branch = "master"
@@ -37,7 +37,7 @@
     "internal/murmur",
     "internal/streams"
   ]
-  revision = "9ce8b08dfa5559eb86592129986654503cf40cf7"
+  revision = "a2c732f85a90e3b03df8088d7719488c8dc4d7d1"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -98,14 +98,14 @@
 [[projects]]
   name = "github.com/stretchr/testify"
   packages = ["assert"]
-  revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
-  version = "v1.1.4"
+  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
+  version = "v1.2.1"
 
 [[projects]]
-  branch = "master"
   name = "github.com/znly/reflect"
   packages = ["."]
-  revision = "ee0ffb3cef0a3739ec1eb54693c12e0ca27fc8c7"
+  revision = "2fbe8413e2343aa5c3bb0bdd9adb19dcfed41f0b"
+  version = "v1.10.0"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -141,6 +141,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "954694b2db705aba679d4ea8024dbcbb8b2109592a7d4c86a7d3cd9f8af68fff"
+  inputs-digest = "b4db01054a0908edfdcea654ca8f17f164641bf027d36b65175ca809a8b3e8f0"
   solver-name = "gps-cdcl"
   solver-version = 1
