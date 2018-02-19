@@ -102,12 +102,6 @@
   version = "v1.1.4"
 
 [[projects]]
-  name = "github.com/teh-cmc/gools"
-  packages = ["tagcleaner"]
-  revision = "cd53071b8ec72b4af1190020121f08f48e6ed844"
-  version = "v1.0.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/znly/reflect"
   packages = ["."]
@@ -147,6 +141,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "76feefa2ef84021ae8a915b4a3f934ea965c259984f10badaad19343c8c113b2"
+  inputs-digest = "954694b2db705aba679d4ea8024dbcbb8b2109592a7d4c86a7d3cd9f8af68fff"
   solver-name = "gps-cdcl"
   solver-version = 1

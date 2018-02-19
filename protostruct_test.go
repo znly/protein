@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/teh-cmc/gools/tagcleaner"
 
 	"github.com/znly/protein/protobuf/test"
 	"github.com/znly/protein/protoscan"
@@ -51,8 +50,8 @@ func ExampleCreateStructType() {
 	}
 
 	// pretty-print the resulting structure-type
-	structType = tagcleaner.Clean(structType) // remove tags to ease reading
-	b, err := format.Source(                  // gofmt
+	structType = Clean(structType) // remove tags to ease reading
+	b, err := format.Source(       // gofmt
 		[]byte(fmt.Sprintf("type TestSchemaXXX %s", structType)))
 	if err != nil {
 		zap.L().Fatal(err.Error())
@@ -86,6 +85,40 @@ func ExampleCreateStructType() {
 	//		Value string
 	//	}
 	//}
+}
+
+// -----------------------------------------------------------------------------
+
+// Clean recursively walks through `t` and annihilates any struct-tag it might
+// find along the way.
+func Clean(t reflect.Type) reflect.Type { return clean(t, true) }
+
+func clean(t reflect.Type, root bool) reflect.Type {
+	// let's not adventure ourselves past the original package's boundaries
+	if !root && t.PkgPath() != "" {
+		return t
+	}
+	switch t.Kind() {
+	case reflect.Ptr:
+		return reflect.PtrTo(clean(t.Elem(), false))
+	case reflect.Map:
+		return reflect.MapOf(t.Key(), clean(t.Elem(), false))
+	case reflect.Array:
+		return reflect.ArrayOf(t.Len(), clean(t.Elem(), false))
+	case reflect.Slice:
+		return reflect.SliceOf(clean(t.Elem(), false))
+	case reflect.Struct:
+		fields := make([]reflect.StructField, t.NumField())
+		for i := 0; i < t.NumField(); i++ {
+			f := t.Field(i)
+			f.Tag = ""
+			f.Type = clean(f.Type, false)
+			fields[i] = f
+		}
+		return reflect.StructOf(fields)
+	default:
+		return t
+	}
 }
 
 // -----------------------------------------------------------------------------

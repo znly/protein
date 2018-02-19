@@ -62,10 +62,6 @@
   version = "1.*"
 
 [[constraint]]
-  name = "github.com/teh-cmc/gools"
-  version = "1.*"
-
-[[constraint]]
   name = "go.uber.org/zap"
   version = "1.*"
 
