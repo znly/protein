@@ -8,8 +8,9 @@ sudo: required
 
 language: go
 go:
-    - 1.8.4
-    - 1.9.2
+    - "1.8.7"
+    - "1.9.4"
+    - "1.10"
 env:
     - PATH=/home/travis/gopath/bin:$PATH
       PROT_CQL_ADDRS=localhost:9042
