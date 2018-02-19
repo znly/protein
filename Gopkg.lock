@@ -111,14 +111,16 @@
 
 [[projects]]
   name = "go.uber.org/zap"
-  packages = [".","buffer","internal/bufferpool","internal/color","internal/exit","zapcore"]
+  packages = [
+    ".",
+    "buffer",
+    "internal/bufferpool",
+    "internal/color",
+    "internal/exit",
+    "zapcore"
+  ]
   revision = "35aad584952c3e7020db7b839f6b102de6271f89"
   version = "v1.7.1"
-
-[[projects]]
-  name = "golang.org/x/arch"
-  packages = ["arm/armasm","ppc64/ppc64asm","x86/x86asm"]
-  revision = "893b1271f1c79eb661bf3cbe4416fb866d42ed39"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -129,6 +131,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2fb7877f0b274b2c9df52369b29099e7727d699b461217054ed54883fdde93ba"
+  inputs-digest = "76feefa2ef84021ae8a915b4a3f934ea965c259984f10badaad19343c8c113b2"
   solver-name = "gps-cdcl"
   solver-version = 1
