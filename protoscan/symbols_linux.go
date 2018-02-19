@@ -31,8 +31,12 @@ func scanSymbols(binPath string) ([]symbol, error) {
 		return nil, errors.WithStack(err)
 	}
 
+	syms, err := f.Symbols()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 	protoFiles := []symbol{}
-	for _, s := range f.Symtab.Syms {
+	for _, s := range syms {
 		if strings.HasSuffix(s.Name, "/proto.protoFiles") {
 			protoFiles = append(protoFiles, symbol{s.Name, uintptr(s.Value)})
 		}
